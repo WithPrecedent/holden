@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "holden"
+version = "0.1.0"
+description = "lightweight, accessible, flexible composite data structures"
+authors = ["Corey Rayburn Yung <coreyrayburnyung@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/WithPrecedent/holden"
+repository = "https://github.com/WithPrecedent/holden"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+amos = "^0.1.7"
+miller = "^0.1.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
