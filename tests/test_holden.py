@@ -119,20 +119,20 @@ def test_graph_again() -> None:
     another_dag = holden.System.create(item = adjacency)
     dag.append(item = another_dag)
     assert dag['cat'] == {'tree'}
-    pipelines = dag.pipelines 
-    assert len(pipelines) == 6
+    paths = dag.paths 
+    assert len(paths) == 6
     assert dag.endpoint == {'house', 'yard'}
     assert dag.root == {'a', 'c'}
     assert dag.nodes == {
         'tree', 'b', 'c', 'a', 'yard', 'cat', 'd', 'house', 'dog', 'e'}
-    pipeline = dag.pipeline
-    new_dag = holden.System.from_pipeline(item = pipeline)
+    path = dag.path
+    new_dag = holden.System.from_path(item = path)
     assert new_dag['tree'] == dag['tree']
-    another_dag = holden.System.from_pipelines(item = pipelines)
+    another_dag = holden.System.from_paths(item = paths)
     assert another_dag['tree'] == dag['tree']
     return
 
-def test_pipeline() -> None:
+def test_path() -> None:
     
     return
 
@@ -144,6 +144,6 @@ def test_tree() -> None:
 if __name__ == '__main__':
     test_graph()
     test_graph_again()
-    test_pipeline()
+    test_path()
     test_tree()
     

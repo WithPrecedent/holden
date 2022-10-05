@@ -55,8 +55,7 @@ __author__ = 'Corey Rayburn Yung'
 
 
 from .base import *
-from .check import *
-from .convert import *
-from .form import *
+from .composites import *
+from .forms import *
 from .graphs import *
-from .trait import *
+from .traits import *

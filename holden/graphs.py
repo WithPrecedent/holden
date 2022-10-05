@@ -1,5 +1,5 @@
 """
-graph: lightweight graph data structures
+graphs: lightweight graph data structures
 Corey Rayburn Yung <coreyrayburnyung@gmail.com>
 Copyright 2020-2022, Corey Rayburn Yung
 License: Apache-2.0
@@ -25,7 +25,8 @@ To Do:
 """
 from __future__ import annotations
 import collections
-from collections.abc import MutableMapping, MutableSequence, Sequence, Set
+from collections.abc import (
+    Collection, MutableMapping, MutableSequence, Sequence, Set)
 import copy
 import dataclasses
 import itertools
@@ -35,74 +36,42 @@ import amos
 
 from . import base
 from . import convert
-from . import form
-from . import trait
+from . import forms
+from . import traits
     
 
-@dataclasses.dataclass # type: ignore
-class Pipeline(trait.Directed, form.Linear, base.Graph):
-    """Linear, directed pipeline graph.
-    
+def is_path(item: object) -> bool:
+    """Returns whether 'item' is a path.
+
     Args:
-        contents (MutableSequence[base.Node]): list of stored Node 
-            instances. Defaults to an empty list.
-          
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a path.
+    
     """
-    contents: MutableSequence[base.Node] = dataclasses.field(
-        default_factory = list)
+    return (
+        isinstance(item, Sequence)
+        and not isinstance(item, str)
+        and all(base.is_node(item = i) for i in item))
 
-    """ Properties """
-    
-    @property
-    def endpoint(self) -> base.Node:
-        """Returns the endpoint(s) of the stored graph."""
-        return self.contents[-1]
-    
-    @property
-    def root(self) -> base.Node:
-        """Returns the root(s) of the stored graph."""
-        return self.contents[0]
-    
-    """ Public Methods """
-   
-    def walk(
-        self, 
-        start: Optional[base.Node] = None,
-        stop: Optional[base.Node] = None, 
-        path: Optional[Pipeline] = None,
-        return_pipelines: bool = False, 
-        *args: Any, 
-        **kwargs: Any) -> Pipeline:
-        """Returns path in the stored composite object from 'start' to 'stop'.
-        
-        Args:
-            start (Optional[base.Node]): base.Node to start paths from. Defaults to None.
-                If it is None, 'start' should be assigned to one of the roots
-                of the base.
-            stop (Optional[base.Node]): base.Node to stop paths. Defaults to None. If it 
-                is None, 'start' should be assigned to one of the roots of the 
-                base.
-            path (Optional[Pipeline]): a path from 'start' to 'stop'. 
-                Defaults to None. This parameter is used by recursive methods 
-                for determining a path.
-            return_pipelines (bool): whether to return a Pipelines instance 
-                (True) or a Pipeline instance (False). Defaults to True.
+def is_paths(item: object) -> bool:
+    """Returns whether 'item' is sequence of paths.
 
-        Returns:
-            Union[Pipeline, Pipelines]: path(s) through the 
-                Composite object. If multiple paths are possible and 
-                'return_pipelines' is False, this method should return a 
-                Pipeline that includes all such paths appended to each other. If 
-                multiple paths are possible and 'return_pipelines' is True, a 
-                Pipelines instance with all of the paths should be returned. 
-                Defaults to True.
-                            
-        """
-        return self.contents
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a sequence of paths.
     
-        
+    """
+    return (
+        isinstance(item, Sequence)
+        and all(base.is_path(item = i) for i in item))
+
+
 @dataclasses.dataclass
-class System(form.Adjacency, trait.Directed, base.Graph):
+class System(forms.Adjacency, traits.Directed, base.Graph):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -140,22 +109,22 @@ class System(form.Adjacency, trait.Directed, base.Graph):
         return self._find_all_paths(starts = self.root, stops = self.endpoint)
     
     @property
-    def pipeline(self) -> base.Pipeline:
-        """Returns stored graph as a pipeline."""
-        pipeline = []
-        for pipe in self.pipelines.values():
-            pipeline.extend(pipe)
-        return base.Pipeline(contents = pipeline)
+    def path(self) -> base.Path:
+        """Returns stored graph as a path."""
+        path = []
+        for pipe in self.paths.values():
+            path.extend(pipe)
+        return base.Path(contents = path)
     
     @property
-    def pipelines(self) -> base.Pipelines:
-        """Returns stored graph as pipelines."""
+    def paths(self) -> base.Paths:
+        """Returns stored graph as paths."""
         all_paths = self.paths
-        instances = [base.Pipeline(contents = p) for p in all_paths]
-        pipelines = base.Pipelines()
+        instances = [base.Path(contents = p) for p in all_paths]
+        paths = base.Paths()
         for instance in instances:
-            pipelines.add(instance, name = 'path')
-        return pipelines
+            paths.add(instance, name = 'path')
+        return paths
             
     @property
     def tree(self) -> tree.Tree:
@@ -167,19 +136,19 @@ class System(form.Adjacency, trait.Directed, base.Graph):
     @classmethod
     def from_nodes(cls, item: base.Nodes) -> System:
         """Creates a System instance from a Nodes."""
-        new_contents = convert.pipeline_to_adjacency(item = item)
+        new_contents = convert.path_to_adjacency(item = item)
         return cls(contents = new_contents)
 
     @classmethod
-    def from_pipeline(cls, item: base.Pipeline) -> System:
-        """Creates a System instance from a Pipeline."""
-        new_contents = convert.pipeline_to_adjacency(item = item)
+    def from_path(cls, item: base.Path) -> System:
+        """Creates a System instance from a Path."""
+        new_contents = convert.path_to_adjacency(item = item)
         return cls(contents = new_contents)
     
     @classmethod
-    def from_pipelines(cls, item: base.Pipelines) -> System:
-        """Creates a System instance from a Pipeline."""
-        new_contents = convert.pipelines_to_adjacency(item = item)
+    def from_paths(cls, item: base.Paths) -> System:
+        """Creates a System instance from a Path."""
+        new_contents = convert.paths_to_adjacency(item = item)
         return cls(contents = new_contents)
 
     @classmethod
@@ -339,14 +308,14 @@ class System(form.Adjacency, trait.Directed, base.Graph):
         """
         if isinstance(item, System):
             adjacency = item.adjacency
-        elif isinstance(item, form.Adjacency):
+        elif isinstance(item, forms.Adjacency):
             adjacency = item
-        elif isinstance(item, form.Edges):
+        elif isinstance(item, forms.Edges):
             adjacency = convert.edges_to_adjacency(item = item)
-        elif isinstance(item, form.Matrix):
+        elif isinstance(item, forms.Matrix):
             adjacency = convert.matrix_to_adjacency(item = item)
         elif isinstance(item, (list, tuple, set)):
-            adjacency = convert.pipeline_to_adjacency(item = item)
+            adjacency = convert.path_to_adjacency(item = item)
         elif isinstance(item, base.Node):
             adjacency = {item: set()}
         else:
@@ -378,8 +347,8 @@ class System(form.Adjacency, trait.Directed, base.Graph):
                     self.connect(start = endpoint, stop = root)
         else:
             raise TypeError(
-                'item must be a System, Adjacency, Edges, Matrix, Pipeline, '
-                'Pipelines, or Node type')
+                'item must be a System, Adjacency, Edges, Matrix, Path, '
+                'Paths, or Node type')
         return
       
     def subset(
@@ -421,7 +390,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
         self, 
         start: base.Node,
         stop: base.Node, 
-        path: Optional[base.Pipeline] = None) -> base.Pipeline:
+        path: Optional[base.Path] = None) -> base.Path:
         """Returns all paths in graph from 'start' to 'stop'.
 
         The code here is adapted from: https://www.python.org/doc/essays/graphs/
@@ -429,11 +398,11 @@ class System(form.Adjacency, trait.Directed, base.Graph):
         Args:
             start (base.Node): node to start paths from.
             stop (base.Node): node to stop paths.
-            path (Pipeline): a path from 'start' to 'stop'. Defaults 
+            path (Path): a path from 'start' to 'stop'. Defaults 
                 to an empty list. 
 
         Returns:
-            Pipeline: a list of possible paths (each path is a list 
+            Path: a list of possible paths (each path is a list 
                 nodes) from 'start' to 'stop'.
             
         """
@@ -460,7 +429,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
     def _find_all_paths(
         self, 
         starts: base.Nodes, 
-        stops: base.Nodes) -> base.Pipeline:
+        stops: base.Nodes) -> base.Path:
         """Returns all paths between 'starts' and 'stops'.
 
         Args:
@@ -470,7 +439,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
                 System.
 
         Returns:
-            base.Pipeline: list of all paths through the System from all 
+            base.Path: list of all paths through the System from all 
                 'starts' to all 'ends'.
             
         """
@@ -485,7 +454,250 @@ class System(form.Adjacency, trait.Directed, base.Graph):
                         all_paths.extend(paths)
         return all_paths
 
+    
+@dataclasses.dataclass
+class Path(amos.Hybrid, base.Graph):
+    """Base class for path graphs.
+    
+    Args:
+        contents (MutableSequence[base.Node]): list of nodes. Defaults to 
+            an empty list.
+                                      
+    """   
+    contents: MutableSequence[base.Node] = dataclasses.field(
+        default_factory = list)
+                                
+    """ Properties """
 
+    @property
+    def adjacency(self) -> forms.Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        return convert.path_to_adjacency(item = self.contents)
+
+    @property
+    def edges(self) -> forms.Edges:
+        """Returns the stored graph as an Edges."""
+        return convert.path_to_edges(item = self.contents)
+          
+    @property
+    def matrix(self) -> forms.Matrix:
+        """Returns the stored graph as a Matrix."""
+        return convert.path_to_matrix(item = self.contents)
+
+    @property
+    def path(self) -> Path:
+        """Returns the stored graph as a Path."""
+        return self.contents
+
+    @property
+    def paths(self) -> Paths:
+        """Returns the stored graph as a Paths."""
+        return convert.path_to_paths(item = self.contents)
+    
+    """ Class Methods """
+    
+    @classmethod
+    def from_adjacency(cls, item: forms.Adjacency) -> Path:
+        """Creates a Path instance from an Adjacency."""
+        return cls(contents = convert.adjacency_to_path(item = item))
+    
+    @classmethod
+    def from_edges(cls, item: forms.Edges) -> Path:
+        """Creates a Path instance from an Edges."""
+        return cls(contents = convert.edges_to_path(item = item))
+        
+    @classmethod
+    def from_matrix(cls, item: forms.Matrix) -> Path:
+        """Creates a Path instance from a Matrix."""
+        return cls(contents = convert.matrix_to_path(item = item))
+    
+    @classmethod
+    def from_path(cls, item: Path) -> Path:
+        """Creates a Path instance from a Path."""
+        return cls(contents = item)
+    
+    @classmethod
+    def from_paths(cls, item: Paths) -> Path:
+        """Creates a Path instance from a Path."""
+        return cls(contents = convert.paths_to_path(item = item))
+                     
+    """ Dunder Methods """
+        
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return is_path(item = instance)
+    
+    
+@dataclasses.dataclass
+class Paths(amos.Listing, base.Graph):
+    """Base class for a list of path graphs.
+    
+    Args:
+        contents (MutableSequence[Path]): list of PAth instances. Defaults to 
+            an empty list.
+                                      
+    """   
+    contents: MutableSequence[Path] = dataclasses.field(default_factory = list)
+                                
+    """ Properties """
+
+    @property
+    def adjacency(self) -> forms.Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        return convert.paths_to_adjacency(item = self.contents)
+
+    @property
+    def edges(self) -> forms.Edges:
+        """Returns the stored graph as an Edges."""
+        return convert.paths_to_edges(item = self.contents)
+          
+    @property
+    def matrix(self) -> forms.Matrix:
+        """Returns the stored graph as a Matrix."""
+        return convert.paths_to_matrix(item = self.contents)
+
+    @property
+    def path(self) -> Path:
+        """Returns the stored graph as a Path."""
+        return convert.paths_to_path(item = self.contents)
+
+    @property
+    def paths(self) -> Paths:
+        """Returns the stored graph as a Paths."""
+        return self.contents
+    
+    """ Class Methods """
+    
+    @classmethod
+    def from_adjacency(cls, item: forms.Adjacency) -> Paths:
+        """Creates a Paths instance from an Adjacency."""
+        return cls(contents = convert.adjacency_to_paths(item = item))
+    
+    @classmethod
+    def from_edges(cls, item: forms.Edges) -> Path:
+        """Creates a Paths instance from an Edges."""
+        return cls(contents = convert.edges_to_paths(item = item))
+        
+    @classmethod
+    def from_matrix(cls, item: forms.Matrix) -> Path:
+        """Creates a Paths instance from a Matrix."""
+        return cls(contents = convert.matrix_to_paths(item = item))
+    
+    @classmethod
+    def from_path(cls, item: Path) -> Path:
+        """Creates a Paths instance from a Path."""
+        return cls(contents = item)
+    
+    @classmethod
+    def from_paths(cls, item: Paths) -> Path:
+        """Creates a Paths instance from a Paths."""
+        return cls(contents = convert.paths_to_paths(item = item))
+                     
+    """ Dunder Methods """
+        
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return is_paths(item = instance)
+
+
+# @to_path.register # type: ignore 
+def adjacency_to_path(item: forms.Adjacency) -> Path:
+    """Converts 'item' to a Path.
+    
+    Args:
+        item (Adjacency): item to convert to a Path.
+
+    Returns:
+        Path: derived from 'item'.
+
+    """ 
+    all_paths = adjacency_to_paths(item = item)
+    if len(all_paths) == 1:
+        return all_paths[0]
+    else:
+        return itertools.chain(all_paths)  
+
+# @to_paths.register # type: ignore 
+def adjacency_to_paths(item: forms.Adjacency) -> Path:
+    """Converts 'item' to a Path.
+    
+    Args:
+        item (forms.Adjacency): item to convert to a Path.
+
+    Returns:
+        Path: derived from 'item'.
+
+    """ 
+    pass
+
+# @to_adjacency.register # type: ignore 
+def path_to_adjacency(item: Path) -> forms.Adjacency:
+    """Converts 'item' to an Adjacency.
+
+    Args:
+        item (Path): item to convert to an Adjacency.
+
+    Returns:
+        Adjacency: derived from 'item'.
+
+    """
+    if is_paths(item = item):
+        return paths_to_adjacency(item = item)
+    else:
+        if not isinstance(item, (Collection)) or isinstance(item, str):
+            item = [item]
+        adjacency = collections.defaultdict(set)
+        if len(item) == 1:
+            adjacency.update({item: set()})
+        else:
+            edges = amos.windowify(item, 2)
+            for edge_pair in edges:
+                if edge_pair[0] in adjacency:
+                    adjacency[edge_pair[0]].add(edge_pair[1])
+                else:
+                    adjacency[edge_pair[0]] = {edge_pair[1]}
+        return adjacency
+
+# @to_adjacency.register # type: ignore 
+def paths_to_adjacency(item: Path) -> forms.Adjacency:
+    """Converts 'item' to an Adjacency.
+
+    Args:
+        item (Path): item to convert to an Adjacency.
+
+    Returns:
+        forms.Adjacency: derived from 'item'.
+
+    """
+    adjacency = collections.defaultdict(set)
+    for _, path in item.items():
+        pipe_adjacency = path_to_adjacency(item = path)
+        for key, value in pipe_adjacency.items():
+            if key in adjacency:
+                for inner_value in value:
+                    if inner_value not in adjacency:
+                        adjacency[key].add(inner_value)
+            else:
+                adjacency[key] = value
+    return adjacency  
     
 # @dataclasses.dataclass
 # class Network(Graph):
@@ -519,11 +731,11 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #         return matrix_to_adjacency(item = self.contents)
 
 #     @property
-#     def breadths(self) -> Pipeline:
+#     def breadths(self) -> Path:
 #         """Returns all paths through the Graph using breadth-first search.
         
 #         Returns:
-#             Pipeline: returns all paths from 'roots' to 'endpoints' in a list 
+#             Path: returns all paths from 'roots' to 'endpoints' in a list 
 #                 of lists of nodes.
                 
 #         """
@@ -533,11 +745,11 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #             depth_first = False)
 
 #     @property
-#     def depths(self) -> Pipeline:
+#     def depths(self) -> Path:
 #         """Returns all paths through the Graph using depth-first search.
         
 #         Returns:
-#             Pipeline: returns all paths from 'roots' to 'endpoints' in a list 
+#             Path: returns all paths from 'roots' to 'endpoints' in a list 
 #                 of lists of nodes.
                 
 #         """
@@ -667,18 +879,18 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #         return cls(contents = matrix_to_adjacency(item = matrix))
     
 #     @classmethod
-#     def from_pipeline(cls, pipeline: Pipeline) -> Graph:
-#         """Creates a Graph instance from a Pipeline.
+#     def from_path(cls, path: Path) -> Graph:
+#         """Creates a Graph instance from a Path.
 
 #         Args:
-#             pipeline (Pipeline): serial pipeline used to create a Graph
+#             path (Path): serial path used to create a Graph
 #                 instance.
  
 #         Returns:
-#             Graph: a Graph instance created compositesd on 'pipeline'.
+#             Graph: a Graph instance created compositesd on 'path'.
                         
 #         """
-#         return cls(contents = pipeline_to_adjacency(item = pipeline))
+#         return cls(contents = path_to_adjacency(item = path))
        
 #     """ Public Methods """
     
@@ -896,8 +1108,8 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #     def walk(self, 
 #              start: base.Node, 
 #              stop: base.Node, 
-#              path: Pipeline = None,
-#              depth_first: bool = True) -> Pipeline:
+#              path: Path = None,
+#              depth_first: bool = True) -> Path:
 #         """Returns all paths in graph from 'start' to 'stop'.
 
 #         The code here is adapted from: https://www.python.org/doc/essays/graphs/
@@ -905,11 +1117,11 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #         Args:
 #             start (base.Node): node to start paths from.
 #             stop (base.Node): node to stop paths.
-#             path (Pipeline): a path from 'start' to 'stop'. Defaults to an 
+#             path (Path): a path from 'start' to 'stop'. Defaults to an 
 #                 empty list. 
 
 #         Returns:
-#             Pipeline: a list of possible paths (each path is a list 
+#             Path: a list of possible paths (each path is a list 
 #                 nodes) from 'start' to 'stop'.
             
 #         """
@@ -956,14 +1168,14 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #                 visited.add(connected)   
 #         return []
 
-#     def _breadth_first_search(self, node: base.Node) -> Pipeline:
+#     def _breadth_first_search(self, node: base.Node) -> Path:
 #         """Returns a breadth first search path through the Graph.
 
 #         Args:
 #             node (base.Node): node to start the search from.
 
 #         Returns:
-#             Pipeline: nodes in a path through the Graph.
+#             Path: nodes in a path through the Graph.
             
 #         """        
 #         visited = set()
@@ -977,7 +1189,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
        
 #     def _depth_first_search(self, 
 #         node: base.Node, 
-#         visited: list[base.Node]) -> Pipeline:
+#         visited: list[base.Node]) -> Path:
 #         """Returns a depth first search path through the Graph.
 
 #         Args:
@@ -985,7 +1197,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #             visited (list[base.Node]): list of visited nodes.
 
 #         Returns:
-#             Pipeline: nodes in a path through the Graph.
+#             Path: nodes in a path through the Graph.
             
 #         """  
 #         if node not in visited:
@@ -997,7 +1209,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #     def _find_all_paths(self, 
 #         starts: Union[base.Node, Sequence[base.Node]],
 #         stops: Union[base.Node, Sequence[base.Node]],
-#         depth_first: bool = True) -> Pipeline:
+#         depth_first: bool = True) -> Path:
 #         """[summary]
 
 #         Args:
@@ -1007,7 +1219,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #                 through the Graph.
 
 #         Returns:
-#             Pipeline: list of all paths through the Graph from all
+#             Path: list of all paths through the Graph from all
 #                 'starts' to all 'ends'.
             
 #         """
@@ -1377,7 +1589,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #                 return node
 #         return self.__missing__()
                                     
-#     def walk(self, depth_first: bool = True) -> base.Pipeline:
+#     def walk(self, depth_first: bool = True) -> base.Path:
 #         """Returns all paths in tree from 'start' to 'stop'.
         
 #         Args:
@@ -1464,7 +1676,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 
 # def breadth_first_search(
 #     tree: Tree, 
-#     visited: Optional[list[Tree]] = None) -> base.Pipeline:
+#     visited: Optional[list[Tree]] = None) -> base.Path:
 #     """Returns a breadth first search path through 'tree'.
 
 #     Args:
@@ -1472,7 +1684,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #         visited (Optional[list[Tree]]): list of visited nodes. Defaults to None.
 
 #     Returns:
-#         base.Pipeline: nodes in a path through 'tree'.
+#         base.Path: nodes in a path through 'tree'.
         
 #     """         
 #     visited = visited or []
@@ -1487,7 +1699,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
                      
 # def depth_first_search(
 #     tree: Tree, 
-#     visited: Optional[list[Tree]] = None) -> base.Pipeline:
+#     visited: Optional[list[Tree]] = None) -> base.Path:
 #     """Returns a depth first search path through 'tree'.
 
 #     Args:
@@ -1495,7 +1707,7 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #         visited (Optional[list[Tree]]): list of visited nodes. Defaults to None.
 
 #     Returns:
-#         base.Pipeline: nodes in a path through 'tree'.
+#         base.Path: nodes in a path through 'tree'.
         
 #     """  
 #     visited = visited or []
@@ -1507,24 +1719,24 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 
  
 # @dataclasses.dataclass # type: ignore
-# class Pipelines(sequence.Hybrid, base.Composite):
-#     """Base class a collection of Pipeline instances.
+# class Paths(sequence.Hybrid, base.Composite):
+#     """Base class a collection of Path instances.
         
 #     Args:
-#         contents (MutableSequence[base.Node]): list of stored Pipeline instances. 
+#         contents (MutableSequence[base.Node]): list of stored Path instances. 
 #             Defaults to an empty list.
 
 #     """
-#     contents: MutableSequence[Pipeline] = dataclasses.field(
+#     contents: MutableSequence[Path] = dataclasses.field(
 #         default_factory = list)
 
 #     """ Properties """
 
-#     def endpoint(self) -> Pipeline:
+#     def endpoint(self) -> Path:
 #         """Returns the endpoint of the stored composite object."""
 #         return self.contents[list(self.contents.keys())[-1]]
 
-#     def root(self) -> Pipeline:
+#     def root(self) -> Path:
 #         """Returns the root of the stored composite object."""
 #         self.contents[list(self.contents.keys())[0]]
     
@@ -1544,10 +1756,10 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #         self, 
 #         start: Optional[base.Node] = None,
 #         stop: Optional[base.Node] = None, 
-#         path: Optional[Pipeline] = None,
-#         return_pipelines: bool = True, 
+#         path: Optional[Path] = None,
+#         return_paths: bool = True, 
 #         *args: Any, 
-#         **kwargs: Any) -> Union[Pipeline, Pipelines]:
+#         **kwargs: Any) -> Union[Path, Paths]:
 #         """Returns path in the stored composite object from 'start' to 'stop'.
         
 #         Args:
@@ -1557,19 +1769,19 @@ class System(form.Adjacency, trait.Directed, base.Graph):
 #             stop (Optional[base.Node]): base.Node to stop paths. Defaults to None. If it 
 #                 is None, 'start' should be assigned to one of the roots of the 
 #                 base.
-#             path (Optional[Pipeline]): a path from 'start' to 'stop'. 
+#             path (Optional[Path]): a path from 'start' to 'stop'. 
 #                 Defaults to None. This parameter is used by recursive methods 
 #                 for determining a path.
-#             return_pipelines (bool): whether to return a Pipelines instance 
-#                 (True) or a Pipeline instance (False). Defaults to True.
+#             return_paths (bool): whether to return a Paths instance 
+#                 (True) or a Path instance (False). Defaults to True.
 
 #         Returns:
-#             Union[Pipeline, Pipelines]: path(s) through the 
+#             Union[Path, Paths]: path(s) through the 
 #                 Composite object. If multiple paths are possible and 
-#                 'return_pipelines' is False, this method should return a 
-#                 Pipeline that includes all such paths appended to each other. If 
-#                 multiple paths are possible and 'return_pipelines' is True, a 
-#                 Pipelines instance with all of the paths should be returned. 
+#                 'return_paths' is False, this method should return a 
+#                 Path that includes all such paths appended to each other. If 
+#                 multiple paths are possible and 'return_paths' is True, a 
+#                 Paths instance with all of the paths should be returned. 
 #                 Defaults to True.
                             
 #         """
@@ -1579,5 +1791,5 @@ class System(form.Adjacency, trait.Directed, base.Graph):
         
 #     @classmethod
 #     def __instancecheck__(cls, instance: object) -> bool:
-#         return check.is_pipelines(item = instance)
+#         return check.is_paths(item = instance)
  

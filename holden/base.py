@@ -39,20 +39,86 @@ To Do:
 """
 from __future__ import annotations
 import abc
-from collections.abc import Collection, Hashable, Sequence
+# import collections
+from collections.abc import (
+    Collection, Hashable, MutableMapping, MutableSequence, Sequence)
 import contextlib
 import dataclasses
+import inspect
 from typing import (
-    Any, Optional, Protocol, runtime_checkable, Type, TYPE_CHECKING)
+    Any, Optional, Protocol, runtime_checkable, Type, TYPE_CHECKING, Union)
 
 import amos
-
-from . import check
-
-if TYPE_CHECKING:
-    from . import form
         
+
+def is_composite(item: Union[object, Type[Any]]) -> bool:
+    """Returns whether 'item' is a collection of node connections.
+
+    Args:
+        item (Union[object, Type[Any]]): instance or class to test.
+
+    Returns:
+        bool: whether 'item' is a collection of node connections.
         
+    """
+    return amos.has_traits(
+        item = item,
+        attributes = ['contents'],
+        methods = ['connect', 'disconnect', 'merge', '__iter__'])
+
+def is_edge(item: Union[object, Type[Any]]) -> bool:
+    """Returns whether 'item' is an edge.
+
+    Args:
+        item (Union[object, Type[Any]]): instance or class to test.
+
+    Returns:
+        bool: whether 'item' is an edge.
+        
+    """
+    if inspect.isclass(item):
+        return issubclass(item, Edge)
+    else:
+        return (
+            isinstance(item, Sequence) 
+            and len(item) == 2
+            and is_node(item = item[0])
+            and is_node(item = item[1]))
+      
+def is_node(item: Union[object, Type[Any]]) -> bool:
+    """Returns whether 'item' is a node.
+
+    Args:
+        item (Union[object, Type[Any]]): instance or class to test.
+
+    Returns:
+        bool: whether 'item' is a node.
+    
+    """
+    if inspect.isclass(item):
+        return type(item) is str or issubclass(Node)
+    return (
+        isinstance(item, str) 
+        or (hasattr(item, 'name') and isinstance(item.name, str)))
+
+def is_nodes(item: Union[object, Type[Any]]) -> bool:
+    """Returns whether 'item' is a collection of nodes.
+
+    Args:
+        item (Union[object, Type[Any]]): instance or class to test.
+
+    Returns:
+        bool: whether 'item' is a collection of nodes.
+    
+    """
+    if inspect.isclass(item):
+        return issubclass(Nodes)
+    else:
+        return (
+            isinstance(item, Collection) 
+            and all(is_node(item = i) for i in item))
+
+      
 @dataclasses.dataclass
 @runtime_checkable
 class Composite(amos.Bunch, Protocol):
@@ -63,36 +129,17 @@ class Composite(amos.Bunch, Protocol):
                                      
     """  
     contents: Collection[Any]
-    
-                 
+             
     """ Required Subclass Methods """
     
     @abc.abstractmethod
-    def connect(self, start: Hashable, stop: Hashable) -> None:
-        """Creates a new edge in the stored graph.
-
-        Args:
-            start (Hashable): starting node for the new edge.
-            stop (Hashable): ending node for the new edge.
-        
-        Raises:
-            KeyError: if 'start' or 'stop' are not a nodes in the stored graph.
-
-        """
+    def connect(self, *args: Any, **kwargs: Any) -> None:
+        """Creates a new edge in the stored graph."""
         pass  
     
     @abc.abstractmethod
-    def disconnect(self, start: Hashable, stop: Hashable) -> None:
-        """Deletes edge from the stored graph.
-
-        Args:
-            start (Hashable): starting node for the edge to delete.
-            stop (Hashable): ending node for the edge to delete.
-        
-        Raises:
-            KeyError: if 'start' or 'stop' are not a nodes in the stored graph.
-
-        """
+    def disconnect(self, *args: Any, **kwargs: Any) -> None:
+        """Deletes edge from the stored graph."""
         pass  
   
     @abc.abstractmethod
@@ -119,9 +166,12 @@ class Composite(amos.Bunch, Protocol):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return check.is_composite(item = instance)
-      
-      
+        return is_composite(item = instance)
+
+     
+# @dataclasses.dataclass(frozen = True, order = True)
+# class Edge(collections.namedtuple('Edge', ['start', 'stop'])):
+         
 @dataclasses.dataclass(frozen = True, order = True)
 class Edge(Sequence):
     """Base class for an edge in a composite structure.
@@ -154,7 +204,7 @@ class Edge(Sequence):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return check.is_edge(item = instance)
+        return is_edge(item = instance)
     
     def __getitem__(self, index: int) -> Node:
         """Allows Edge subclass to be accessed by index.
@@ -177,104 +227,19 @@ class Edge(Sequence):
             
         """
         return len(dataclasses.fields(self))
-        
-
-@dataclasses.dataclass # type: ignore
-@runtime_checkable
-class Graph(Composite, Protocol):
-    """Base class for graph data structures.
-    
-    Args:
-        contents (Collection[Any]): stored collection of nodes and/or edges.
-                                      
-    """  
-    contents: Collection[Any]
-   
-    """ Required Subclass Properties """
-
-    @abc.abstractproperty
-    def adjacency(self) -> form.Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        pass
-
-    @abc.abstractproperty
-    def edges(self) -> form.Edges:
-        """Returns the stored graph as an Edges."""
-        pass
-
-    @abc.abstractproperty
-    def linear(self) -> form.Linear:
-        """Returns the stored graph as a Linear."""
-        pass
-           
-    @abc.abstractproperty
-    def matrix(self) -> form.Matrix:
-        """Returns the stored graph as a Matrix."""
-        pass
-           
-    @property
-    def tree(self) -> form.Tree:
-        """Returns the stored graph as a Tree."""
-        pass     
-     
-    """ Required Subclass Methods """
-    
-    @abc.abstractclassmethod
-    def from_adjacency(cls, item: form.Adjacency) -> Graph:
-        """Creates a Graph instance from an Adjacency."""
-        pass
-    
-    @abc.abstractclassmethod
-    def from_edges(cls, item: form.Edges) -> Graph:
-        """Creates a Graph instance from an Edges."""
-        pass
-    
-    @abc.abstractclassmethod
-    def from_linear(cls, item: form.Linear) -> Graph:
-        """Creates a Graph instance from a Linear."""
-        pass
-        
-    @abc.abstractclassmethod
-    def from_matrix(cls, item: form.Matrix) -> Graph:
-        """Creates a Graph instance from a Matrix."""
-        pass
-            
-    @classmethod
-    def from_tree(cls, item: form.Tree) -> Graph:
-        """Creates an Edges instance from a Tree."""
-        pass
-            
-    """ Dunder Methods """
-    
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return check.is_graph(item = instance)
  
  
 @dataclasses.dataclass
-class Node(amos.Proxy):
+class Node(Hashable):
     """Vertex wrapper to provide hashability to any object.
     
     Node acts a basic wrapper for any item stored in a composite structure.
     
     Args:
         contents (Optional[Any]): any stored item(s). Defaults to None.
-        name (Optional[str]): designates the name of a class instance that is 
-            used for internal and external referencing in a composite object.
-            Defaults to None.
             
     """
     contents: Optional[Any] = None
-    name: Optional[str] = None
 
     """ Initialization Methods """
     
@@ -293,14 +258,6 @@ class Node(amos.Proxy):
         cls.__hash__ = Node.__hash__ # type: ignore
         cls.__eq__ = Node.__eq__ # type: ignore
         cls.__ne__ = Node.__ne__ # type: ignore
-   
-    def __post_init__(self) -> None:
-        """Initializes instance."""
-        # To support usage as a mixin, it is important to call other base class 
-        # '__post_init__' methods, if they exist.
-        with contextlib.suppress(AttributeError):
-            super().__post_init__(*args, **kwargs) # type: ignore
-        self.name = self.name or amos.namify(item = self)
                 
     """ Dunder Methods """
     
@@ -315,7 +272,7 @@ class Node(amos.Proxy):
             bool: whether 'subclass' is a real or virtual subclass.
             
         """
-        return check.is_node(item = subclass)
+        return is_node(item = subclass)
                
     @classmethod
     def __instancecheck__(cls, instance: object) -> bool:
@@ -328,7 +285,7 @@ class Node(amos.Proxy):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return check.is_node(item = instance)
+        return is_node(item = instance)
     
     def __hash__(self) -> int:
         """Makes Node hashable so that it can be used as a key in a dict.
@@ -397,5 +354,26 @@ class Nodes(amos.Bunch, Protocol):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return check.is_nodes(item = instance)
-    
+        return is_nodes(item = instance)
+
+
+def to_node(
+    item: Union[Type[Any], object], 
+    base: Optional[Type[Node]] = Node) -> Node:
+    """Converts 'item' into a Node, if it is not already a Node instance.
+
+    Args:
+        item (Union[Type[Any], object]): class or instance to transform into a  
+            Node.
+        base (Optional[Type[Node]]): base class to wrap 'item' in if 'item'
+             is not a Node.
+
+    Returns:
+        Node: a Node or Node subclass instance.
+        
+    """
+    if is_node(item = item):
+        return item
+    else:
+        return base(contents = item)    
+          
