@@ -18,13 +18,15 @@ License: Apache-2.0
 
 Contents:
     Directed (Protocol): a directed graph with unweighted edges.
-        
+    Labeled (Protocol):    
 To Do:
 
     
 """
 from __future__ import annotations
 import abc
+from collections.abc import (
+    Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
 import contextlib
 import dataclasses
 from typing import (
@@ -37,18 +39,19 @@ if TYPE_CHECKING:
     
     
 @dataclasses.dataclass
+@runtime_checkable
 class Directed(Protocol):
     """Base class for directed graph data structures."""  
     
     """ Required Subclass Properties """
         
     @abc.abstractproperty
-    def endpoint(self) -> Union[base.Node, base.Nodes]:
+    def endpoint(self) -> Union[Hashable, Collection[Hashable]]:
         """Returns the endpoint(s) of the stored graph."""
         pass
  
     @abc.abstractproperty
-    def root(self) -> Union[base.Node, base.Nodes]:
+    def root(self) -> Union[Hashable, Collection[Hashable]]:
         """Returns the root(s) of the stored graph."""
         pass
             
@@ -57,13 +60,13 @@ class Directed(Protocol):
     @abc.abstractmethod
     def append(
         self, 
-        item: Union[base.Node, base.Graph], 
+        item: Union[Hashable, base.Graph], 
         *args: Any, 
         **kwargs: Any) -> None:
         """Appends 'item' to the endpoint(s) of the stored graph.
 
         Args:
-            item (Union[base.Node, base.Graph]): a Node or Graph to 
+            item (Union[Hashable, base.Graph]): a Node or Graph to 
                 add to the stored graph.
                 
         """
@@ -72,13 +75,13 @@ class Directed(Protocol):
     @abc.abstractmethod
     def prepend(
         self, 
-        item: Union[base.Node, base.Graph], 
+        item: Union[Hashable, base.Graph], 
         *args: Any, 
         **kwargs: Any) -> None:
         """Prepends 'item' to the root(s) of the stored graph.
 
         Args:
-            item (Union[base.Node, base.Graph]): a Node or Graph to 
+            item (Union[Hashable, base.Graph]): a Node or Graph to 
                 add to the stored graph.
                 
         """
@@ -87,18 +90,18 @@ class Directed(Protocol):
     @abc.abstractmethod
     def walk(
         self, 
-        start: Optional[base.Node] = None,
-        stop: Optional[base.Node] = None, 
+        start: Optional[Hashable] = None,
+        stop: Optional[Hashable] = None, 
         path: Optional[base.Path] = None,
         *args: Any, 
         **kwargs: Any) -> base.Path:
         """Returns path in the stored graph from 'start' to 'stop'.
         
         Args:
-            start (Optional[base.Node]): Node to start paths from. 
+            start (Optional[Hashable]): Node to start paths from. 
                 Defaults to None. If it is None, 'start' should be assigned to 
                 'root'.
-            stop (Optional[base.Node]): Node to stop paths at. 
+            stop (Optional[Hashable]): Node to stop paths at. 
                 Defaults to None. If it is None, 'start' should be assigned to 
                 'endpoint'.
             path (Optional[base.Path]): a path from 'start' to 'stop'. 

@@ -101,8 +101,8 @@ def is_edge(item: Union[object, Type[Any]]) -> bool:
         return (
             isinstance(item, Sequence) 
             and len(item) == 2
-            and is_node(item = item[0])
-            and is_node(item = item[1]))
+            and isinstance(item[0], Hashable)
+            and isinstance(item[1], Hashable))
 
 def is_graph(item: object) -> bool:
     """Returns whether 'item' is a graph.
@@ -215,12 +215,12 @@ class Edge(Sequence):
     structures.
     
     Args:
-        start (Node): starting point for the edge.
-        stop (Node): stopping point for the edge.
+        start (Hashable): starting point for the edge.
+        stop (Hashable): stopping point for the edge.
         
     """
-    start: Node
-    stop: Node
+    start: Hashable
+    stop: Hashable
 
     """ Dunder Methods """
         
@@ -237,7 +237,7 @@ class Edge(Sequence):
         """
         return is_edge(item = instance)
     
-    def __getitem__(self, index: int) -> Node:
+    def __getitem__(self, index: int) -> Hashable:
         """Allows Edge subclass to be accessed by index.
         
         Args:
@@ -245,7 +245,7 @@ class Edge(Sequence):
                 order.
         
         Returns:
-            Node: contents of field identified by 'index'.
+            Hashable: contents of field identified by 'index'.
                  
         """
         return getattr(self, dataclasses.fields(self)[index].name)

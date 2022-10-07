@@ -165,15 +165,13 @@ class Adjacency(amos.Dictionary, base.Graph):
     """Base class for adjacency-list graphs.
     
     Args:
-        contents (MutableMapping[base.Node, Set[base.Node]]): keys 
-            are nodes and values are sets of nodes (or hashable representations 
-            of nodes). Defaults to a defaultdict that has a set for its value 
-            type.
+        contents (MutableMapping[Hashable, set[Hashable]]): keys are hashable 
+            representations of nodes. Defaults to a defaultdict that has a set 
+            for its value type.
                                       
     """  
-    contents: MutableMapping[base.Node, Set[base.Node]] = (
-        dataclasses.field(
-            default_factory = lambda: collections.defaultdict(set)))
+    contents: MutableMapping[Hashable, set[Hashable]] = dataclasses.field(
+            default_factory = lambda: collections.defaultdict(set))
    
     """ Properties """
 
@@ -501,11 +499,11 @@ class Serial(amos.Hybrid, base.Graph):
     """Base class for serial graphs.
     
     Args:
-        contents (MutableSequence[base.Node]): list of nodes. Defaults to 
+        contents (MutableSequence[Hashable]): list of nodes. Defaults to 
             an empty list.
                                       
     """   
-    contents: MutableSequence[base.Node] = dataclasses.field(
+    contents: MutableSequence[Hashable] = dataclasses.field(
         default_factory = list)
                                 
     """ Properties """
@@ -937,11 +935,11 @@ def serial_to_parallel(item: Serial) -> Parallel:
 #     raise NotImplementedError
              
 # # @to_adjacency.register # type: ignore 
-# def nodes_to_adjacency(item: base.Nodes) -> Adjacency:
+# def nodes_to_adjacency(item: Collection[Hashable]) -> Adjacency:
 #     """Converts 'item' to an Adjacency.
 
 #     Args:
-#         item (base.Nodes): item to convert to an Adjacency.
+#         item (Collection[Hashable]): item to convert to an Adjacency.
 
 #     Returns:
 #         Adjacency: derived from 'item'.

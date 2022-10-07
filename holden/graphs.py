@@ -26,7 +26,7 @@ To Do:
 from __future__ import annotations
 import collections
 from collections.abc import (
-    Collection, MutableMapping, MutableSequence, Sequence, Set)
+    Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
 import copy
 import dataclasses
 import itertools
@@ -44,22 +44,22 @@ class Path(traits.Directed, forms.Serial):
     """Linear path graph.
     
     Args:
-        contents (MutableSequence[base.Node]): ordered list of stored Node 
+        contents (MutableSequence[Hashable]): ordered list of stored Node 
             instances. Defaults to an empty list.
           
     """
-    contents: MutableSequence[base.Node] = dataclasses.field(
+    contents: MutableSequence[Hashable] = dataclasses.field(
         default_factory = list)
 
     """ Properties """
     
     @property
-    def endpoint(self) -> base.Node:
+    def endpoint(self) -> Hashable:
         """Returns the endpoint of the stored graph."""
         return self.contents[-1]
     
     @property
-    def root(self) -> base.Node:
+    def root(self) -> Hashable:
         """Returns the root of the stored graph."""
         return self.contents[0]
     
@@ -67,8 +67,8 @@ class Path(traits.Directed, forms.Serial):
       
     def walk(
         self, 
-        start: Optional[base.Node] = None,
-        stop: Optional[base.Node] = None, 
+        start: Optional[Hashable] = None,
+        stop: Optional[Hashable] = None, 
         path: Optional[Path] = None,
         return_parallel: bool = False, 
         *args: Any, 
@@ -76,9 +76,9 @@ class Path(traits.Directed, forms.Serial):
         """Returns path in the stored composite object from 'start' to 'stop'.
         
         Args:
-            start (Optional[base.Node]): base.Node to start paths from. Defaults 
+            start (Optional[Hashable]): Hashable to start paths from. Defaults 
                 to None. If it is None, 'start' is assigned to 'root'.
-            stop (Optional[base.Node]): base.Node to stop paths. Defaults to 
+            stop (Optional[Hashable]): Hashable to stop paths. Defaults to 
                 None. If it is None, 'stop' is assigned to 'endpoint'.
             path (Optional[Path]): a path from 'start' to 'stop'. Defaults to 
                 None. This parameter is used by recursive methods for 
@@ -124,8 +124,8 @@ class Paths(forms.Parallel):
       
     def walk(
         self, 
-        start: Optional[base.Node] = None,
-        stop: Optional[base.Node] = None, 
+        start: Optional[Hashable] = None,
+        stop: Optional[Hashable] = None, 
         path: Optional[Path] = None,
         return_parallel: bool = False, 
         *args: Any, 
@@ -133,9 +133,9 @@ class Paths(forms.Parallel):
         """Returns path in the stored composite object from 'start' to 'stop'.
         
         Args:
-            start (Optional[base.Node]): base.Node to start paths from. Defaults 
+            start (Optional[Hashable]): Hashable to start paths from. Defaults 
                 to None. If it is None, 'start' is assigned to 'root'.
-            stop (Optional[base.Node]): base.Node to stop paths. Defaults to 
+            stop (Optional[Hashable]): Hashable to stop paths. Defaults to 
                 None. If it is None, 'stop' is assigned to 'endpoint'.
             path (Optional[Path]): a path from 'start' to 'stop'. Defaults to 
                 None. This parameter is used by recursive methods for 
@@ -171,35 +171,36 @@ class System(traits.Directed, forms.Adjacency):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
-        contents (MutableMapping[base.Node, Set[base.Node]]): keys are nodes and 
+        contents (MutableMapping[Hashable, Set[Hashable]]): keys are nodes and 
             values are sets of nodes (or hashable representations of nodes). 
             Defaults to a defaultdict that has a set for its value format.
                   
     """  
-    contents: MutableMapping[base.Node, Set[base.Node]] = (
+    contents: MutableMapping[Hashable, Set[Hashable]] = (
         dataclasses.field(
             default_factory = lambda: collections.defaultdict(set)))
+    nodes: amos.Library = dataclasses.field(default_factory = amos.Library)
     
     """ Properties """
 
     @property
-    def endpoint(self) -> Union[base.Node, base.Nodes]:
+    def endpoint(self) -> Union[Hashable, Collection[Hashable]]:
         """Returns the endpoint(s) of the stored graph."""
         return {k for k in self.contents.keys() if not self.contents[k]}
                     
     @property
-    def root(self) -> Union[base.Node, base.Nodes]:
+    def root(self) -> Union[Hashable, Collection[Hashable]]:
         """Returns the root(s) of the stored graph."""
         stops = list(itertools.chain.from_iterable(self.contents.values()))
         return {k for k in self.contents.keys() if k not in stops}
                       
     @property
-    def nodes(self) -> set[base.Node]:
+    def nodes(self) -> set[Hashable]:
         """Returns all stored nodes in a set."""
         return set(self.contents.keys())
 
     @property
-    def parallel(self) -> base.Nodes:
+    def parallel(self) -> Collection[Hashable]:
         """Returns all paths through the stored as a list of paths."""
         return self._find_all_paths(starts = self.root, stops = self.endpoint)
     
@@ -216,15 +217,15 @@ class System(traits.Directed, forms.Adjacency):
     def add(
         self, 
         node: base.Node,
-        ancestors: base.Nodes = None,
-        descendants: base.Nodes = None) -> None:
+        ancestors: Collection[Hashable] = None,
+        descendants: Collection[Hashable] = None) -> None:
         """Adds 'node' to the stored graph.
         
         Args:
-            node (base.Node): a node to add to the stored graph.
-            ancestors (base.Nodes): node(s) from which 'node' should be 
+            node (Hashable): a node to add to the stored graph.
+            ancestors (Collection[Hashable]): node(s) from which 'node' should be 
                 connected.
-            descendants (base.Nodes): node(s) to which 'node' should be 
+            descendants (Collection[Hashable]): node(s) to which 'node' should be 
                 connected.
 
         Raises:
@@ -232,10 +233,13 @@ class System(traits.Directed, forms.Adjacency):
                 the stored graph.
                 
         """
+        if base.is_node(item = node):
+            name = node.name
+            self.library.deposit(item = node, name = name)
+        else:
+            name = node
         if descendants is None:
-            self.contents[node] = set()
-        # elif utilities.is_property(item = descendants, instance = self):
-        #     self.contents = set(getattr(self, descendants))
+            self.contents[name] = set()
         else:
             descendants = list(amos.iterify(item = descendants))
             descendants = [amos.namify(item = n) for n in descendants]
@@ -245,7 +249,7 @@ class System(traits.Directed, forms.Adjacency):
                     f'descendants {str(missing)} are not in '
                     f'{self.__class__.__name__}')
             else:
-                self.contents[node] = set(descendants)
+                self.contents[name] = set(descendants)
         if ancestors is not None:  
             # if utilities.is_property(item = ancestors, instance = self):
             #     start = list(getattr(self, ancestors))
@@ -274,7 +278,7 @@ class System(traits.Directed, forms.Adjacency):
             
         Raises:
             TypeError: if 'item' is neither a Graph, Adjacency, Edges, Matrix,
-                or base.Nodes type.
+                or Collection[Hashable] type.
                 
         """
         if isinstance(item, base.Graph):
@@ -288,12 +292,12 @@ class System(traits.Directed, forms.Adjacency):
             raise TypeError('item must be a Node, Nodes, or Composite type')
         return
   
-    def connect(self, start: base.Node, stop: base.Node) -> None:
+    def connect(self, start: Hashable, stop: Hashable) -> None:
         """Adds an edge from 'start' to 'stop'.
 
         Args:
-            start (base.Node): name of node for edge to start.
-            stop (base.Node): name of node for edge to stop.
+            start (Hashable): name of node for edge to start.
+            stop (Hashable): name of node for edge to stop.
             
         Raises:
             ValueError: if 'start' is the same as 'stop'.
@@ -311,11 +315,11 @@ class System(traits.Directed, forms.Adjacency):
             self.contents[start].add(amos.namify(item = stop))
         return
 
-    def delete(self, node: base.Node) -> None:
+    def delete(self, node: Hashable) -> None:
         """Deletes node from graph.
         
         Args:
-            node (base.Node): node to delete from 'contents'.
+            node (Hashable): node to delete from 'contents'.
         
         Raises:
             KeyError: if 'node' is not in 'contents'.
@@ -328,12 +332,12 @@ class System(traits.Directed, forms.Adjacency):
         self.contents = {k: v.discard(node) for k, v in self.contents.items()}
         return
 
-    def disconnect(self, start: base.Node, stop: base.Node) -> None:
+    def disconnect(self, start: Hashable, stop: Hashable) -> None:
         """Deletes edge from graph.
 
         Args:
-            start (base.Node): starting node for the edge to delete.
-            stop (base.Node): ending node for the edge to delete.
+            start (Hashable): starting node for the edge to delete.
+            stop (Hashable): ending node for the edge to delete.
         
         Raises:
             KeyError: if 'start' is not a node in the stored graph..
@@ -358,7 +362,7 @@ class System(traits.Directed, forms.Adjacency):
             
         Raises:
             TypeError: if 'item' is neither a System, Adjacency, 
-                Edges, Matrix, or base.Nodes type.
+                Edges, Matrix, or Collection[Hashable] type.
             
         """
         if isinstance(item, System):
@@ -371,7 +375,7 @@ class System(traits.Directed, forms.Adjacency):
             adjacency = forms.matrix_to_adjacency(item = item)
         elif isinstance(item, (list, tuple, set)):
             adjacency = forms.path_to_adjacency(item = item)
-        elif isinstance(item, base.Node):
+        elif isinstance(item, Hashable):
             adjacency = {item: set()}
         else:
             raise TypeError('item must be a Node, Nodes, or Composite type')
@@ -390,7 +394,7 @@ class System(traits.Directed, forms.Adjacency):
             
         Raises:
             TypeError: if 'item' is neither a System, Adjacency, Edges, Matrix, 
-                or base.Nodes type.
+                or Collection[Hashable] type.
                 
         """
         if isinstance(item, base.Graph):
@@ -443,16 +447,16 @@ class System(traits.Directed, forms.Adjacency):
     
     def walk(
         self, 
-        start: base.Node,
-        stop: base.Node, 
+        start: Hashable,
+        stop: Hashable, 
         path: Optional[base.Path] = None) -> base.Path:
         """Returns all paths in graph from 'start' to 'stop'.
 
         The code here is adapted from: https://www.python.org/doc/essays/graphs/
         
         Args:
-            start (base.Node): node to start paths from.
-            stop (base.Node): node to stop paths.
+            start (Hashable): node to start paths from.
+            stop (Hashable): node to stop paths.
             path (Path): a path from 'start' to 'stop'. Defaults 
                 to an empty list. 
 
@@ -483,14 +487,14 @@ class System(traits.Directed, forms.Adjacency):
 
     def _find_all_paths(
         self, 
-        starts: base.Nodes, 
-        stops: base.Nodes) -> base.Path:
+        starts: Collection[Hashable], 
+        stops: Collection[Hashable]) -> base.Path:
         """Returns all paths between 'starts' and 'stops'.
 
         Args:
-            start (base.Nodes): starting point(s) for paths through the 
+            start (Collection[Hashable]): starting point(s) for paths through the 
                 System.
-            ends (base.Nodes): ending point(s) for paths through the 
+            ends (Collection[Hashable]): ending point(s) for paths through the 
                 System.
 
         Returns:
@@ -503,7 +507,7 @@ class System(traits.Directed, forms.Adjacency):
             for end in amos.iterify(item = stops):
                 paths = self.walk(start = start, stop = end)
                 if paths:
-                    if all(isinstance(path, base.Node) for path in paths):
+                    if all(isinstance(path, Hashable) for path in paths):
                         all_paths.append(paths)
                     else:
                         all_paths.extend(paths)
@@ -574,7 +578,7 @@ class System(traits.Directed, forms.Adjacency):
 #         return adjacency_to_edges(item = self.contents)
 
 #     @property
-#     def endpoints(self) -> list[base.Node]:
+#     def endpoints(self) -> list[Hashable]:
 #         """Returns a list of endpoint nodes in the stored graph.."""
 #         return [k for k in self.contents.keys() if not self.contents[k]]
 
@@ -584,11 +588,11 @@ class System(traits.Directed, forms.Adjacency):
 #         return adjacency_to_matrix(item = self.contents)
                       
 #     @property
-#     def nodes(self) -> dict[str, base.Node]:
+#     def nodes(self) -> dict[str, Hashable]:
 #         """Returns a dict of node names as keys and nodes as values.
         
-#         Because Graph allows various base.Node objects to be used as keys,
-#         including the base.Nodes class, there isn't an obvious way to access already
+#         Because Graph allows various Hashable objects to be used as keys,
+#         including the Collection[Hashable] class, there isn't an obvious way to access already
 #         stored nodes. This property creates a new dict with str keys derived
 #         from the nodes (looking first for a 'name' attribute) so that a user
 #         can access a node. 
@@ -596,18 +600,18 @@ class System(traits.Directed, forms.Adjacency):
 #         This property is not needed if the stored nodes are all strings.
         
 #         Returns:
-#             Dict[str, base.Node]: keys are the name or has of nodes and the 
+#             Dict[str, Hashable]: keys are the name or has of nodes and the 
 #                 values are the nodes themselves.
             
 #         """
 #         return {self.trait.namify(item = n): n for n in self.contents.keys()}
   
 #     @property
-#     def roots(self) -> list[base.Node]:
+#     def roots(self) -> list[Hashable]:
 #         """Returns root nodes in the stored graph..
 
 #         Returns:
-#             list[base.Node]: root nodes.
+#             list[Hashable]: root nodes.
             
 #         """
 #         stops = list(itertools.chain.from_iterable(self.contents.values()))
@@ -706,15 +710,15 @@ class System(traits.Directed, forms.Adjacency):
 #     """ Public Methods """
     
 #     def add(self, 
-#             node: base.Node,
-#             ancestors: base.Nodes = None,
-#             descendants: base.Nodes = None) -> None:
+#             node: Hashable,
+#             ancestors: Collection[Hashable] = None,
+#             descendants: Collection[Hashable] = None) -> None:
 #         """Adds 'node' to 'contents' with no corresponding edges.
         
 #         Args:
-#             node (base.Node): a node to add to the stored graph.
-#             ancestors (base.Nodes): node(s) from which node should be connected.
-#             descendants (base.Nodes): node(s) to which node should be connected.
+#             node (Hashable): a node to add to the stored graph.
+#             ancestors (Collection[Hashable]): node(s) from which node should be connected.
+#             descendants (Collection[Hashable]): node(s) to which node should be connected.
 
 #         """
 #         if descendants is None:
@@ -725,9 +729,9 @@ class System(traits.Directed, forms.Adjacency):
 #             missing = [n for n in descendants if n not in self.contents]
 #             raise KeyError(f'descendants {missing} are not in the stored graph.')
 #         if ancestors is not None:  
-#             if (isinstance(ancestors, base.Node) and ancestors in self
+#             if (isinstance(ancestors, Hashable) and ancestors in self
 #                     or (isinstance(ancestors, (list, tuple, set)) 
-#                         and all(isinstance(n, base.Node) for n in ancestors)
+#                         and all(isinstance(n, Hashable) for n in ancestors)
 #                         and all(n in self.contents for n in ancestors))):
 #                 start = ancestors
 #             elif (hasattr(self.__class__, ancestors) 
@@ -742,20 +746,20 @@ class System(traits.Directed, forms.Adjacency):
 #         return 
 
 #     def append(self, 
-#                item: Union[Graph, Adjacency, Edges, Matrix, base.Nodes]) -> None:
+#                item: Union[Graph, Adjacency, Edges, Matrix, Collection[Hashable]]) -> None:
 #         """Adds 'item' to this Graph.
 
 #         Combining creates an edge between every endpoint of this instance's
 #         Graph and the every root of 'item'.
 
 #         Args:
-#             item (Union[Graph, Adjacency, Edges, Matrix, base.Nodes]): another 
+#             item (Union[Graph, Adjacency, Edges, Matrix, Collection[Hashable]]): another 
 #                 Graph to join with this one, an adjacency list, an edge list, an
-#                 adjacency matrix, or base.Nodes.
+#                 adjacency matrix, or Collection[Hashable].
             
 #         Raises:
 #             TypeError: if 'item' is neither a Graph, Adjacency, Edges, Matrix,
-#                 or base.Nodes type.
+#                 or Collection[Hashable] type.
             
 #         """
 #         if isinstance(item, Graph):
@@ -773,7 +777,7 @@ class System(traits.Directed, forms.Adjacency):
 #             self.append(item = self.from_edges(edges = item))
 #         elif isinstance(item, Matrix):
 #             self.append(item = self.from_matrix(matrix = item))
-#         elif isinstance(item, base.Nodes):
+#         elif isinstance(item, Collection[Hashable]):
 #             if isinstance(item, (list, tuple, set)):
 #                 new_graph = Graph()
 #                 edges = more_itertools.windowed(item, 2)
@@ -784,16 +788,16 @@ class System(traits.Directed, forms.Adjacency):
 #                 self.add(node = item)
 #         else:
 #             raise TypeError(
-#                 'item must be a Graph, Adjacency, Edges, Matrix, or base.Nodes '
+#                 'item must be a Graph, Adjacency, Edges, Matrix, or Collection[Hashable] '
 #                 'type')
 #         return
   
-#     def connect(self, start: base.Node, stop: base.Node) -> None:
+#     def connect(self, start: Hashable, stop: Hashable) -> None:
 #         """Adds an edge from 'start' to 'stop'.
 
 #         Args:
-#             start (base.Node): name of node for edge to start.
-#             stop (base.Node): name of node for edge to stop.
+#             start (Hashable): name of node for edge to start.
+#             stop (Hashable): name of node for edge to stop.
             
 #         Raises:
 #             ValueError: if 'start' is the same as 'stop'.
@@ -811,11 +815,11 @@ class System(traits.Directed, forms.Adjacency):
 #                 self.contents[start].append(self.trait.namify(item = stop))
 #         return
 
-#     def delete(self, node: base.Node) -> None:
+#     def delete(self, node: Hashable) -> None:
 #         """Deletes node from graph.
         
 #         Args:
-#             node (base.Node): node to delete from 'contents'.
+#             node (Hashable): node to delete from 'contents'.
         
 #         Raises:
 #             KeyError: if 'node' is not in 'contents'.
@@ -829,12 +833,12 @@ class System(traits.Directed, forms.Adjacency):
 #             k: v.remove(node) for k, v in self.contents.items() if node in v}
 #         return
 
-#     def disconnect(self, start: base.Node, stop: base.Node) -> None:
+#     def disconnect(self, start: Hashable, stop: Hashable) -> None:
 #         """Deletes edge from graph.
 
 #         Args:
-#             start (base.Node): starting node for the edge to delete.
-#             stop (base.Node): ending node for the edge to delete.
+#             start (Hashable): starting node for the edge to delete.
+#             stop (Hashable): ending node for the edge to delete.
         
 #         Raises:
 #             KeyError: if 'start' is not a node in the stored graph..
@@ -917,8 +921,8 @@ class System(traits.Directed, forms.Adjacency):
 #         return new_graph
 
 #     def walk(self, 
-#              start: base.Node, 
-#              stop: base.Node, 
+#              start: Hashable, 
+#              stop: Hashable, 
 #              path: Path = None,
 #              depth_first: bool = True) -> Path:
 #         """Returns all paths in graph from 'start' to 'stop'.
@@ -926,8 +930,8 @@ class System(traits.Directed, forms.Adjacency):
 #         The code here is adapted from: https://www.python.org/doc/essays/graphs/
         
 #         Args:
-#             start (base.Node): node to start paths from.
-#             stop (base.Node): node to stop paths.
+#             start (Hashable): node to start paths from.
+#             stop (Hashable): node to stop paths.
 #             path (Path): a path from 'start' to 'stop'. Defaults to an 
 #                 empty list. 
 
@@ -979,11 +983,11 @@ class System(traits.Directed, forms.Adjacency):
 #                 visited.add(connected)   
 #         return []
 
-#     def _breadth_first_search(self, node: base.Node) -> Path:
+#     def _breadth_first_search(self, node: Hashable) -> Path:
 #         """Returns a breadth first search path through the Graph.
 
 #         Args:
-#             node (base.Node): node to start the search from.
+#             node (Hashable): node to start the search from.
 
 #         Returns:
 #             Path: nodes in a path through the Graph.
@@ -999,13 +1003,13 @@ class System(traits.Directed, forms.Adjacency):
 #         return list(visited)
        
 #     def _depth_first_search(self, 
-#         node: base.Node, 
-#         visited: list[base.Node]) -> Path:
+#         node: Hashable, 
+#         visited: list[Hashable]) -> Path:
 #         """Returns a depth first search path through the Graph.
 
 #         Args:
-#             node (base.Node): node to start the search from.
-#             visited (list[base.Node]): list of visited nodes.
+#             node (Hashable): node to start the search from.
+#             visited (list[Hashable]): list of visited nodes.
 
 #         Returns:
 #             Path: nodes in a path through the Graph.
@@ -1018,15 +1022,15 @@ class System(traits.Directed, forms.Adjacency):
 #         return visited
   
 #     def _find_all_paths(self, 
-#         starts: Union[base.Node, Sequence[base.Node]],
-#         stops: Union[base.Node, Sequence[base.Node]],
+#         starts: Union[Hashable, Sequence[Hashable]],
+#         stops: Union[Hashable, Sequence[Hashable]],
 #         depth_first: bool = True) -> Path:
 #         """[summary]
 
 #         Args:
-#             start (Union[base.Node, Sequence[base.Node]]): starting points for 
+#             start (Union[Hashable, Sequence[Hashable]]): starting points for 
 #                 paths through the Graph.
-#             ends (Union[base.Node, Sequence[base.Node]]): endpoints for paths 
+#             ends (Union[Hashable, Sequence[Hashable]]): endpoints for paths 
 #                 through the Graph.
 
 #         Returns:
@@ -1042,7 +1046,7 @@ class System(traits.Directed, forms.Adjacency):
 #                     stop = end,
 #                     depth_first = depth_first)
 #                 if paths:
-#                     if all(isinstance(path, base.Node) for path in paths):
+#                     if all(isinstance(path, Hashable) for path in paths):
 #                         all_paths.append(paths)
 #                     else:
 #                         all_paths.extend(paths)
@@ -1078,11 +1082,11 @@ class System(traits.Directed, forms.Adjacency):
 #         self.merge(graph = other)        
 #         return
 
-#     def __contains__(self, nodes: base.Nodes) -> bool:
+#     def __contains__(self, nodes: Collection[Hashable]) -> bool:
 #         """[summary]
 
 #         Args:
-#             nodes (base.Nodes): [description]
+#             nodes (Collection[Hashable]): [description]
 
 #         Returns:
 #             bool: [description]
@@ -1090,16 +1094,16 @@ class System(traits.Directed, forms.Adjacency):
 #         """
 #         if isinstance(nodes, (list, tuple, set)):
 #             return all(n in self.contents for n in nodes)
-#         elif isinstance(nodes, base.Node):
+#         elif isinstance(nodes, Hashable):
 #             return nodes in self.contents
 #         else:
 #             return False   
         
-#     def __getitem__(self, key: base.Node) -> Any:
+#     def __getitem__(self, key: Hashable) -> Any:
 #         """Returns value for 'key' in 'contents'.
 
 #         Args:
-#             key (base.Node): key in 'contents' for which a value is sought.
+#             key (Hashable): key in 'contents' for which a value is sought.
 
 #         Returns:
 #             Any: value stored in 'contents'.
@@ -1107,22 +1111,22 @@ class System(traits.Directed, forms.Adjacency):
 #         """
 #         return self.contents[key]
 
-#     def __setitem__(self, key: base.Node, value: Any) -> None:
+#     def __setitem__(self, key: Hashable, value: Any) -> None:
 #         """sets 'key' in 'contents' to 'value'.
 
 #         Args:
-#             key (base.Node): key to set in 'contents'.
+#             key (Hashable): key to set in 'contents'.
 #             value (Any): value to be paired with 'key' in 'contents'.
 
 #         """
 #         self.contents[key] = value
 #         return
 
-#     def __delitem__(self, key: base.Node) -> None:
+#     def __delitem__(self, key: Hashable) -> None:
 #         """Deletes 'key' in 'contents'.
 
 #         Args:
-#             key (base.Node): key in 'contents' to delete the key/value pair.
+#             key (Hashable): key in 'contents' to delete the key/value pair.
 
 #         """
 #         del self.contents[key]
@@ -1153,8 +1157,8 @@ class System(traits.Directed, forms.Adjacency):
 #             summary.append(f'{tab}{node}: {str(edges)}')
 #         return new_line.join(summary) 
 
-# Changer: Type[Any] = Callable[[base.Node], None]
-# Finder: Type[Any] = Callable[[base.Node], Optional[base.Node]]
+# Changer: Type[Any] = Callable[[Hashable], None]
+# Finder: Type[Any] = Callable[[Hashable], Optional[Hashable]]
 
 
 
@@ -1164,7 +1168,7 @@ class System(traits.Directed, forms.Adjacency):
 #     """composites class for an tree data structures.
         
 #     Args:
-#         contents (MutableSequence[base.Node]): list of stored Node 
+#         contents (MutableSequence[Hashable]): list of stored Node 
 #             instances (including other Trees). Defaults to an empty list.
 #         name (Optional[str]): name of Tree node which should match a parent 
 #             tree's key name corresponding to this Tree node. All nodes in a Tree
@@ -1174,7 +1178,7 @@ class System(traits.Directed, forms.Adjacency):
 #         parent (Optional[Tree]): parent Tree, if any. Defaults to None.
         
 #     """
-#     contents: MutableSequence[base.Node] = dataclasses.field(
+#     contents: MutableSequence[Hashable] = dataclasses.field(
 #         default_factory = list)
 #     name: Optional[str] = None
 #     parent: Optional[Tree] = None 
@@ -1187,11 +1191,11 @@ class System(traits.Directed, forms.Adjacency):
 #         return self.nodes - self.leaves
     
 #     @property
-#     def children(self) -> dict[str, base.Node]:
+#     def children(self) -> dict[str, Hashable]:
 #         """[summary]
 
 #         Returns:
-#             dict[str, base.Node]: [description]
+#             dict[str, Hashable]: [description]
 #         """
 #         return self.contents
     
@@ -1214,7 +1218,7 @@ class System(traits.Directed, forms.Adjacency):
 #         return self.parent is None
     
 #     @property
-#     def leaves(self) -> list[base.Node]:
+#     def leaves(self) -> list[Hashable]:
 #         """Returns all stored leaf nodes in a list."""
 #         matches = []
 #         for node in self.nodes:
@@ -1223,7 +1227,7 @@ class System(traits.Directed, forms.Adjacency):
 #         return matches
      
 #     @property
-#     def nodes(self) -> list[base.Node]:
+#     def nodes(self) -> list[Hashable]:
 #         """Returns all stored nodes in a list."""
 #         return depth_first_search(tree = self.contents)
 
@@ -1243,7 +1247,7 @@ class System(traits.Directed, forms.Adjacency):
     
 #     def add(
 #         self, 
-#         item: Union[base.Node, Sequence[base.Node]],
+#         item: Union[Hashable, Sequence[Hashable]],
 #         parent: Optional[str] = None) -> None:
 #         """Adds node(s) in item to 'contents'.
         
@@ -1251,7 +1255,7 @@ class System(traits.Directed, forms.Adjacency):
 #         node(s) is set to this Tree instance.
 
 #         Args:
-#             item (Union[base.Node, Sequence[base.Node]]): node(s) to 
+#             item (Union[Hashable, Sequence[Hashable]]): node(s) to 
 #                 add to the 'contents' attribute.
 
 #         Raises:
@@ -1278,18 +1282,18 @@ class System(traits.Directed, forms.Adjacency):
 #             parent_node.contents.append(item)
 #         return
     
-#     def find(self, finder: Finder, **kwargs: Any) -> Optional[base.Node]:
+#     def find(self, finder: Finder, **kwargs: Any) -> Optional[Hashable]:
 #         """Finds first matching node in Tree using 'finder'.
 
 #         Args:
-#             finder (Callable[[base.Node], Optional[base.Node]]): 
+#             finder (Callable[[Hashable], Optional[Hashable]]): 
 #                 function or other callable that returns a node if it meets 
 #                 certain criteria or otherwise returns None.
 #             kwargs: keyword arguments to pass to 'finder' when examing each
 #                 node.
 
 #         Returns:
-#             Optional[base.Node]: matching Node or None if no matching node 
+#             Optional[Hashable]: matching Node or None if no matching node 
 #                 is found.
             
 #         """                  
@@ -1302,15 +1306,15 @@ class System(traits.Directed, forms.Adjacency):
 #     def find_add(
 #         self, 
 #         finder: Finder, 
-#         item: base.Node, 
+#         item: Hashable, 
 #         **kwargs: Any) -> None:
 #         """Finds first matching node in Tree using 'finder'.
 
 #         Args:
-#             finder (Callable[[base.Node], Optional[base.Node]]): 
+#             finder (Callable[[Hashable], Optional[Hashable]]): 
 #                 function or other callable that returns a node if it meets 
 #                 certain criteria or otherwise returns None.
-#             item (base.Node): node to add to the 'contents' attribute of 
+#             item (Hashable): node to add to the 'contents' attribute of 
 #                 the first node that meets criteria in 'finder'.
 #             kwargs: keyword arguments to pass to 'finder' when examing each
 #                 node.
@@ -1319,7 +1323,7 @@ class System(traits.Directed, forms.Adjacency):
 #             ValueError: if no matching node is found by 'finder'.
 
 #         Returns:
-#             Optional[base.Node]: matching Node or None if no matching node 
+#             Optional[Hashable]: matching Node or None if no matching node 
 #                 is found.
             
 #         """  
@@ -1332,18 +1336,18 @@ class System(traits.Directed, forms.Adjacency):
 #                 'finder')
 #         return
     
-#     def find_all(self, finder: Finder, **kwargs: Any) -> list[base.Node]:
+#     def find_all(self, finder: Finder, **kwargs: Any) -> list[Hashable]:
 #         """Finds all matching nodes in Tree using 'finder'.
 
 #         Args:
-#             finder (Callable[[base.Node], Optional[base.Node]]): 
+#             finder (Callable[[Hashable], Optional[Hashable]]): 
 #                 function or other callable that returns a node if it meets 
 #                 certain criteria or otherwise returns None.
 #             kwargs: keyword arguments to pass to 'finder' when examing each
 #                 node.
 
 #         Returns:
-#             list[base.Node]: matching nodes or an empty list if no 
+#             list[Hashable]: matching nodes or an empty list if no 
 #                 matching node is found.
             
 #         """              
@@ -1362,10 +1366,10 @@ class System(traits.Directed, forms.Adjacency):
 #         """Finds matching nodes in Tree using 'finder' and applies 'changer'.
 
 #         Args:
-#             finder (Callable[[base.Node], Optional[base.Node]]): 
+#             finder (Callable[[Hashable], Optional[Hashable]]): 
 #                 function or other callable that returns a node if it meets 
 #                 certain criteria or otherwise returns None.
-#             changer (Callable[[base.Node], None]): function or other 
+#             changer (Callable[[Hashable], None]): function or other 
 #                 callable that modifies the found node.
 #             kwargs: keyword arguments to pass to 'finder' when examing each
 #                 node.
@@ -1384,14 +1388,14 @@ class System(traits.Directed, forms.Adjacency):
 #                 'found by finder')
 #         return
     
-#     def get(self, item: str) -> Optional[base.Node]:
+#     def get(self, item: str) -> Optional[Hashable]:
 #         """Finds first matching node in Tree match 'item'.
 
 #         Args:
 #             item (str): 
 
 #         Returns:
-#             Optional[base.Node]: matching Node or None if no matching node 
+#             Optional[Hashable]: matching Node or None if no matching node 
 #                 is found.
             
 #         """                  
@@ -1534,7 +1538,7 @@ class System(traits.Directed, forms.Adjacency):
 #     """Base class a collection of Path instances.
         
 #     Args:
-#         contents (MutableSequence[base.Node]): list of stored Path instances. 
+#         contents (MutableSequence[Hashable]): list of stored Path instances. 
 #             Defaults to an empty list.
 
 #     """
@@ -1565,8 +1569,8 @@ class System(traits.Directed, forms.Adjacency):
 
 #     def walk(
 #         self, 
-#         start: Optional[base.Node] = None,
-#         stop: Optional[base.Node] = None, 
+#         start: Optional[Hashable] = None,
+#         stop: Optional[Hashable] = None, 
 #         path: Optional[Path] = None,
 #         return_paths: bool = True, 
 #         *args: Any, 
@@ -1574,10 +1578,10 @@ class System(traits.Directed, forms.Adjacency):
 #         """Returns path in the stored composite object from 'start' to 'stop'.
         
 #         Args:
-#             start (Optional[base.Node]): base.Node to start paths from. Defaults to None.
+#             start (Optional[Hashable]): Hashable to start paths from. Defaults to None.
 #                 If it is None, 'start' should be assigned to one of the roots
 #                 of the base.
-#             stop (Optional[base.Node]): base.Node to stop paths. Defaults to None. If it 
+#             stop (Optional[Hashable]): Hashable to stop paths. Defaults to None. If it 
 #                 is None, 'start' should be assigned to one of the roots of the 
 #                 base.
 #             path (Optional[Path]): a path from 'start' to 'stop'. 

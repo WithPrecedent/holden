@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from . import forms  
        
 
-
 def is_tree(item: object) -> bool:
     """Returns whether 'item' is a tree.
 
@@ -92,7 +91,7 @@ class Tree(amos.Hybrid, traits.Directed, base.Composite):
             function to call when the 'get' method is used. Defaults to None. 
               
     """
-    contents: MutableSequence[base.Node] = dataclasses.field(
+    contents: MutableSequence[Hashable] = dataclasses.field(
         default_factory = list)
     name: Optional[str] = None
     parent: Optional[Tree] = None
@@ -101,12 +100,12 @@ class Tree(amos.Hybrid, traits.Directed, base.Composite):
     """ Properties """
         
     @property
-    def children(self) -> MutableSequence[base.Node]:
+    def children(self) -> MutableSequence[Hashable]:
         """Returns child nodes of this Node."""
         return self.contents
     
     @children.setter
-    def children(self, value: MutableSequence[base.Node]) -> None:
+    def children(self, value: MutableSequence[Hashable]) -> None:
         """Sets child nodes of this Node."""
         if amos.is_sequence(value):
             self.contents = value
@@ -115,7 +114,7 @@ class Tree(amos.Hybrid, traits.Directed, base.Composite):
         return
 
     @property
-    def endpoint(self) -> Union[base.Node, base.Nodes]:
+    def endpoint(self) -> Union[Hashable, Collection[Hashable]]:
         """Returns the endpoint(s) of the stored graph."""
         if not self.contents:
             return self
@@ -123,7 +122,7 @@ class Tree(amos.Hybrid, traits.Directed, base.Composite):
             return self.contents[0].endpoint
  
     @property
-    def root(self) -> Union[base.Node, base.Nodes]:
+    def root(self) -> Union[Hashable, Collection[Hashable]]:
         """Returns the root(s) of the stored graph."""
         if self.parent is None:
             return self
