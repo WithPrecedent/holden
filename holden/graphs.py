@@ -35,7 +35,6 @@ from typing import Any, Optional, Type, TYPE_CHECKING, Union
 import amos
 
 from . import base
-from . import convert
 from . import forms
 from . import traits
     
@@ -172,10 +171,9 @@ class System(traits.Directed, forms.Adjacency):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
-        contents (MutableMapping[base.Node, Set[base.Node]]): keys 
-            are nodes and values are sets of nodes (or hashable representations 
-            of nodes). Defaults to a defaultdict that has a set for its value 
-            format.
+        contents (MutableMapping[base.Node, Set[base.Node]]): keys are nodes and 
+            values are sets of nodes (or hashable representations of nodes). 
+            Defaults to a defaultdict that has a set for its value format.
                   
     """  
     contents: MutableMapping[base.Node, Set[base.Node]] = (
@@ -368,11 +366,11 @@ class System(traits.Directed, forms.Adjacency):
         elif isinstance(item, forms.Adjacency):
             adjacency = item
         elif isinstance(item, forms.Edges):
-            adjacency = convert.edges_to_adjacency(item = item)
+            adjacency = forms.edges_to_adjacency(item = item)
         elif isinstance(item, forms.Matrix):
-            adjacency = convert.matrix_to_adjacency(item = item)
+            adjacency = forms.matrix_to_adjacency(item = item)
         elif isinstance(item, (list, tuple, set)):
-            adjacency = convert.path_to_adjacency(item = item)
+            adjacency = forms.path_to_adjacency(item = item)
         elif isinstance(item, base.Node):
             adjacency = {item: set()}
         else:

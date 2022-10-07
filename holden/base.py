@@ -17,7 +17,9 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
+    is_composite
     is_edge
+    is_graph
     is_node
     is_nodes
     Composite (amos.Bunch, Protocol): base class for composite data structures. 
@@ -52,7 +54,9 @@ from typing import (
     Any, Optional, Protocol, runtime_checkable, Type, TYPE_CHECKING, Union)
 
 import amos
-        
+
+if TYPE_CHECKING:
+    from . import forms    
 
 # def is_composite(item: Union[object, Type[Any]]) -> bool:
 #     """Returns whether 'item' is a collection of node connections.
@@ -68,6 +72,18 @@ import amos
 #         item = item,
 #         attributes = ['contents'],
 #         methods = ['merge'])
+
+def is_composite(item: object) -> bool:
+    """Returns whether 'item' is a composite.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a composite.
+    
+    """
+    raise NotImplementedError
 
 def is_edge(item: Union[object, Type[Any]]) -> bool:
     """Returns whether 'item' is an edge.
@@ -87,6 +103,18 @@ def is_edge(item: Union[object, Type[Any]]) -> bool:
             and len(item) == 2
             and is_node(item = item[0])
             and is_node(item = item[1]))
+
+def is_graph(item: object) -> bool:
+    """Returns whether 'item' is a graph.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a graph.
+    
+    """
+    raise NotImplementedError
       
 def is_node(item: Union[object, Type[Any]]) -> bool:
     """Returns whether 'item' is a node.
@@ -99,7 +127,7 @@ def is_node(item: Union[object, Type[Any]]) -> bool:
     
     """
     if inspect.isclass(item):
-        return type(item) is str or issubclass(Node)
+        return type(item) is str or hasattr(item, 'name')
     return (
         isinstance(item, str) 
         or (hasattr(item, 'name') and isinstance(item.name, str)))
@@ -230,6 +258,72 @@ class Edge(Sequence):
             
         """
         return len(dataclasses.fields(self))
+       
+    
+@dataclasses.dataclass # type: ignore
+@runtime_checkable
+class Graph(Composite, Protocol):
+    """Base class for graph data structures.
+    
+    Args:
+        contents (Collection[Any]): stored collection of nodes and/or edges.
+                                      
+    """  
+    contents: Collection[Any]
+   
+    """ Required Subclass Properties """
+
+    @abc.abstractproperty
+    def adjacency(self) -> forms.Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        pass
+
+    @abc.abstractproperty
+    def edges(self) -> forms.Edges:
+        """Returns the stored graph as an Edges."""
+        pass
+           
+    @abc.abstractproperty
+    def matrix(self) -> forms.Matrix:
+        """Returns the stored graph as a Matrix."""
+        pass
+
+    @abc.abstractproperty
+    def parallel(self) -> forms.Parallel:
+        """Returns the stored graph as a Parallel."""
+        pass
+
+    @abc.abstractproperty
+    def serial(self) -> forms.Serial:
+        """Returns the stored graph as a Serial."""
+        pass
+
+    """ Required Subclass Methods """
+    
+    @abc.abstractclassmethod
+    def from_adjacency(cls, item: forms.Adjacency) -> Graph:
+        """Creates a Graph instance from an Adjacency."""
+        pass
+    
+    @abc.abstractclassmethod
+    def from_edges(cls, item: forms.Edges) -> Graph:
+        """Creates a Graph instance from an Edges."""
+        pass
+        
+    @abc.abstractclassmethod
+    def from_matrix(cls, item: forms.Matrix) -> Graph:
+        """Creates a Graph instance from a Matrix."""
+        pass
+              
+    @abc.abstractclassmethod
+    def from_parallel(cls, item: forms.Parallel) -> Graph:
+        """Creates a Graph instance from a Parallel."""
+        pass
+              
+    @abc.abstractclassmethod
+    def from_serial(cls, item: forms.Serial) -> Graph:
+        """Creates a Graph instance from a Serial."""
+        pass
  
  
 @dataclasses.dataclass

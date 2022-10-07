@@ -34,13 +34,26 @@ Contents:
     adjacency_to_serial
     adjacency_to_parallel
     edges_to_adjacency
+    edges_to_matrix
+    edges_to_serial
+    edges_to_parallel
     matrix_to_adjacency
+    matrix_to_edges
+    matrix_to_serial
+    matrix_to_parallel
     serial_to_adjacency
+    serial_to_edges
+    serial_to_matrix
+    serial_to_parallel
     parallel_to_adjacency
+    parallel_to_edges
+    parallel_to_matrix
+    parallel_to_serial
+    
           
 To Do:
-    Add the remainder of the conversion methods between 
-    Integrate Kinds system when it is finished.
+    Add the remainder of the conversion methods between different forms
+    Integrate Kinds system when it is finished
     
 """
 from __future__ import annotations
@@ -130,7 +143,6 @@ def is_parallel(item: object) -> bool:
     return (
         isinstance(item, Sequence)
         and all(base.is_serial(item = i) for i in item))
-
 
 def is_serial(item: object) -> bool:
     """Returns whether 'item' is a serial.
@@ -238,7 +250,7 @@ class Edges(amos.Listing, base.Graph):
     """Base class for edge-list graphs.
 
     Args:
-        contents (MutableSequence[base.Edge]): list of edges. Defaults to 
+        contents (MutableSequence[base.Edge]): Listing of edges. Defaults to 
             an empty list.
                                       
     """   
@@ -407,8 +419,8 @@ class Parallel(amos.Listing, base.Graph):
     """Base class for a list of serial graphs.
     
     Args:
-        contents (MutableSequence[Serial]): list of PAth instances. Defaults to 
-            an empty list.
+        contents (MutableSequence[Serial]): Listing of Serial instances. 
+            Defaults to an empty list.
                                       
     """   
     contents: MutableSequence[Serial] = dataclasses.field(
