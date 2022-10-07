@@ -51,16 +51,6 @@ class Directed(Protocol):
     def root(self) -> Union[base.Node, base.Nodes]:
         """Returns the root(s) of the stored graph."""
         pass
-    
-    @abc.abstractclassmethod
-    def from_path(cls, item: Path) -> Path:
-        """Creates a Paths instance from a Path."""
-        return cls(contents = item)
-    
-    @abc.abstractclassmethod
-    def from_paths(cls, item: Paths) -> Path:
-        """Creates a Paths instance from a Paths."""
-        return cls(contents = convert.paths_to_paths(item = item))
             
     """ Required Subclass Methods """
     
@@ -155,11 +145,11 @@ class Labeled(Protocol):
         name (Optional[str]): designates the name of a class instance that is 
             used for internal and external referencing in a composite object.
             Defaults to None.
-        contents (Optional[Any]): any stored item(s). Defaults to None.
+        # contents (Optional[Any]): any stored item(s). Defaults to None.
             
     """
     name: Optional[str] = None
-    contents: Optional[Any] = None
+    # contents: Optional[Any] = None
     
     """ Initialization Methods """
 
@@ -171,7 +161,6 @@ class Labeled(Protocol):
             super().__post_init__(*args, **kwargs) # type: ignore
         self.name = self.name or self._namify()
 
-    
     """ Private Methods """
     
     def _namify(self) -> str:

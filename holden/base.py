@@ -17,6 +17,9 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
+    is_edge
+    is_node
+    is_nodes
     Composite (amos.Bunch, Protocol): base class for composite data structures. 
         Requires 'append', 'delete', 'merge', 'prepend', and 'walk' methods.
     Edge (Sequence): base class for an edge in a graph. Many graphs will not
@@ -30,10 +33,10 @@ Contents:
         intended for easy type checking of any arbitrary group of objects to 
         make sure they meet the requirements of being a Node (real or virtual) 
         instance.
-                  
+    to_node
+                 
 To Do:
     Integrate Kinds system when it is finished.
-    Restore 'beautify' str representations once those are finished.
 
     
 """
@@ -51,20 +54,20 @@ from typing import (
 import amos
         
 
-def is_composite(item: Union[object, Type[Any]]) -> bool:
-    """Returns whether 'item' is a collection of node connections.
+# def is_composite(item: Union[object, Type[Any]]) -> bool:
+#     """Returns whether 'item' is a collection of node connections.
 
-    Args:
-        item (Union[object, Type[Any]]): instance or class to test.
+#     Args:
+#         item (Union[object, Type[Any]]): instance or class to test.
 
-    Returns:
-        bool: whether 'item' is a collection of node connections.
+#     Returns:
+#         bool: whether 'item' is a collection of node connections.
         
-    """
-    return amos.has_traits(
-        item = item,
-        attributes = ['contents'],
-        methods = ['connect', 'disconnect', 'merge', '__iter__'])
+#     """
+#     return amos.has_traits(
+#         item = item,
+#         attributes = ['contents'],
+#         methods = ['merge'])
 
 def is_edge(item: Union[object, Type[Any]]) -> bool:
     """Returns whether 'item' is an edge.
@@ -132,15 +135,15 @@ class Composite(amos.Bunch, Protocol):
              
     """ Required Subclass Methods """
     
-    @abc.abstractmethod
-    def connect(self, *args: Any, **kwargs: Any) -> None:
-        """Creates a new edge in the stored graph."""
-        pass  
+    # @abc.abstractmethod
+    # def connect(self, *args: Any, **kwargs: Any) -> None:
+    #     """Creates a new edge in the stored graph."""
+    #     pass  
     
-    @abc.abstractmethod
-    def disconnect(self, *args: Any, **kwargs: Any) -> None:
-        """Deletes edge from the stored graph."""
-        pass  
+    # @abc.abstractmethod
+    # def disconnect(self, *args: Any, **kwargs: Any) -> None:
+    #     """Deletes edge from the stored graph."""
+    #     pass  
   
     @abc.abstractmethod
     def merge(self, item: Composite, *args: Any, **kwargs: Any) -> None:
@@ -153,20 +156,20 @@ class Composite(amos.Bunch, Protocol):
         """
         pass
             
-    """ Dunder Methods """
+    # """ Dunder Methods """
     
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+    # @classmethod
+    # def __instancecheck__(cls, instance: object) -> bool:
+    #     """Returns whether 'instance' meets criteria to be a subclass.
 
-        Args:
-            instance (object): item to test as an instance.
+    #     Args:
+    #         instance (object): item to test as an instance.
 
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
+    #     Returns:
+    #         bool: whether 'instance' meets criteria to be a subclass.
             
-        """
-        return is_composite(item = instance)
+    #     """
+    #     return is_composite(item = instance)
 
      
 # @dataclasses.dataclass(frozen = True, order = True)

@@ -42,6 +42,17 @@ if TYPE_CHECKING:
     from . import forms  
     from . import traits     
 
+def is_graph(item: object) -> bool:
+    """Returns whether 'item' is a graph.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a graph.
+    
+    """
+    raise NotImplementedError
 
 def is_tree(item: object) -> bool:
     """Returns whether 'item' is a tree.
@@ -57,20 +68,20 @@ def is_tree(item: object) -> bool:
         isinstance(item, MutableSequence)
         and all(isinstance(i, (MutableSequence, Hashable)) for i in item)) 
     
-def is_forest(item: object) -> bool:
-    """Returns whether 'item' is a dict of tree.
+# def is_forest(item: object) -> bool:
+#     """Returns whether 'item' is a dict of tree.
 
-    Args:
-        item (object): instance to test.
+#     Args:
+#         item (object): instance to test.
 
-    Returns:
-        bool: whether 'item' is a dict of tree.
+#     Returns:
+#         bool: whether 'item' is a dict of tree.
     
-    """
-    return (
-        isinstance(item, MutableMapping)
-        and all(base.is_node(item = i) for i in item.keys())
-        and all(is_tree(item = i) for i in item.values())) 
+#     """
+#     return (
+#         isinstance(item, MutableMapping)
+#         and all(base.is_node(item = i) for i in item.keys())
+#         and all(is_tree(item = i) for i in item.values())) 
        
     
 @dataclasses.dataclass # type: ignore
@@ -102,13 +113,13 @@ class Graph(base.Composite, Protocol):
         pass
 
     @abc.abstractproperty
-    def path(self) -> forms.Path:
-        """Returns the stored graph as a Path."""
+    def parallel(self) -> forms.Parallel:
+        """Returns the stored graph as a Parallel."""
         pass
 
     @abc.abstractproperty
-    def paths(self) -> forms.Paths:
-        """Returns the stored graph as a Path."""
+    def serial(self) -> forms.Serial:
+        """Returns the stored graph as a Serial."""
         pass
 
     """ Required Subclass Methods """
@@ -129,81 +140,16 @@ class Graph(base.Composite, Protocol):
         pass
               
     @abc.abstractclassmethod
-    def from_path(cls, item: forms.Path) -> Graph:
-        """Creates a Graph instance from a Path."""
+    def from_parallel(cls, item: forms.Parallel) -> Graph:
+        """Creates a Graph instance from a Parallel."""
         pass
               
     @abc.abstractclassmethod
-    def from_paths(cls, item: forms.Paths) -> Graph:
-        """Creates a Graph instance from a Paths."""
+    def from_serial(cls, item: forms.Serial) -> Graph:
+        """Creates a Graph instance from a Serial."""
         pass
 
-
-@dataclasses.dataclass # type: ignore
-class Path(traits.Directed, forms.Path, base.Graph):
-    """Path, directed path graph.
     
-    Args:
-        contents (MutableSequence[base.Node]): list of stored Node 
-            instances. Defaults to an empty list.
-          
-    """
-    contents: MutableSequence[base.Node] = dataclasses.field(
-        default_factory = list)
-
-    """ Properties """
-    
-    @property
-    def endpoint(self) -> base.Node:
-        """Returns the endpoint(s) of the stored graph."""
-        return self.contents[-1]
-    
-    @property
-    def root(self) -> base.Node:
-        """Returns the root(s) of the stored graph."""
-        return self.contents[0]
-    
-    """ Public Methods """
-   
-    def walk(
-        self, 
-        start: Optional[base.Node] = None,
-        stop: Optional[base.Node] = None, 
-        path: Optional[Path] = None,
-        return_paths: bool = False, 
-        *args: Any, 
-        **kwargs: Any) -> Path:
-        """Returns path in the stored composite object from 'start' to 'stop'.
-        
-        Args:
-            start (Optional[base.Node]): base.Node to start paths from. Defaults to None.
-                If it is None, 'start' should be assigned to one of the roots
-                of the base.
-            stop (Optional[base.Node]): base.Node to stop paths. Defaults to None. If it 
-                is None, 'start' should be assigned to one of the roots of the 
-                base.
-            path (Optional[Path]): a path from 'start' to 'stop'. 
-                Defaults to None. This parameter is used by recursive methods 
-                for determining a path.
-            return_paths (bool): whether to return a Paths instance 
-                (True) or a Path instance (False). Defaults to True.
-
-        Returns:
-            Path
-                            
-        """
-        if start is None and stop is None:
-            return self.contents
-        start = start or self.root
-        stop = stop or self.endpoint
-        index_start = self.contents.index(start)
-        index_stop = self.contents.index(stop) + 1
-        if index_stop > len(self.contents):
-            return self.contents[index_start:]
-        else:
-            return self.contents[index_start:index_stop]
-     
-
 @dataclasses.dataclass # type: ignore
 class Tree(amos.Hybrid, traits.Directed, base.Composite, Protocol):
     """Base class for an tree data structures.

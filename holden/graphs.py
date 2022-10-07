@@ -40,38 +40,135 @@ from . import forms
 from . import traits
     
 
-def is_path(item: object) -> bool:
-    """Returns whether 'item' is a path.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a path.
+@dataclasses.dataclass # type: ignore
+class Path(traits.Directed, forms.Serial):
+    """Linear path graph.
     
-    """
-    return (
-        isinstance(item, Sequence)
-        and not isinstance(item, str)
-        and all(base.is_node(item = i) for i in item))
-
-def is_paths(item: object) -> bool:
-    """Returns whether 'item' is sequence of paths.
-
     Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a sequence of paths.
-    
+        contents (MutableSequence[base.Node]): ordered list of stored Node 
+            instances. Defaults to an empty list.
+          
     """
-    return (
-        isinstance(item, Sequence)
-        and all(base.is_path(item = i) for i in item))
+    contents: MutableSequence[base.Node] = dataclasses.field(
+        default_factory = list)
+
+    """ Properties """
+    
+    @property
+    def endpoint(self) -> base.Node:
+        """Returns the endpoint of the stored graph."""
+        return self.contents[-1]
+    
+    @property
+    def root(self) -> base.Node:
+        """Returns the root of the stored graph."""
+        return self.contents[0]
+    
+    """ Public Methods """
+      
+    def walk(
+        self, 
+        start: Optional[base.Node] = None,
+        stop: Optional[base.Node] = None, 
+        path: Optional[Path] = None,
+        return_parallel: bool = False, 
+        *args: Any, 
+        **kwargs: Any) -> Path:
+        """Returns path in the stored composite object from 'start' to 'stop'.
+        
+        Args:
+            start (Optional[base.Node]): base.Node to start paths from. Defaults 
+                to None. If it is None, 'start' is assigned to 'root'.
+            stop (Optional[base.Node]): base.Node to stop paths. Defaults to 
+                None. If it is None, 'stop' is assigned to 'endpoint'.
+            path (Optional[Path]): a path from 'start' to 'stop'. Defaults to 
+                None. This parameter is used by recursive methods for 
+                determining a path.
+            return_parallel (bool): whether to always return a Paths instance 
+                (True) or a Path instance (False) if there is only one path. 
+                Defaults to False (because a Path should never have more than
+                one path through it).
+
+        Returns:
+            Path: derived from self.contents.
+                            
+        """
+        if start is None and stop is None:
+            path = self.contents
+        else:
+            start = start or self.root
+            stop = stop or self.endpoint
+            index_start = self.contents.index(start)
+            index_stop = self.contents.index(stop) + 1
+            if index_stop > len(self.contents):
+                path = self.contents[index_start:]
+            else:
+                path = self.contents[index_start:index_stop]
+        if return_parallel:
+            return Paths(contents = [path])
+        else:
+            return path
+
+
+@dataclasses.dataclass # type: ignore
+class Paths(forms.Parallel):
+    """List of linear path graphs.
+    
+    Args:
+        contents (MutableSequence[Path]): ordered list of stored Path 
+            instances. Defaults to an empty list.
+          
+    """
+    contents: MutableSequence[Path] = dataclasses.field(default_factory = list)
+    
+    """ Public Methods """
+      
+    def walk(
+        self, 
+        start: Optional[base.Node] = None,
+        stop: Optional[base.Node] = None, 
+        path: Optional[Path] = None,
+        return_parallel: bool = False, 
+        *args: Any, 
+        **kwargs: Any) -> Path:
+        """Returns path in the stored composite object from 'start' to 'stop'.
+        
+        Args:
+            start (Optional[base.Node]): base.Node to start paths from. Defaults 
+                to None. If it is None, 'start' is assigned to 'root'.
+            stop (Optional[base.Node]): base.Node to stop paths. Defaults to 
+                None. If it is None, 'stop' is assigned to 'endpoint'.
+            path (Optional[Path]): a path from 'start' to 'stop'. Defaults to 
+                None. This parameter is used by recursive methods for 
+                determining a path.
+            return_parallel (bool): whether to always return a Paths instance 
+                (True) or a Path instance (False) if there is only one path. 
+                Defaults to False (because a Path should never have more than
+                one path through it).
+
+        Returns:
+            Path: derived from self.contents.
+                            
+        """
+        if start is None and stop is None:
+            path = self.contents
+        else:
+            start = start or self.root
+            stop = stop or self.endpoint
+            index_start = self.contents.index(start)
+            index_stop = self.contents.index(stop) + 1
+            if index_stop > len(self.contents):
+                path = self.contents[index_start:]
+            else:
+                path = self.contents[index_start:index_stop]
+        if return_parallel:
+            return Paths(contents = [path])
+        else:
+            return path
 
 
 @dataclasses.dataclass
-class System(forms.Adjacency, traits.Directed, base.Graph):
+class System(traits.Directed, forms.Adjacency):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -104,57 +201,17 @@ class System(forms.Adjacency, traits.Directed, base.Graph):
         return set(self.contents.keys())
 
     @property
-    def paths(self) -> base.Nodes:
-        """Returns all paths through the stored as a list of nodes."""
+    def parallel(self) -> base.Nodes:
+        """Returns all paths through the stored as a list of paths."""
         return self._find_all_paths(starts = self.root, stops = self.endpoint)
     
     @property
-    def path(self) -> base.Path:
+    def serial(self) -> base.Path:
         """Returns stored graph as a path."""
-        path = []
-        for pipe in self.paths.values():
-            path.extend(pipe)
-        return base.Path(contents = path)
-    
-    @property
-    def paths(self) -> base.Paths:
-        """Returns stored graph as paths."""
-        all_paths = self.paths
-        instances = [base.Path(contents = p) for p in all_paths]
-        paths = base.Paths()
-        for instance in instances:
-            paths.add(instance, name = 'path')
-        return paths
-            
-    @property
-    def tree(self) -> tree.Tree:
-        """Returns the stored composite object as a tree.Tree."""
-        raise NotImplementedError
-
-    """ Class Methods """
-    
-    @classmethod
-    def from_nodes(cls, item: base.Nodes) -> System:
-        """Creates a System instance from a Nodes."""
-        new_contents = convert.path_to_adjacency(item = item)
-        return cls(contents = new_contents)
-
-    @classmethod
-    def from_path(cls, item: base.Path) -> System:
-        """Creates a System instance from a Path."""
-        new_contents = convert.path_to_adjacency(item = item)
-        return cls(contents = new_contents)
-    
-    @classmethod
-    def from_paths(cls, item: base.Paths) -> System:
-        """Creates a System instance from a Path."""
-        new_contents = convert.paths_to_adjacency(item = item)
-        return cls(contents = new_contents)
-
-    @classmethod
-    def from_tree(cls, item: tree.Tree) -> System:
-        """Creates a System instance from a Tree."""
-        raise NotImplementedError
+        if len(self.parallel) == 1:
+            return self.parallel[0]
+        else:
+            return itertools.chain_from_iterable(self.parallel)
              
     """ Public Methods """
 
@@ -454,251 +511,7 @@ class System(forms.Adjacency, traits.Directed, base.Graph):
                         all_paths.extend(paths)
         return all_paths
 
-    
-@dataclasses.dataclass
-class Path(amos.Hybrid, base.Graph):
-    """Base class for path graphs.
-    
-    Args:
-        contents (MutableSequence[base.Node]): list of nodes. Defaults to 
-            an empty list.
-                                      
-    """   
-    contents: MutableSequence[base.Node] = dataclasses.field(
-        default_factory = list)
-                                
-    """ Properties """
-
-    @property
-    def adjacency(self) -> forms.Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return convert.path_to_adjacency(item = self.contents)
-
-    @property
-    def edges(self) -> forms.Edges:
-        """Returns the stored graph as an Edges."""
-        return convert.path_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> forms.Matrix:
-        """Returns the stored graph as a Matrix."""
-        return convert.path_to_matrix(item = self.contents)
-
-    @property
-    def path(self) -> Path:
-        """Returns the stored graph as a Path."""
-        return self.contents
-
-    @property
-    def paths(self) -> Paths:
-        """Returns the stored graph as a Paths."""
-        return convert.path_to_paths(item = self.contents)
-    
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: forms.Adjacency) -> Path:
-        """Creates a Path instance from an Adjacency."""
-        return cls(contents = convert.adjacency_to_path(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: forms.Edges) -> Path:
-        """Creates a Path instance from an Edges."""
-        return cls(contents = convert.edges_to_path(item = item))
-        
-    @classmethod
-    def from_matrix(cls, item: forms.Matrix) -> Path:
-        """Creates a Path instance from a Matrix."""
-        return cls(contents = convert.matrix_to_path(item = item))
-    
-    @classmethod
-    def from_path(cls, item: Path) -> Path:
-        """Creates a Path instance from a Path."""
-        return cls(contents = item)
-    
-    @classmethod
-    def from_paths(cls, item: Paths) -> Path:
-        """Creates a Path instance from a Path."""
-        return cls(contents = convert.paths_to_path(item = item))
-                     
-    """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_path(item = instance)
-    
-    
-@dataclasses.dataclass
-class Paths(amos.Listing, base.Graph):
-    """Base class for a list of path graphs.
-    
-    Args:
-        contents (MutableSequence[Path]): list of PAth instances. Defaults to 
-            an empty list.
-                                      
-    """   
-    contents: MutableSequence[Path] = dataclasses.field(default_factory = list)
-                                
-    """ Properties """
-
-    @property
-    def adjacency(self) -> forms.Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return convert.paths_to_adjacency(item = self.contents)
-
-    @property
-    def edges(self) -> forms.Edges:
-        """Returns the stored graph as an Edges."""
-        return convert.paths_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> forms.Matrix:
-        """Returns the stored graph as a Matrix."""
-        return convert.paths_to_matrix(item = self.contents)
-
-    @property
-    def path(self) -> Path:
-        """Returns the stored graph as a Path."""
-        return convert.paths_to_path(item = self.contents)
-
-    @property
-    def paths(self) -> Paths:
-        """Returns the stored graph as a Paths."""
-        return self.contents
-    
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: forms.Adjacency) -> Paths:
-        """Creates a Paths instance from an Adjacency."""
-        return cls(contents = convert.adjacency_to_paths(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: forms.Edges) -> Path:
-        """Creates a Paths instance from an Edges."""
-        return cls(contents = convert.edges_to_paths(item = item))
-        
-    @classmethod
-    def from_matrix(cls, item: forms.Matrix) -> Path:
-        """Creates a Paths instance from a Matrix."""
-        return cls(contents = convert.matrix_to_paths(item = item))
-    
-    @classmethod
-    def from_path(cls, item: Path) -> Path:
-        """Creates a Paths instance from a Path."""
-        return cls(contents = item)
-    
-    @classmethod
-    def from_paths(cls, item: Paths) -> Path:
-        """Creates a Paths instance from a Paths."""
-        return cls(contents = convert.paths_to_paths(item = item))
-                     
-    """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_paths(item = instance)
-
-
-# @to_path.register # type: ignore 
-def adjacency_to_path(item: forms.Adjacency) -> Path:
-    """Converts 'item' to a Path.
-    
-    Args:
-        item (Adjacency): item to convert to a Path.
-
-    Returns:
-        Path: derived from 'item'.
-
-    """ 
-    all_paths = adjacency_to_paths(item = item)
-    if len(all_paths) == 1:
-        return all_paths[0]
-    else:
-        return itertools.chain(all_paths)  
-
-# @to_paths.register # type: ignore 
-def adjacency_to_paths(item: forms.Adjacency) -> Path:
-    """Converts 'item' to a Path.
-    
-    Args:
-        item (forms.Adjacency): item to convert to a Path.
-
-    Returns:
-        Path: derived from 'item'.
-
-    """ 
-    pass
-
-# @to_adjacency.register # type: ignore 
-def path_to_adjacency(item: Path) -> forms.Adjacency:
-    """Converts 'item' to an Adjacency.
-
-    Args:
-        item (Path): item to convert to an Adjacency.
-
-    Returns:
-        Adjacency: derived from 'item'.
-
-    """
-    if is_paths(item = item):
-        return paths_to_adjacency(item = item)
-    else:
-        if not isinstance(item, (Collection)) or isinstance(item, str):
-            item = [item]
-        adjacency = collections.defaultdict(set)
-        if len(item) == 1:
-            adjacency.update({item: set()})
-        else:
-            edges = amos.windowify(item, 2)
-            for edge_pair in edges:
-                if edge_pair[0] in adjacency:
-                    adjacency[edge_pair[0]].add(edge_pair[1])
-                else:
-                    adjacency[edge_pair[0]] = {edge_pair[1]}
-        return adjacency
-
-# @to_adjacency.register # type: ignore 
-def paths_to_adjacency(item: Path) -> forms.Adjacency:
-    """Converts 'item' to an Adjacency.
-
-    Args:
-        item (Path): item to convert to an Adjacency.
-
-    Returns:
-        forms.Adjacency: derived from 'item'.
-
-    """
-    adjacency = collections.defaultdict(set)
-    for _, path in item.items():
-        pipe_adjacency = path_to_adjacency(item = path)
-        for key, value in pipe_adjacency.items():
-            if key in adjacency:
-                for inner_value in value:
-                    if inner_value not in adjacency:
-                        adjacency[key].add(inner_value)
-            else:
-                adjacency[key] = value
-    return adjacency  
-    
+   
 # @dataclasses.dataclass
 # class Network(Graph):
 #     """composites class for undirected graphs with unweighted edges.
