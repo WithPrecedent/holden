@@ -73,7 +73,7 @@ def is_tree(item: object) -> bool:
 
 
 @dataclasses.dataclass # type: ignore
-class Tree(amos.Hybrid, traits.Directed, base.Composite):
+class Tree(amos.Hybrid, traits.Directed, base.Graph):
     """Base class for an tree data structures.
     
     The Tree class uses a Hybrid instead of a linked list for storing children

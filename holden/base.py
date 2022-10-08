@@ -17,22 +17,19 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    Composite (amos.Bunch, Protocol): base class for composite data structures. 
-        Requires 'append', 'delete', 'merge', 'prepend', and 'walk' methods.
+    Graph (amos.Bunch, Protocol): base class for composite data structures. 
+        Provides some common functionality and requires subclass methods.
     Edge (Sequence): base class for an edge in a graph. Many graphs will not
         require edge instances, but the class is made available for more complex 
         graphs and type checking.
-    Graph (Composite, Protocol): base class for graphs. All subclasses must have 
-        'connect' and 'disconnect' methods for changing edges between nodes.
     Node (amos.Proxy): wrapper for items that can be stored in a Graph or other
         data structure.  
     Nodes (amos.Bunch): any collection of Node instances. This is primarily
         intended for easy type checking of any arbitrary group of objects to 
         make sure they meet the requirements of being a Node (real or virtual) 
         instance.
-    is_composite
-    is_edge
     is_graph
+    is_edge
     is_node
     is_nodes
     to_node
@@ -60,11 +57,11 @@ if TYPE_CHECKING:
     from . import forms    
 
 
-""" Base Classes for Composite Data Structures """
+""" Base Classes for Graph Data Structures """
       
 @dataclasses.dataclass
 @runtime_checkable
-class Composite(amos.Bunch, Protocol):
+class Graph(amos.Bunch, Protocol):
     """Base class for composite data structures.
     
     Args:
@@ -76,37 +73,17 @@ class Composite(amos.Bunch, Protocol):
     """ Required Subclass Methods """
     
     @abc.abstractmethod
-    def add(
+    def _add(
         self, 
         item: Union[Hashable, Collection[Hashable]], 
         *args: Any, 
         **kwargs: Any) -> None:
-        """Adds node(s) to the stored composite."""
-        pass
-    
-    @abc.abstractmethod    
-    def delete(
-        self, 
-        item: Union[Hashable, Collection[Hashable]], 
-        *args: Any, 
-        **kwargs: Any) -> None:
-        """Deletes node(s) from the stored composite."""
-        pass
-  
-    @abc.abstractmethod
-    def merge(self, item: Composite, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored composite object.
-
-        Args:
-            item (Composite): another Composite object to add to the stored 
-                composite object.
-                
-        """
+        """Adds node(s) to the stored graph."""
         pass
 
     @abc.abstractmethod 
     def _connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored composite.
+        """Adds edge to the stored graph.
 
         Subclasses must provide their own specific methods for adding a single
         edge. The provided 'connect' method offers all of the error checking and
@@ -115,14 +92,23 @@ class Composite(amos.Bunch, Protocol):
         validation or error-checking.
         
         Args:
-            item (Edge): edge to add to the stored composite.
+            item (Edge): edge to add to the stored graph.
             
         """
         pass
-
+    
+    @abc.abstractmethod    
+    def _delete(
+        self, 
+        item: Union[Hashable, Collection[Hashable]], 
+        *args: Any, 
+        **kwargs: Any) -> None:
+        """Deletes node(s) from the stored graph."""
+        pass
+  
     @abc.abstractmethod 
     def _disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored composite.
+        """Removes edge from the stored graph.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. The provided 'disconnect' method offers all of the error checking 
@@ -131,17 +117,28 @@ class Composite(amos.Bunch, Protocol):
         about validation or error-checking.
         
         Args:
-            item (Edge): edge to delete from the stored composite.
+            item (Edge): edge to delete from the stored graph.
             
         """
         pass   
 
+    @abc.abstractmethod
+    def _merge(self, item: Graph, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored graph object.
+
+        Args:
+            item (Graph): another Graph object to add to the stored 
+                graph object.
+                
+        """
+        pass
+    
     @abc.abstractmethod 
     def _subset(
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Composite:
-        """Returns a new Composite without a subset of 'contents'.
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Graph:
+        """Returns a new Graph without a subset of 'contents'.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. Subclasses just need to provide the mechanism for returning a
@@ -149,18 +146,69 @@ class Composite(amos.Bunch, Protocol):
         
         Args:
             include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new composite.
+                should be included in the new graph.
             exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new composite.
+                should not be included in the new graph.
 
         Returns:
-           Composite: with only selected nodes and edges.
+           Graph: with only selected nodes and edges.
             
         """
         pass  
          
     """ Public Methods """
-    
+
+    def add(
+        self, 
+        item: Union[Hashable, Collection[Hashable]], 
+        ancestors: Collection[Hashable] = None,
+        descendants: Collection[Hashable] = None) -> None:
+        """Adds node(s) to the stored graph.
+        
+        Args:
+            node (Hashable): a node to add to the stored graph.
+            ancestors (Collection[Hashable]): node(s) from which 'item' should 
+                be connected.
+            descendants (Collection[Hashable]): node(s) to which 'item' should 
+                be connected.
+
+        Raises:
+            KeyError: if some nodes in 'descendants' or 'ancestors' are not in 
+                the stored graph.
+                
+        """
+        if is_node(item = item):
+            name = item.name
+            self.library.deposit(item = item, name = name)
+        else:
+            name = item
+        if descendants is None:
+            self.contents[name] = set()
+        else:
+            descendants = list(amos.iterify(item = descendants))
+            descendants = [amos.namify(item = n) for n in descendants]
+            missing = [n for n in descendants if n not in self.contents]
+            if missing:
+                raise KeyError(
+                    f'descendants {str(missing)} are not in '
+                    f'{self.__class__.__name__}')
+            else:
+                self.contents[name] = set(descendants)
+        if ancestors is not None:  
+            # if utilities.is_property(item = ancestors, instance = self):
+            #     start = list(getattr(self, ancestors))
+            # else:
+            ancestors = list(amos.iterify(item = ancestors))
+            missing = [n for n in ancestors if n not in self.contents]
+            if missing:
+                raise KeyError(
+                    f'ancestors {str(missing)} are not in '
+                    f'{self.__class__.__name__}')
+            for start in ancestors:
+                if node not in self[start]:
+                    self.connect(start = start, stop = node)                 
+        return 
+        
     def connect(
         self, 
         item: Union[Edge, Collection[Edge]], 
@@ -191,7 +239,24 @@ class Composite(amos.Bunch, Protocol):
             else:
                 self._connect(item, *args, **kwargs)
         return                         
-
+  
+    def delete(self, node: Hashable) -> None:
+        """Deletes node(s) from graph.
+        
+        Args:
+            node (Hashable): node to delete from 'contents'.
+        
+        Raises:
+            KeyError: if 'node' is not in 'contents'.
+            
+        """
+        try:
+            del self.contents[node]
+        except KeyError:
+            raise KeyError(f'{node} does not exist in the graph')
+        self.contents = {k: v.discard(node) for k, v in self.contents.items()}
+        return
+    
     def disconnect(
         self, 
         item: Union[Edge, Collection[Edge]], 
@@ -221,27 +286,27 @@ class Composite(amos.Bunch, Protocol):
     def subset(
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Composite:
-        """Returns a new Composite without a subset of 'contents'.
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Graph:
+        """Returns a new Graph without a subset of 'contents'.
         
         All edges will be removed that include any nodes that are not part of
         the new subgraph.
         
-        Any extra attributes that are part of a Composite (or a subclass) should 
+        Any extra attributes that are part of a Graph (or a subclass) should 
         be maintained in the returned subgraph.
 
         Args:
             include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new composite.
+                should be included in the new graph.
             exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new composite.
+                should not be included in the new graph.
 
         Raises:
             ValueError: if include and exclude are none or if any item in
-                include or exclude is not in the stored composite.
+                include or exclude is not in the stored graph.
 
         Returns:
-           Composite: with only selected nodes and edges.
+           Graph: with only selected nodes and edges.
 
         """
         if include is None and exclude is None:
@@ -265,7 +330,7 @@ class Composite(amos.Bunch, Protocol):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return is_composite(item = instance)
+        return is_graph(item = instance)
 
      
 # @dataclasses.dataclass(frozen = True, order = True)
@@ -273,12 +338,12 @@ class Composite(amos.Bunch, Protocol):
          
 @dataclasses.dataclass(frozen = True, order = True)
 class Edge(Sequence):
-    """Base class for an edge in a composite structure.
+    """Base class for an edge in a graph structure.
     
     If a subclass adds other attributes, it is important that they are not 
     declared as dataclass fields to allow indexing to work properly.
     
-    Edges are not required for most of the base composite classes in amos. But
+    Edges are not required for most of the base graph classes in amos. But
     they can be used by subclasses of those base classes for more complex data
     structures.
     
@@ -312,93 +377,33 @@ class Edge(Sequence):
             index (int): the number of the field in the dataclass based on 
                 order.
         
+        Raises:
+            IndexError: if 'index' is greater than 1.
+        
         Returns:
             Hashable: contents of field identified by 'index'.
                  
         """
-        return getattr(self, dataclasses.fields(self)[index].name)
+        if index > 1:
+            raise IndexError('Index out of bounds - edges are only two points')
+        else:
+            return getattr(self, dataclasses.fields(self)[index].name)
     
     def __len__(self) -> int:
-        """Returns length based on the number of fields.
+        """Returns length of 2.
         
         Returns:
-            int: number of fields.
+            int: 2
             
         """
-        return len(dataclasses.fields(self))
-       
-    
-@dataclasses.dataclass # type: ignore
-@runtime_checkable
-class Graph(Composite, Protocol):
-    """Base class for graph data structures.
-    
-    Args:
-        contents (Collection[Any]): stored collection of nodes and/or edges.
-                                      
-    """  
-    contents: Collection[Any]
-   
-    """ Required Subclass Properties """
+        return 2
 
-    @abc.abstractproperty
-    def adjacency(self) -> forms.Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        pass
 
-    @abc.abstractproperty
-    def edges(self) -> forms.Edges:
-        """Returns the stored graph as an Edges."""
-        pass
-           
-    @abc.abstractproperty
-    def matrix(self) -> forms.Matrix:
-        """Returns the stored graph as a Matrix."""
-        pass
-
-    @abc.abstractproperty
-    def parallel(self) -> forms.Parallel:
-        """Returns the stored graph as a Parallel."""
-        pass
-
-    @abc.abstractproperty
-    def serial(self) -> forms.Serial:
-        """Returns the stored graph as a Serial."""
-        pass
-
-    """ Required Subclass Methods """
-    
-    @abc.abstractclassmethod
-    def from_adjacency(cls, item: forms.Adjacency) -> Graph:
-        """Creates a Graph instance from an Adjacency."""
-        pass
-    
-    @abc.abstractclassmethod
-    def from_edges(cls, item: forms.Edges) -> Graph:
-        """Creates a Graph instance from an Edges."""
-        pass
-        
-    @abc.abstractclassmethod
-    def from_matrix(cls, item: forms.Matrix) -> Graph:
-        """Creates a Graph instance from a Matrix."""
-        pass
-              
-    @abc.abstractclassmethod
-    def from_parallel(cls, item: forms.Parallel) -> Graph:
-        """Creates a Graph instance from a Parallel."""
-        pass
-              
-    @abc.abstractclassmethod
-    def from_serial(cls, item: forms.Serial) -> Graph:
-        """Creates a Graph instance from a Serial."""
-        pass
- 
- 
 @dataclasses.dataclass
 class Node(Hashable):
     """Vertex wrapper to provide hashability to any object.
     
-    Node acts a basic wrapper for any item stored in a composite structure.
+    Node acts a basic wrapper for any item stored in a graph structure.
     
     Args:
         contents (Optional[Any]): any stored item(s). Defaults to None.
@@ -456,7 +461,7 @@ class Node(Hashable):
         """Makes Node hashable so that it can be used as a key in a dict.
 
         Rather than using the object ID, this method prevents two Nodes with
-        the same name from being used in a composite object that uses a dict as
+        the same name from being used in a graph object that uses a dict as
         its base storage type.
         
         Returns:
@@ -524,7 +529,7 @@ class Nodes(amos.Bunch, Protocol):
 
 """ Base Class Type Checkers """
 
-# def is_composite(item: Union[object, Type[Any]]) -> bool:
+# def is_graph(item: Union[object, Type[Any]]) -> bool:
 #     """Returns whether 'item' is a collection of node connections.
 
 #     Args:
@@ -539,14 +544,14 @@ class Nodes(amos.Bunch, Protocol):
 #         attributes = ['contents'],
 #         methods = ['merge'])
 
-def is_composite(item: object) -> bool:
-    """Returns whether 'item' is a composite.
+def is_graph(item: object) -> bool:
+    """Returns whether 'item' is a graph.
 
     Args:
         item (object): instance to test.
 
     Returns:
-        bool: whether 'item' is a composite.
+        bool: whether 'item' is a graph.
     
     """
     raise NotImplementedError

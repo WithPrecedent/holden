@@ -78,7 +78,7 @@ import amos
 from . import base
 
 
-""" Composite Form Base Classes """
+""" Graph Form Base Classes """
 
 @dataclasses.dataclass
 class Adjacency(amos.Dictionary, base.Graph):

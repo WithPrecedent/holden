@@ -36,6 +36,7 @@ import amos
 
 if TYPE_CHECKING:
     from . import base
+    from . import forms
     
     
 @dataclasses.dataclass
@@ -137,7 +138,73 @@ class Directed(Protocol):
         """
         self.prepend(item = other)     
         return 
+       
+    
+@dataclasses.dataclass # type: ignore
+@runtime_checkable
+class Fungible(Protocol):
+    """Mixin requirements for graphs that can be internally transformed.
+    
+    Args:
+        contents (Collection[Any]): stored collection of nodes and/or edges.
+                                      
+    """  
+    contents: Collection[Any]
+   
+    """ Required Subclass Properties """
 
+    @abc.abstractproperty
+    def adjacency(self) -> forms.Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        pass
+
+    @abc.abstractproperty
+    def edges(self) -> forms.Edges:
+        """Returns the stored graph as an Edges."""
+        pass
+           
+    @abc.abstractproperty
+    def matrix(self) -> forms.Matrix:
+        """Returns the stored graph as a Matrix."""
+        pass
+
+    @abc.abstractproperty
+    def parallel(self) -> forms.Parallel:
+        """Returns the stored graph as a Parallel."""
+        pass
+
+    @abc.abstractproperty
+    def serial(self) -> forms.Serial:
+        """Returns the stored graph as a Serial."""
+        pass
+
+    """ Required Subclass Methods """
+    
+    @abc.abstractclassmethod
+    def from_adjacency(cls, item: forms.Adjacency) -> Fungible:
+        """Creates a Graph instance from an Adjacency."""
+        pass
+    
+    @abc.abstractclassmethod
+    def from_edges(cls, item: forms.Edges) -> Fungible:
+        """Creates a Graph instance from an Edges."""
+        pass
+        
+    @abc.abstractclassmethod
+    def from_matrix(cls, item: forms.Matrix) -> Fungible:
+        """Creates a Graph instance from a Matrix."""
+        pass
+              
+    @abc.abstractclassmethod
+    def from_parallel(cls, item: forms.Parallel) -> Fungible:
+        """Creates a Graph instance from a Parallel."""
+        pass
+              
+    @abc.abstractclassmethod
+    def from_serial(cls, item: forms.Serial) -> Fungible:
+        """Creates a Graph instance from a Serial."""
+        pass
+ 
  
 @dataclasses.dataclass
 @runtime_checkable

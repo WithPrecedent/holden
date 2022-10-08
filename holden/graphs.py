@@ -167,7 +167,7 @@ class Paths(forms.Parallel):
 
 
 @dataclasses.dataclass
-class System(traits.Directed, traits.Storage, forms.Adjacency):
+class System(traits.Fungible, traits.Directed, traits.Storage, forms.Adjacency):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -284,7 +284,7 @@ class System(traits.Directed, traits.Storage, forms.Adjacency):
                 for root in new_graph.root:
                     self.connect(start = endpoint, stop = root)
         else:
-            raise TypeError('item must be a Node, Nodes, or Composite type')
+            raise TypeError('item must be a Node, Nodes, or Graph type')
         return
   
     def delete(self, node: Hashable) -> None:
@@ -333,7 +333,7 @@ class System(traits.Directed, traits.Storage, forms.Adjacency):
         elif isinstance(item, Hashable):
             adjacency = {item: set()}
         else:
-            raise TypeError('item must be a Node, Nodes, or Composite type')
+            raise TypeError('item must be a Node, Nodes, or Graph type')
         self.contents.update(adjacency)
         return
 
@@ -1380,7 +1380,7 @@ class System(traits.Directed, traits.Storage, forms.Adjacency):
 #         """Adds 'other' to the stored tree using the 'append' method.
 
 #         Args:
-#             other (base.Graph): another Composite or supported
+#             other (base.Graph): another Graph or supported
 #                 raw data structure.
             
 #         """
@@ -1391,7 +1391,7 @@ class System(traits.Directed, traits.Storage, forms.Adjacency):
 #         """Adds 'other' to the stored tree using the 'prepend' method.
 
 #         Args:
-#             other (base.Graph): another Composite or supported
+#             other (base.Graph): another Graph or supported
 #                 raw data structure.
             
 #         """
@@ -1489,7 +1489,7 @@ class System(traits.Directed, traits.Storage, forms.Adjacency):
 
  
 # @dataclasses.dataclass # type: ignore
-# class Paths(sequence.Hybrid, base.Composite):
+# class Paths(sequence.Hybrid, base.Graph):
 #     """Base class a collection of Path instances.
         
 #     Args:
@@ -1512,11 +1512,11 @@ class System(traits.Directed, traits.Storage, forms.Adjacency):
     
 #     """ Public Methods """
   
-#     def merge(item: base.Composite, *args: Any, **kwargs: Any) -> None:
+#     def merge(item: base.Graph, *args: Any, **kwargs: Any) -> None:
 #         """Combines 'item' with the stored composite object.
 
 #         Args:
-#             item (Composite): another Composite object to add to the stored 
+#             item (Graph): another Graph object to add to the stored 
 #                 composite object.
                 
 #         """
@@ -1547,7 +1547,7 @@ class System(traits.Directed, traits.Storage, forms.Adjacency):
 
 #         Returns:
 #             Union[Path, Paths]: path(s) through the 
-#                 Composite object. If multiple paths are possible and 
+#                 Graph object. If multiple paths are possible and 
 #                 'return_paths' is False, this method should return a 
 #                 Path that includes all such paths appended to each other. If 
 #                 multiple paths are possible and 'return_paths' is True, a 
