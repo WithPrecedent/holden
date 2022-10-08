@@ -17,11 +17,6 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    is_adjacency
-    is_edges
-    is_matrix
-    is_serial
-    is_parallel
     Adjacency (amos.Dictionary, base.Graph): a graph stored as an adjacency 
         list.
     Edges (sequences.Listing, base.Graph): a graph stored as an edge list.
@@ -29,6 +24,17 @@ Contents:
         matrix.
     Serial
     Parallel
+        is_adjacency
+    is_edges
+    is_matrix
+    is_serial
+    is_parallel
+    transform
+    to_adjacency
+    to_edges
+    to_matrix
+    to_parallel
+    to_serial
     adjacency_to_edges
     adjacency_to_matrix
     adjacency_to_serial
@@ -63,6 +69,7 @@ from collections.abc import (
     Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
 import contextlib
 import dataclasses
+import functools
 import itertools
 from typing import Any, ClassVar, Optional, Type, TYPE_CHECKING, Union
 
@@ -70,6 +77,545 @@ import amos
 
 from . import base
 
+
+""" Composite Form Base Classes """
+
+@dataclasses.dataclass
+class Adjacency(amos.Dictionary, base.Graph):
+    """Base class for adjacency-list graphs.
+    
+    Args:
+        contents (MutableMapping[Hashable, set[Hashable]]): keys are hashable 
+            representations of nodes. Defaults to a defaultdict that has a set 
+            for its value type.
+                                      
+    """  
+    contents: MutableMapping[Hashable, set[Hashable]] = dataclasses.field(
+            default_factory = lambda: collections.defaultdict(set))
+   
+    """ Properties """
+
+    @property
+    def adjacency(self) -> Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        return self.contents
+
+    @property
+    def edges(self) -> Edges:
+        """Returns the stored graph as an Edges."""
+        return adjacency_to_edges(item = self.contents)
+         
+    @property
+    def matrix(self) -> Matrix:
+        """Returns the stored graph as a Matrix."""
+        return adjacency_to_matrix(item = self.contents)
+
+    @property
+    def parallel(self) -> Parallel:
+        """Returns the stored graph as a Serial."""
+        return adjacency_to_parallel(item = self.contents)
+     
+    @property
+    def serial(self) -> Serial:
+        """Returns the stored graph as a Serial."""
+        return adjacency_to_serial(item = self.contents)
+            
+    """ Class Methods """
+    
+    @classmethod
+    def from_adjacency(cls, item: Adjacency) -> Adjacency:
+        """Creates an Adjacency instance from an Adjacency."""
+        return cls(contents = item)
+    
+    @classmethod
+    def from_edges(cls, item: Edges) -> Adjacency:
+        """Creates an Adjacency instance from an Edges."""
+        return cls(contents = edges_to_adjacency(item = item))
+        
+    @classmethod
+    def from_matrix(cls, item: Matrix) -> Adjacency:
+        """Creates an Adjacency instance from a Matrix."""
+        return cls(contents = matrix_to_adjacency(item = item))
+    
+    @classmethod
+    def from_parallel(cls, item: Parallel) -> Adjacency:
+        """Creates an Edges instance from a Serial."""
+        return cls(contents = parallel_to_adjacency(item = item))
+      
+    @classmethod
+    def from_serial(cls, item: Serial) -> Adjacency:
+        """Creates an Edges instance from a Serial."""
+        return cls(contents = serial_to_adjacency(item = item))
+
+    """ Private Methods """   
+    
+    @abc.abstractmethod 
+    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        """
+        self.contents[item[0]].add(item[1])
+        return
+
+    @abc.abstractmethod 
+    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        self.contents[item[0]].remove(item[1])  
+        return
+    
+    """ Dunder Methods """
+    
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return is_adjacency(item = instance)
+
+
+@dataclasses.dataclass
+class Edges(amos.Listing, base.Graph):
+    """Base class for edge-list graphs.
+
+    Args:
+        contents (MutableSequence[base.Edge]): Listing of edges. Defaults to 
+            an empty list.
+                                      
+    """   
+    contents: MutableSequence[base.Edge] = dataclasses.field(
+        default_factory = list)
+   
+    """ Properties """
+
+    @property
+    def adjacency(self) -> Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        return edges_to_adjacency(item = self.contents)
+
+    @property
+    def edges(self) -> Edges:
+        """Returns the stored graph as an Edges."""
+        return self.contents
+     
+    @property
+    def matrix(self) -> Matrix:
+        """Returns the stored graph as a Matrix."""
+        return edges_to_matrix(item = self.contents)
+
+    @property
+    def parallel(self) -> Parallel:
+        """Returns the stored graph as a Parallel."""
+        return edges_to_parallel(item = self.contents)
+ 
+    @property
+    def serial(self) -> Serial:
+        """Returns the stored graph as a Serial."""
+        return edges_to_serial(item = self.contents)
+                            
+    """ Class Methods """
+    
+    @classmethod
+    def from_adjacency(cls, item: Adjacency) -> Edges:
+        """Creates an Edges instance from an Adjacency."""
+        return cls(contents = adjacency_to_edges(item = item))
+    
+    @classmethod
+    def from_edges(cls, item: Edges) -> Edges:
+        """Creates an Edges instance from an Edges."""
+        return cls(contents = item)
+           
+    @classmethod
+    def from_matrix(cls, item: Matrix) -> Edges:
+        """Creates an Edges instance from a Matrix."""
+        return cls(contents = matrix_to_edges(item = item))
+    
+    @classmethod
+    def from_parallel(cls, item: Parallel) -> Edges:
+        """Creates an Edges instance from a Parallel."""
+        return cls(contents = parallel_to_edges(item = item))
+    
+    @classmethod
+    def from_serial(cls, item: Serial) -> Edges:
+        """Creates an Edges instance from a Serial."""
+        return cls(contents = serial_to_edges(item = item))
+
+    """ Private Methods """   
+    
+    @abc.abstractmethod 
+    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        """
+        self.contents.append(item)
+        return
+
+    @abc.abstractmethod 
+    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        self.contents.remove(item) 
+        return    
+                    
+    """ Dunder Methods """
+           
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return is_edges(item = instance)
+
+   
+@dataclasses.dataclass
+class Matrix(amos.Listing, base.Graph):
+    """Base class for adjacency-matrix graphs.
+    
+    Args:
+        contents (Sequence[Sequence[int]]): a list of list of integers 
+            indicating edges between nodes in the matrix. Defaults to an empty
+            list.
+        labels (Sequence[Hashable]): names of nodes in the matrix. 
+            Defaults to an empty list.
+                                      
+    """  
+    contents: MutableSequence[MutableSequence[int]] = dataclasses.field(
+        default_factory = list)
+    labels: MutableSequence[Hashable] = dataclasses.field(
+        default_factory = list)
+   
+    """ Properties """
+
+    @property
+    def adjacency(self) -> Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        return matrix_to_adjacency(item = self.contents)
+
+    @property
+    def edges(self) -> Edges:
+        """Returns the stored graph as an Edges."""
+        return matrix_to_edges(item = self.contents)
+          
+    @property
+    def matrix(self) -> Matrix:
+        """Returns the stored graph as a Matrix."""
+        return self.contents
+
+    @property
+    def parallel(self) -> Parallel:
+        """Returns the stored graph as a Parallel."""
+        return matrix_to_parallel(item = self.contents)
+ 
+    @property
+    def serial(self) -> Serial:
+        """Returns the stored graph as a Serial."""
+        return matrix_to_serial(item = self.contents)
+     
+    """ Class Methods """
+    
+    @classmethod
+    def from_adjacency(cls, item: Adjacency) -> Matrix:
+        """Creates a Matrix instance from an Adjacency."""
+        return cls(contents = adjacency_to_matrix(item = item))
+    
+    @classmethod
+    def from_edges(cls, item: Edges) -> Matrix:
+        """Creates a Matrix instance from an Edges."""
+        return cls(contents = edges_to_matrix(item = item))
+          
+    @classmethod
+    def from_matrix(cls, item: Matrix) -> Matrix:
+        """Creates a Matrix instance from a Matrix."""
+        return cls(contents = item[0], labels = item[1])
+    
+    @classmethod
+    def from_parallel(cls, item: Parallel) -> Matrix:
+        """Creates a Graph instance from a Parallel."""
+        return cls(contents = parallel_to_matrix(item = item))
+     
+    @classmethod
+    def from_serial(cls, item: Serial) -> Matrix:
+        """Creates a Graph instance from a Serial."""
+        return cls(contents = serial_to_matrix(item = item))
+
+    """ Private Methods """   
+    
+    @abc.abstractmethod 
+    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod 
+    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        raise NotImplementedError 
+                             
+    """ Dunder Methods """
+        
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return is_matrix(item = instance)
+    
+   
+@dataclasses.dataclass
+class Parallel(amos.Listing, base.Graph):
+    """Base class for a list of serial graphs.
+    
+    Args:
+        contents (MutableSequence[Serial]): Listing of Serial instances. 
+            Defaults to an empty list.
+                                      
+    """   
+    contents: MutableSequence[Serial] = dataclasses.field(
+        default_factory = list)
+                                
+    """ Properties """
+
+    @property
+    def adjacency(self) -> Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        return parallel_to_adjacency(item = self.contents)
+
+    @property
+    def edges(self) -> Edges:
+        """Returns the stored graph as an Edges."""
+        return parallel_to_edges(item = self.contents)
+          
+    @property
+    def matrix(self) -> Matrix:
+        """Returns the stored graph as a Matrix."""
+        return parallel_to_matrix(item = self.contents)
+
+    @property
+    def parallel(self) -> Parallel:
+        """Returns the stored graph as a Parallel."""
+        return self.contents
+
+    @property
+    def serial(self) -> Serial:
+        """Returns the stored graph as a Serial."""
+        return parallel_to_serial(item = self.contents)
+    
+    """ Class Methods """
+    
+    @classmethod
+    def from_adjacency(cls, item: Adjacency) -> Parallel:
+        """Creates a Parallel instance from an Adjacency."""
+        return cls(contents = adjacency_to_parallel(item = item))
+    
+    @classmethod
+    def from_edges(cls, item: Edges) -> Serial:
+        """Creates a Parallel instance from an Edges."""
+        return cls(contents = edges_to_parallel(item = item))
+        
+    @classmethod
+    def from_matrix(cls, item: Matrix) -> Serial:
+        """Creates a Parallel instance from a Matrix."""
+        return cls(contents = matrix_to_parallel(item = item))
+    
+    @classmethod
+    def from_parallel(cls, item: Parallel) -> Serial:
+        """Creates a Parallel instance from a Parallel."""
+        return cls(contents = item)
+     
+    @classmethod
+    def from_serial(cls, item: Serial) -> Serial:
+        """Creates a Parallel instance from a Serial."""
+        return cls(contents = item)
+
+    """ Private Methods """   
+    
+    @abc.abstractmethod 
+    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        """
+        raise NotImplementedError(
+            'Parallel graphs cannot connect edges because it changes the form')
+
+    @abc.abstractmethod 
+    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        raise NotImplementedError(
+            'Parallel graphs cannot disconnect edges because it changes the '
+            'form')
+                        
+    """ Dunder Methods """
+        
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return is_parallel(item = instance)
+     
+    
+@dataclasses.dataclass
+class Serial(amos.Hybrid, base.Graph):
+    """Base class for serial graphs.
+    
+    Args:
+        contents (MutableSequence[Hashable]): list of nodes. Defaults to 
+            an empty list.
+                                      
+    """   
+    contents: MutableSequence[Hashable] = dataclasses.field(
+        default_factory = list)
+                                
+    """ Properties """
+
+    @property
+    def adjacency(self) -> Adjacency:
+        """Returns the stored graph as an Adjacency."""
+        return serial_to_adjacency(item = self.contents)
+
+    @property
+    def edges(self) -> Edges:
+        """Returns the stored graph as an Edges."""
+        return serial_to_edges(item = self.contents)
+          
+    @property
+    def matrix(self) -> Matrix:
+        """Returns the stored graph as a Matrix."""
+        return serial_to_matrix(item = self.contents)
+
+    @property
+    def parallel(self) -> Parallel:
+        """Returns the stored graph as a Parallel."""
+        return serial_to_parallel(item = self.contents)
+
+    @property
+    def serial(self) -> Serial:
+        """Returns the stored graph as a Serial."""
+        return self.contents
+    
+    """ Class Methods """
+    
+    @classmethod
+    def from_adjacency(cls, item: Adjacency) -> Serial:
+        """Creates a Serial instance from an Adjacency."""
+        return cls(contents = adjacency_to_serial(item = item))
+    
+    @classmethod
+    def from_edges(cls, item: Edges) -> Serial:
+        """Creates a Serial instance from an Edges."""
+        return cls(contents = edges_to_serial(item = item))
+        
+    @classmethod
+    def from_matrix(cls, item: Matrix) -> Serial:
+        """Creates a Serial instance from a Matrix."""
+        return cls(contents = matrix_to_serial(item = item))
+    
+    @classmethod
+    def from_parallel(cls, item: Parallel) -> Serial:
+        """Creates a Serial instance from a Serial."""
+        return cls(contents = parallel_to_serial(item = item))
+     
+    @classmethod
+    def from_serial(cls, item: Serial) -> Serial:
+        """Creates a Serial instance from a Serial."""
+        return cls(contents = item)
+
+    """ Private Methods """   
+    
+    @abc.abstractmethod 
+    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        """
+        raise NotImplementedError(
+            'Serial graphs cannot connect edges because it changes the form')
+
+    @abc.abstractmethod 
+    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        raise NotImplementedError(
+            'Serial graphs cannot disconnect edges because it changes the form')
+                        
+    """ Dunder Methods """
+        
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return is_serial(item = instance)
+
+
+""" Form Type Checkers """
 
 def is_adjacency(item: object) -> bool:
     """Returns whether 'item' is an adjacency list.
@@ -159,424 +705,138 @@ def is_serial(item: object) -> bool:
         and not isinstance(item, str)
         and all(base.is_node(item = i) for i in item))
 
-
-@dataclasses.dataclass
-class Adjacency(amos.Dictionary, base.Graph):
-    """Base class for adjacency-list graphs.
-    
-    Args:
-        contents (MutableMapping[Hashable, set[Hashable]]): keys are hashable 
-            representations of nodes. Defaults to a defaultdict that has a set 
-            for its value type.
-                                      
-    """  
-    contents: MutableMapping[Hashable, set[Hashable]] = dataclasses.field(
-            default_factory = lambda: collections.defaultdict(set))
+""" Form Type Converters """
    
-    """ Properties """
-
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return self.contents
-
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return adjacency_to_edges(item = self.contents)
-         
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return adjacency_to_matrix(item = self.contents)
-
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Serial."""
-        return adjacency_to_parallel(item = self.contents)
-     
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return adjacency_to_serial(item = self.contents)
-            
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Adjacency:
-        """Creates an Adjacency instance from an Adjacency."""
-        return cls(contents = item)
-    
-    @classmethod
-    def from_edges(cls, item: Edges) -> Adjacency:
-        """Creates an Adjacency instance from an Edges."""
-        return cls(contents = edges_to_adjacency(item = item))
-        
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Adjacency:
-        """Creates an Adjacency instance from a Matrix."""
-        return cls(contents = matrix_to_adjacency(item = item))
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Adjacency:
-        """Creates an Edges instance from a Serial."""
-        return cls(contents = parallel_to_adjacency(item = item))
-      
-    @classmethod
-    def from_serial(cls, item: Serial) -> Adjacency:
-        """Creates an Edges instance from a Serial."""
-        return cls(contents = serial_to_adjacency(item = item))
-                         
-    """ Dunder Methods """
-    
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_adjacency(item = instance)
-
-
-@dataclasses.dataclass
-class Edges(amos.Listing, base.Graph):
-    """Base class for edge-list graphs.
+def transform(item: object, output: str) -> object:
+    """Will transform 'item' to another composite form.
 
     Args:
-        contents (MutableSequence[base.Edge]): Listing of edges. Defaults to 
-            an empty list.
-                                      
-    """   
-    contents: MutableSequence[base.Edge] = dataclasses.field(
-        default_factory = list)
-   
-    """ Properties """
+        item (object): item to convert.
+        output (str): lowercase name of form to convert 'item' to.
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return edges_to_adjacency(item = self.contents)
-
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return self.contents
-     
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return edges_to_matrix(item = self.contents)
-
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return edges_to_parallel(item = self.contents)
- 
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return edges_to_serial(item = self.contents)
-                            
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Edges:
-        """Creates an Edges instance from an Adjacency."""
-        return cls(contents = adjacency_to_edges(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: Edges) -> Edges:
-        """Creates an Edges instance from an Edges."""
-        return cls(contents = item)
-           
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Edges:
-        """Creates an Edges instance from a Matrix."""
-        return cls(contents = matrix_to_edges(item = item))
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Edges:
-        """Creates an Edges instance from a Parallel."""
-        return cls(contents = parallel_to_edges(item = item))
-    
-    @classmethod
-    def from_serial(cls, item: Serial) -> Edges:
-        """Creates an Edges instance from a Serial."""
-        return cls(contents = serial_to_edges(item = item))
-                    
-    """ Dunder Methods """
-           
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_edges(item = instance)
-
-   
-@dataclasses.dataclass
-class Matrix(amos.Listing, base.Graph):
-    """Base class for adjacency-matrix graphs.
+    Raises:
+        TypeError: if 'output' has no corresponding converter function using the
+            format 'to_{name of form}'.
+                
+    Returns:
+        object: converted 'item'.
+        
+    """
+    transformer = 'to_' + output
+    try:
+        return locals()[transformer](item = item)
+    except KeyError:
+        raise TypeError(
+            f'item cannot be converted because {output} is not recognized.')
+               
+@functools.singledispatch
+def to_adjacency(item: object) -> Adjacency:
+    """Converts 'item' to an Adjacency.
     
     Args:
-        contents (Sequence[Sequence[int]]): a list of list of integers 
-            indicating edges between nodes in the matrix. Defaults to an empty
-            list.
-        labels (Sequence[Hashable]): names of nodes in the matrix. 
-            Defaults to an empty list.
-                                      
-    """  
-    contents: MutableSequence[MutableSequence[int]] = dataclasses.field(
-        default_factory = list)
-    labels: MutableSequence[Hashable] = dataclasses.field(
-        default_factory = list)
-   
-    """ Properties """
+        item (object): item to convert to an Adjacency.
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return matrix_to_adjacency(item = self.contents)
+    Raises:
+        TypeError: if 'item' is a type that is not registered with the 
+        dispatcher.
 
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return matrix_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return self.contents
+    Returns:
+        Adjacency: derived from 'item'.
 
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return matrix_to_parallel(item = self.contents)
- 
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return matrix_to_serial(item = self.contents)
-     
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Matrix:
-        """Creates a Matrix instance from an Adjacency."""
-        return cls(contents = adjacency_to_matrix(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: Edges) -> Matrix:
-        """Creates a Matrix instance from an Edges."""
-        return cls(contents = edges_to_matrix(item = item))
-          
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Matrix:
-        """Creates a Matrix instance from a Matrix."""
-        return cls(contents = item[0], labels = item[1])
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Matrix:
-        """Creates a Graph instance from a Parallel."""
-        return cls(contents = parallel_to_matrix(item = item))
-     
-    @classmethod
-    def from_serial(cls, item: Serial) -> Matrix:
-        """Creates a Graph instance from a Serial."""
-        return cls(contents = serial_to_matrix(item = item))
-                         
-    """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+    """
+    if is_adjacency(item = item):
+        return item
+    else:
+        raise TypeError(
+            f'item cannot be converted because it is an unsupported type: '
+            f'{type(item).__name__}')
 
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_matrix(item = instance)
-    
-   
-@dataclasses.dataclass
-class Parallel(amos.Listing, base.Graph):
-    """Base class for a list of serial graphs.
+@functools.singledispatch  
+def to_edges(item: object) -> Edges:
+    """Converts 'item' to an Edges.
     
     Args:
-        contents (MutableSequence[Serial]): Listing of Serial instances. 
-            Defaults to an empty list.
-                                      
-    """   
-    contents: MutableSequence[Serial] = dataclasses.field(
-        default_factory = list)
-                                
-    """ Properties """
+        item (object): item to convert to an Edges.
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return parallel_to_adjacency(item = self.contents)
+    Raises:
+        TypeError: if 'item' is a type that is not registered.
 
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return parallel_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return parallel_to_matrix(item = self.contents)
+    Returns:
+        Edges: derived from 'item'.
 
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return self.contents
+    """
+    if is_edges(item = item):
+        return item
+    else:
+        raise TypeError(
+            f'item cannot be converted because it is an unsupported type: '
+            f'{type(item).__name__}')
 
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return parallel_to_serial(item = self.contents)
-    
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Parallel:
-        """Creates a Parallel instance from an Adjacency."""
-        return cls(contents = adjacency_to_parallel(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: Edges) -> Serial:
-        """Creates a Parallel instance from an Edges."""
-        return cls(contents = edges_to_parallel(item = item))
-        
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Serial:
-        """Creates a Parallel instance from a Matrix."""
-        return cls(contents = matrix_to_parallel(item = item))
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Serial:
-        """Creates a Parallel instance from a Parallel."""
-        return cls(contents = item)
-     
-    @classmethod
-    def from_serial(cls, item: Serial) -> Serial:
-        """Creates a Parallel instance from a Serial."""
-        return cls(contents = item)
-                    
-    """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
 
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_parallel(item = instance)
-     
-    
-@dataclasses.dataclass
-class Serial(amos.Hybrid, base.Graph):
-    """Base class for serial graphs.
+@functools.singledispatch   
+def to_matrix(item: object) -> Matrix:
+    """Converts 'item' to a Matrix.
     
     Args:
-        contents (MutableSequence[Hashable]): list of nodes. Defaults to 
-            an empty list.
-                                      
-    """   
-    contents: MutableSequence[Hashable] = dataclasses.field(
-        default_factory = list)
-                                
-    """ Properties """
+        item (object): item to convert to a Matrix.
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return serial_to_adjacency(item = self.contents)
+    Raises:
+        TypeError: if 'item' is a type that is not registered.
 
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return serial_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return serial_to_matrix(item = self.contents)
+    Returns:
+        Matrix: derived from 'item'.
 
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return serial_to_parallel(item = self.contents)
+    """
+    if is_matrix(item = item):
+        return item
+    else:
+        raise TypeError(
+            f'item cannot be converted because it is an unsupported type: '
+            f'{type(item).__name__}')
 
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return self.contents
+@functools.singledispatch  
+def to_parallel(item: object) -> Parallel:
+    """Converts 'item' to a Parallel.
     
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Serial:
-        """Creates a Serial instance from an Adjacency."""
-        return cls(contents = adjacency_to_serial(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: Edges) -> Serial:
-        """Creates a Serial instance from an Edges."""
-        return cls(contents = edges_to_serial(item = item))
-        
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Serial:
-        """Creates a Serial instance from a Matrix."""
-        return cls(contents = matrix_to_serial(item = item))
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Serial:
-        """Creates a Serial instance from a Serial."""
-        return cls(contents = parallel_to_serial(item = item))
-     
-    @classmethod
-    def from_serial(cls, item: Serial) -> Serial:
-        """Creates a Serial instance from a Serial."""
-        return cls(contents = item)
-                    
-    """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+    Args:
+        item (object): item to convert to a Parallel.
 
-        Args:
-            instance (object): item to test as an instance.
+    Raises:
+        TypeError: if 'item' is a type that is not registered.
 
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_serial(item = instance)
+    Returns:
+        Parallel: derived from 'item'.
 
+    """
+    if is_parallel(item = item):
+        return item
+    else:
+        raise TypeError(
+            f'item cannot be converted because it is an unsupported type: '
+            f'{type(item).__name__}')
+
+@functools.singledispatch  
+def to_serial(item: object) -> Serial:
+    """Converts 'item' to a Serial.
     
-# @to_edges.register # type: ignore
+    Args:
+        item (object): item to convert to a Serial.
+
+    Raises:
+        TypeError: if 'item' is a type that is not registered.
+
+    Returns:
+        Serial: derived from 'item'.
+
+    """
+    if is_serial(item = item):
+        return item
+    else:
+        raise TypeError(
+            f'item cannot be converted because it is an unsupported type: '
+            f'{type(item).__name__}')
+   
+@to_edges.register # type: ignore
 def adjacency_to_edges(item: Adjacency) -> Edges:
     """Converts 'item' to an Edges.
     
@@ -593,7 +853,7 @@ def adjacency_to_edges(item: Adjacency) -> Edges:
             edges.append(tuple([node, connection]))
     return tuple(edges)
 
-# @to_matrix.register # type: ignore 
+@to_matrix.register # type: ignore 
 def adjacency_to_matrix(item: Adjacency) -> Matrix:
     """Converts 'item' to a Matrix.
     
@@ -612,7 +872,7 @@ def adjacency_to_matrix(item: Adjacency) -> Matrix:
             matrix[i][j] = 1
     return tuple([matrix, names])    
 
-# @to_serial.register # type: ignore 
+@to_serial.register # type: ignore 
 def adjacency_to_serial(item: Adjacency) -> Serial:
     """Converts 'item' to a Serial.
     
@@ -629,7 +889,7 @@ def adjacency_to_serial(item: Adjacency) -> Serial:
     else:
         return itertools.chain(all_parallel)  
 
-# @to_parallel.register # type: ignore 
+@to_parallel.register # type: ignore 
 def adjacency_to_parallel(item: Adjacency) -> Serial:
     """Converts 'item' to a Serial.
     
@@ -642,7 +902,7 @@ def adjacency_to_parallel(item: Adjacency) -> Serial:
     """ 
     pass
 
-# @to_adjacency.register # type: ignore
+@to_adjacency.register # type: ignore
 def edges_to_adjacency(item: Edges) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -663,7 +923,7 @@ def edges_to_adjacency(item: Edges) -> Adjacency:
             adjacency[edge_pair[1]] = set()
     return adjacency
     
-# @to_matrix.register # type: ignore 
+@to_matrix.register # type: ignore 
 def edges_to_matrix(item: Edges) -> Matrix:
     """Converts 'item' to a Matrix.
 
@@ -676,7 +936,7 @@ def edges_to_matrix(item: Edges) -> Matrix:
     """
     raise NotImplementedError
  
-# @to_parallel.register # type: ignore 
+@to_parallel.register # type: ignore 
 def edges_to_parallel(item: Edges) -> Parallel:
     """Converts 'item' to a Parallel.
 
@@ -689,7 +949,7 @@ def edges_to_parallel(item: Edges) -> Parallel:
     """
     raise NotImplementedError
    
-# @to_serial.register # type: ignore 
+@to_serial.register # type: ignore 
 def edges_to_serial(item: Edges) -> Serial:
     """Converts 'item' to a Serial.
 
@@ -702,7 +962,7 @@ def edges_to_serial(item: Edges) -> Serial:
     """
     raise NotImplementedError
 
-# @to_adjacency.register # type: ignore 
+@to_adjacency.register # type: ignore 
 def matrix_to_adjacency(item: Matrix) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -728,7 +988,7 @@ def matrix_to_adjacency(item: Matrix) -> Adjacency:
         adjacency[new_key] = new_values
     return adjacency
     
-# @to_edges.register # type: ignore 
+@to_edges.register # type: ignore 
 def matrix_to_edges(item: Matrix) -> Edges:
     """Converts 'item' to an Edges.
 
@@ -741,7 +1001,7 @@ def matrix_to_edges(item: Matrix) -> Edges:
     """
     raise NotImplementedError
  
-# @to_parallel.register # type: ignore 
+@to_parallel.register # type: ignore 
 def matrix_to_parallel(item: Matrix) -> Parallel:
     """Converts 'item' to a Parallel.
 
@@ -754,7 +1014,7 @@ def matrix_to_parallel(item: Matrix) -> Parallel:
     """
     raise NotImplementedError
    
-# @to_serial.register # type: ignore 
+@to_serial.register # type: ignore 
 def matrix_to_serial(item: Matrix) -> Serial:
     """Converts 'item' to a Serial.
 
@@ -767,7 +1027,7 @@ def matrix_to_serial(item: Matrix) -> Serial:
     """
     raise NotImplementedError
 
-# @to_adjacency.register # type: ignore 
+@to_adjacency.register # type: ignore 
 def parallel_to_adjacency(item: Parallel) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -790,7 +1050,7 @@ def parallel_to_adjacency(item: Parallel) -> Adjacency:
                 adjacency[key] = value
     return adjacency  
     
-# @to_edges.register # type: ignore 
+@to_edges.register # type: ignore 
 def parallel_to_edges(item: Parallel) -> Edges:
     """Converts 'item' to an Edges.
 
@@ -803,7 +1063,7 @@ def parallel_to_edges(item: Parallel) -> Edges:
     """
     raise NotImplementedError
  
-# @to_matrix.register # type: ignore 
+@to_matrix.register # type: ignore 
 def parallel_to_matrix(item: Parallel) -> Matrix:
     """Converts 'item' to a Matrix.
 
@@ -816,7 +1076,7 @@ def parallel_to_matrix(item: Parallel) -> Matrix:
     """
     raise NotImplementedError
    
-# @to_serial.register # type: ignore 
+@to_serial.register # type: ignore 
 def parallel_to_serial(item: Parallel) -> Serial:
     """Converts 'item' to a Serial.
 
@@ -829,7 +1089,7 @@ def parallel_to_serial(item: Parallel) -> Serial:
     """
     raise NotImplementedError
     
-# @to_adjacency.register # type: ignore 
+@to_adjacency.register # type: ignore 
 def serial_to_adjacency(item: Serial) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -858,7 +1118,7 @@ def serial_to_adjacency(item: Serial) -> Adjacency:
                     
         return adjacency
     
-# @to_edges.register # type: ignore 
+@to_edges.register # type: ignore 
 def serial_to_edges(item: Serial) -> Edges:
     """Converts 'item' to an Edges.
 
@@ -871,7 +1131,7 @@ def serial_to_edges(item: Serial) -> Edges:
     """
     raise NotImplementedError
     
-# @to_matrix.register # type: ignore 
+@to_matrix.register # type: ignore 
 def serial_to_matrix(item: Serial) -> Matrix:
     """Converts 'item' to a Matrix.
 
@@ -884,7 +1144,7 @@ def serial_to_matrix(item: Serial) -> Matrix:
     """
     raise NotImplementedError
  
-# @to_parallel.register # type: ignore 
+@to_parallel.register # type: ignore 
 def serial_to_parallel(item: Serial) -> Parallel:
     """Converts 'item' to a Parallel.
 
@@ -896,30 +1156,6 @@ def serial_to_parallel(item: Serial) -> Parallel:
 
     """
     raise NotImplementedError
-
-
-       
-# # @functools.singledispatch
-# def to_adjacency(item: Any) -> Adjacency:
-#     """Converts 'item' to an Adjacency.
-    
-#     Args:
-#         item (Any): item to convert to an Adjacency.
-
-#     Raises:
-#         TypeError: if 'item' is a type that is not registered with the 
-#         dispatcher.
-
-#     Returns:
-#         Adjacency: derived from 'item'.
-
-#     """
-#     if check.is_adjacency(item = item):
-#         return item
-#     else:
-#         raise TypeError(
-#             f'item cannot be converted because it is an unsupported type: '
-#             f'{type(item).__name__}')
 
 # # @to_adjacency.register # type: ignore 
 # def tree_to_adjacency(item: Tree) -> Adjacency:
@@ -947,69 +1183,4 @@ def serial_to_parallel(item: Serial) -> Parallel:
 #     """
 #     adjacency = collections.defaultdict(set)
 #     return adjacency.update((k, set()) for k in item)
-
-# # @functools.singledispatch  
-# def to_edges(item: Any) -> Edges:
-#     """Converts 'item' to an Edges.
-    
-#     Args:
-#         item (Any): item to convert to an Edges.
-
-#     Raises:
-#         TypeError: if 'item' is a type that is not registered.
-
-#     Returns:
-#         Edges: derived from 'item'.
-
-#     """
-#     if check.is_edges(item = item):
-#         return item
-#     else:
-#         raise TypeError(
-#             f'item cannot be converted because it is an unsupported type: '
-#             f'{type(item).__name__}')
-
-
-# # @functools.singledispatch   
-# def to_matrix(item: Any) -> Matrix:
-#     """Converts 'item' to a Matrix.
-    
-#     Args:
-#         item (Any): item to convert to a Matrix.
-
-#     Raises:
-#         TypeError: if 'item' is a type that is not registered.
-
-#     Returns:
-#         Matrix: derived from 'item'.
-
-#     """
-#     if check.is_matrix(item = item):
-#         return item
-#     else:
-#         raise TypeError(
-#             f'item cannot be converted because it is an unsupported type: '
-#             f'{type(item).__name__}')
-
-
-# # @functools.singledispatch  
-# def to_serial(item: Any) -> Serial:
-#     """Converts 'item' to a Serial.
-    
-#     Args:
-#         item (Any): item to convert to a Serial.
-
-#     Raises:
-#         TypeError: if 'item' is a type that is not registered.
-
-#     Returns:
-#         Serial: derived from 'item'.
-
-#     """
-#     if check.is_serial(item = item):
-#         return item
-#     else:
-#         raise TypeError(
-#             f'item cannot be converted because it is an unsupported type: '
-#             f'{type(item).__name__}')
                      

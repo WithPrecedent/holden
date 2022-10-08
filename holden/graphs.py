@@ -167,7 +167,7 @@ class Paths(forms.Parallel):
 
 
 @dataclasses.dataclass
-class System(traits.Directed, forms.Adjacency):
+class System(traits.Directed, traits.Storage, forms.Adjacency):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -193,11 +193,6 @@ class System(traits.Directed, forms.Adjacency):
         """Returns the root(s) of the stored graph."""
         stops = list(itertools.chain.from_iterable(self.contents.values()))
         return {k for k in self.contents.keys() if k not in stops}
-                      
-    @property
-    def nodes(self) -> set[Hashable]:
-        """Returns all stored nodes in a set."""
-        return set(self.contents.keys())
 
     @property
     def parallel(self) -> Collection[Hashable]:
@@ -216,7 +211,7 @@ class System(traits.Directed, forms.Adjacency):
 
     def add(
         self, 
-        node: base.Node,
+        item: Union[Hashable, Collection[Hashable]], 
         ancestors: Collection[Hashable] = None,
         descendants: Collection[Hashable] = None) -> None:
         """Adds 'node' to the stored graph.
@@ -233,11 +228,11 @@ class System(traits.Directed, forms.Adjacency):
                 the stored graph.
                 
         """
-        if base.is_node(item = node):
-            name = node.name
+        if base.is_node(item = item):
+            name = item.name
             self.library.deposit(item = node, name = name)
         else:
-            name = node
+            name = item
         if descendants is None:
             self.contents[name] = set()
         else:
@@ -292,29 +287,6 @@ class System(traits.Directed, forms.Adjacency):
             raise TypeError('item must be a Node, Nodes, or Composite type')
         return
   
-    def connect(self, start: Hashable, stop: Hashable) -> None:
-        """Adds an edge from 'start' to 'stop'.
-
-        Args:
-            start (Hashable): name of node for edge to start.
-            stop (Hashable): name of node for edge to stop.
-            
-        Raises:
-            ValueError: if 'start' is the same as 'stop'.
-            
-        """
-        if start == stop:
-            raise ValueError(
-                'The start of an edge cannot be the same as the '
-                'stop in a System because it is acyclic')
-        elif start not in self:
-            self.add(node = start)
-        elif stop not in self:
-            self.add(node = stop)
-        if stop not in self.contents[start]:
-            self.contents[start].add(amos.namify(item = stop))
-        return
-
     def delete(self, node: Hashable) -> None:
         """Deletes node from graph.
         
@@ -330,23 +302,6 @@ class System(traits.Directed, forms.Adjacency):
         except KeyError:
             raise KeyError(f'{node} does not exist in the graph')
         self.contents = {k: v.discard(node) for k, v in self.contents.items()}
-        return
-
-    def disconnect(self, start: Hashable, stop: Hashable) -> None:
-        """Deletes edge from graph.
-
-        Args:
-            start (Hashable): starting node for the edge to delete.
-            stop (Hashable): ending node for the edge to delete.
-        
-        Raises:
-            KeyError: if 'start' is not a node in the stored graph..
-
-        """
-        try:
-            self.contents[start].discard(stop)
-        except KeyError:
-            raise KeyError(f'{start} does not exist in the graph')
         return
 
     def merge(self, item: base.Graph) -> None:

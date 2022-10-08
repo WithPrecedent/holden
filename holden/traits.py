@@ -223,3 +223,25 @@ class Labeled(Protocol):
         """
         return not(self == other)
  
+
+@dataclasses.dataclass
+class Storage(Protocol):
+    """Mixin for storage of nodes in a Library with the composite object.
+    
+    Args:
+
+                  
+    """  
+    nodes: amos.Library = dataclasses.field(default_factory = amos.Library)
+ 
+
+@dataclasses.dataclass
+class Weighted(Protocol):
+    """Mixin for weighted nodes.
+    
+    Args:
+
+                  
+    """  
+    weight: Optional[float] = 1   
+   
