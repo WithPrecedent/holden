@@ -67,21 +67,26 @@ import abc
 import collections
 from collections.abc import (
     Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
-import contextlib
+import copy
 import dataclasses
 import functools
 import itertools
 from typing import Any, ClassVar, Optional, Type, TYPE_CHECKING, Union
 
 import amos
+import miller
 
 from . import base
+
+
+FORMS: MutableSequence[str] = [
+    'adjacency', 'edges', 'matrix', 'parallel', 'serial']
 
 
 """ Graph Form Base Classes """
 
 @dataclasses.dataclass
-class Adjacency(amos.Dictionary, base.Graph):
+class Adjacency(base.Graph, amos.Dictionary):
     """Base class for adjacency-list graphs.
     
     Args:
@@ -147,9 +152,18 @@ class Adjacency(amos.Dictionary, base.Graph):
         """Creates an Edges instance from a Serial."""
         return cls(contents = serial_to_adjacency(item = item))
 
-    """ Private Methods """   
+    """ Public Methods """   
     
-    @abc.abstractmethod 
+    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Adds node to the stored graph.
+                   
+        Args:
+            item (Hashable): node to add to the stored graph.
+            
+        """
+        self.contents[item] = set()
+        return
+        
     def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Adds edge to the stored graph.
         
@@ -159,8 +173,25 @@ class Adjacency(amos.Dictionary, base.Graph):
         """
         self.contents[item[0]].add(item[1])
         return
+      
+    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Deletes node from the stored graph.
 
-    @abc.abstractmethod 
+        Subclasses must provide their own specific methods for deleting a single
+        node. The provided 'delete' method offers all of the error checking and
+        the ability to delete multiple nodes at once. Subclasses just need to 
+        provide the mechanism for deleting a single node without worrying about
+        validation or error-checking.
+                
+        Args:
+            item (Hashable): node to delete from 'contents'.
+        
+            
+        """
+        del self.contents[item]
+        self.contents = {k: v.remove(item) for k, v in self.contents.items()}
+        return
+  
     def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Removes edge from the stored graph.
         
@@ -170,7 +201,62 @@ class Adjacency(amos.Dictionary, base.Graph):
         """
         self.contents[item[0]].remove(item[1])  
         return
+
+    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored graph.
+
+        Subclasses must provide their own specific methods for merging with
+        another graph. The provided 'merge' method offers all of the error 
+        checking. Subclasses just need to provide the mechanism for merging 
+        ithout worrying about validation or error-checking.
+        
+        Args:
+            item (Graph): another Graph object to add to the stored graph.
+                
+        """
+        form = what_form(item = item)
+        if form is 'adjacency':
+            other = item
+        else:
+            transformer = globals()[f'{form}_to_adjacency']
+            other = transformer(item = item)
+        for node, edges in other.items():
+            if node in self:
+                self[node].update(edges)
+            else:
+                self[node] = edges
+        return
     
+    def _subset(
+        self, 
+        include: Union[Hashable, Sequence[Hashable]] = None,
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
+        """Returns a new Graph without a subset of 'contents'.
+
+        Subclasses must provide their own specific methods for deleting a single
+        edge. Subclasses just need to provide the mechanism for returning a
+        subset without worrying about validation or error-checking.
+        
+        Args:
+            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should be included in the new graph.
+            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should not be included in the new graph.
+
+        Returns:
+           Adjacency: with only selected nodes and edges.
+            
+        """
+        if include:
+            excludables = [k for k in self.contents if k not in include]
+        else:
+            excludables = []
+        excludables.extend([i for i in self.contents if i in exclude])
+        new_graph = copy.deepcopy(self)
+        for node in amos.iterify(item = excludables):
+            new_graph.delete(node = node)
+        return new_graph  
+          
     """ Dunder Methods """
     
     @classmethod
@@ -614,7 +700,6 @@ class Serial(amos.Hybrid, base.Graph):
         """
         return is_serial(item = instance)
 
-
 """ Form Type Checkers """
 
 def is_adjacency(item: object) -> bool:
@@ -631,8 +716,8 @@ def is_adjacency(item: object) -> bool:
         connections = list(item.values())
         nodes = list(itertools.chain(item.values()))
         return (
-            all(isinstance(e, (Collection)) for e in connections)
-            and all(base.is_node(item = i) for i in nodes))
+            all(isinstance(e, set) for e in connections))
+            # and all(base.is_node(item = i) for i in nodes))
     else:
         return False
 
@@ -688,7 +773,7 @@ def is_parallel(item: object) -> bool:
     """
     return (
         isinstance(item, Sequence)
-        and all(base.is_serial(item = i) for i in item))
+        and all(is_serial(item = i) for i in item))
 
 def is_serial(item: object) -> bool:
     """Returns whether 'item' is a serial.
@@ -705,138 +790,158 @@ def is_serial(item: object) -> bool:
         and not isinstance(item, str)
         and all(base.is_node(item = i) for i in item))
 
+""" Form Inspectors """
+
+def get_endpoints_adjacency(item: Adjacency) -> MutableSequence[Hashable]:
+    """Returns the endpoints in 'item'."""
+    return [k for k in item.keys() if not item[k]]
+
+def get_roots_adjacency(item: Adjacency) -> MutableSequence[Hashable]:
+    """Returns the roots in 'item'."""
+    stops = list(itertools.chain.from_iterable(item.values()))
+    return [k for k in item.keys() if k not in stops]  
+
+""" Form Type Classifier """
+
+def what_form(item: object) -> str:
+    for form in FORMS:
+        if globals()[f'is_{form}']:
+            return form
+    raise TypeError(f'{item} is not a recognized graph form')
+
+
+        
 """ Form Type Converters """
    
-def transform(item: object, output: str) -> object:
-    """Will transform 'item' to another composite form.
+# def transform(item: object, output: str) -> object:
+#     """Will transform 'item' to another composite form.
 
-    Args:
-        item (object): item to convert.
-        output (str): lowercase name of form to convert 'item' to.
+#     Args:
+#         item (object): item to convert.
+#         output (str): lowercase name of form to convert 'item' to.
 
-    Raises:
-        TypeError: if 'output' has no corresponding converter function using the
-            format 'to_{name of form}'.
+#     Raises:
+#         TypeError: if 'output' has no corresponding converter function using the
+#             format 'to_{name of form}'.
                 
-    Returns:
-        object: converted 'item'.
+#     Returns:
+#         object: converted 'item'.
         
-    """
-    transformer = 'to_' + output
-    try:
-        return locals()[transformer](item = item)
-    except KeyError:
-        raise TypeError(
-            f'item cannot be converted because {output} is not recognized.')
+#     """
+#     transformer = 'to_' + output
+#     try:
+#         return locals()[transformer](item = item)
+#     except KeyError:
+#         raise TypeError(
+#             f'item cannot be converted because {output} is not recognized.')
                
-@functools.singledispatch
-def to_adjacency(item: object) -> Adjacency:
-    """Converts 'item' to an Adjacency.
+# @functools.singledispatch
+# def to_adjacency(item: object) -> Adjacency:
+#     """Converts 'item' to an Adjacency.
     
-    Args:
-        item (object): item to convert to an Adjacency.
+#     Args:
+#         item (object): item to convert to an Adjacency.
 
-    Raises:
-        TypeError: if 'item' is a type that is not registered with the 
-        dispatcher.
+#     Raises:
+#         TypeError: if 'item' is a type that is not registered with the 
+#         dispatcher.
 
-    Returns:
-        Adjacency: derived from 'item'.
+#     Returns:
+#         Adjacency: derived from 'item'.
 
-    """
-    if is_adjacency(item = item):
-        return item
-    else:
-        raise TypeError(
-            f'item cannot be converted because it is an unsupported type: '
-            f'{type(item).__name__}')
+#     """
+#     if is_adjacency(item = item):
+#         return item
+#     else:
+#         raise TypeError(
+#             f'item cannot be converted because it is an unsupported type: '
+#             f'{type(item).__name__}')
 
-@functools.singledispatch  
-def to_edges(item: object) -> Edges:
-    """Converts 'item' to an Edges.
+# @functools.singledispatch  
+# def to_edges(item: object) -> Edges:
+#     """Converts 'item' to an Edges.
     
-    Args:
-        item (object): item to convert to an Edges.
+#     Args:
+#         item (object): item to convert to an Edges.
 
-    Raises:
-        TypeError: if 'item' is a type that is not registered.
+#     Raises:
+#         TypeError: if 'item' is a type that is not registered.
 
-    Returns:
-        Edges: derived from 'item'.
+#     Returns:
+#         Edges: derived from 'item'.
 
-    """
-    if is_edges(item = item):
-        return item
-    else:
-        raise TypeError(
-            f'item cannot be converted because it is an unsupported type: '
-            f'{type(item).__name__}')
+#     """
+#     if is_edges(item = item):
+#         return item
+#     else:
+#         raise TypeError(
+#             f'item cannot be converted because it is an unsupported type: '
+#             f'{type(item).__name__}')
 
-
-@functools.singledispatch   
-def to_matrix(item: object) -> Matrix:
-    """Converts 'item' to a Matrix.
+# @functools.singledispatch   
+# def to_matrix(item: object) -> Matrix:
+#     """Converts 'item' to a Matrix.
     
-    Args:
-        item (object): item to convert to a Matrix.
+#     Args:
+#         item (object): item to convert to a Matrix.
 
-    Raises:
-        TypeError: if 'item' is a type that is not registered.
+#     Raises:
+#         TypeError: if 'item' is a type that is not registered.
 
-    Returns:
-        Matrix: derived from 'item'.
+#     Returns:
+#         Matrix: derived from 'item'.
 
-    """
-    if is_matrix(item = item):
-        return item
-    else:
-        raise TypeError(
-            f'item cannot be converted because it is an unsupported type: '
-            f'{type(item).__name__}')
+#     """
+#     if is_matrix(item = item):
+#         return item
+#     else:
+#         raise TypeError(
+#             f'item cannot be converted because it is an unsupported type: '
+#             f'{type(item).__name__}')
 
-@functools.singledispatch  
-def to_parallel(item: object) -> Parallel:
-    """Converts 'item' to a Parallel.
+# @functools.singledispatch  
+# def to_parallel(item: object) -> Parallel:
+#     """Converts 'item' to a Parallel.
     
-    Args:
-        item (object): item to convert to a Parallel.
+#     Args:
+#         item (object): item to convert to a Parallel.
 
-    Raises:
-        TypeError: if 'item' is a type that is not registered.
+#     Raises:
+#         TypeError: if 'item' is a type that is not registered.
 
-    Returns:
-        Parallel: derived from 'item'.
+#     Returns:
+#         Parallel: derived from 'item'.
 
-    """
-    if is_parallel(item = item):
-        return item
-    else:
-        raise TypeError(
-            f'item cannot be converted because it is an unsupported type: '
-            f'{type(item).__name__}')
+#     """
+#     if is_parallel(item = item):
+#         return item
+#     else:
+#         raise TypeError(
+#             f'item cannot be converted because it is an unsupported type: '
+#             f'{type(item).__name__}')
 
-@functools.singledispatch  
-def to_serial(item: object) -> Serial:
-    """Converts 'item' to a Serial.
+# @functools.singledispatch  
+# def to_serial(item: object) -> Serial:
+#     """Converts 'item' to a Serial.
     
-    Args:
-        item (object): item to convert to a Serial.
+#     Args:
+#         item (object): item to convert to a Serial.
 
-    Raises:
-        TypeError: if 'item' is a type that is not registered.
+#     Raises:
+#         TypeError: if 'item' is a type that is not registered.
 
-    Returns:
-        Serial: derived from 'item'.
+#     Returns:
+#         Serial: derived from 'item'.
 
-    """
-    if is_serial(item = item):
-        return item
-    else:
-        raise TypeError(
-            f'item cannot be converted because it is an unsupported type: '
-            f'{type(item).__name__}')
+#     """
+#     if is_serial(item = item):
+#         return item
+#     else:
+#         raise TypeError(
+#             f'item cannot be converted because it is an unsupported type: '
+#             f'{type(item).__name__}')
    
-@to_edges.register # type: ignore
+# @to_edges.register # type: ignore
 def adjacency_to_edges(item: Adjacency) -> Edges:
     """Converts 'item' to an Edges.
     
@@ -853,7 +958,7 @@ def adjacency_to_edges(item: Adjacency) -> Edges:
             edges.append(tuple([node, connection]))
     return tuple(edges)
 
-@to_matrix.register # type: ignore 
+# @to_matrix.register # type: ignore 
 def adjacency_to_matrix(item: Adjacency) -> Matrix:
     """Converts 'item' to a Matrix.
     
@@ -872,7 +977,31 @@ def adjacency_to_matrix(item: Adjacency) -> Matrix:
             matrix[i][j] = 1
     return tuple([matrix, names])    
 
-@to_serial.register # type: ignore 
+# @to_parallel.register # type: ignore 
+def adjacency_to_parallel(item: Adjacency) -> Serial:
+    """Converts 'item' to a Serial.
+    
+    Args:
+        item (Adjacency): item to convert to a Serial.
+
+    Returns:
+        Serial: derived from 'item'.
+
+    """
+    roots = get_roots_adjacency(item = item)
+    endpoints = get_endpoints_adjacency(item = item)
+    all_paths = []
+    for start in roots:
+        for end in endpoints:
+            paths = walk_adjacency(item = item, start = start, stop = end)
+            if paths:
+                if all(isinstance(path, Hashable) for path in paths):
+                    all_paths.append(paths)
+                else:
+                    all_paths.extend(paths)
+    return all_paths
+
+# @to_serial.register # type: ignore 
 def adjacency_to_serial(item: Adjacency) -> Serial:
     """Converts 'item' to a Serial.
     
@@ -887,22 +1016,49 @@ def adjacency_to_serial(item: Adjacency) -> Serial:
     if len(all_parallel) == 1:
         return all_parallel[0]
     else:
-        return itertools.chain(all_parallel)  
+        return list(itertools.chain.from_iterable(all_parallel))
 
-@to_parallel.register # type: ignore 
-def adjacency_to_parallel(item: Adjacency) -> Serial:
-    """Converts 'item' to a Serial.
+def walk_adjacency(
+    item: Adjacency, 
+    start: Hashable, 
+    stop: Hashable,
+    path: Optional[Sequence[Hashable]] = None) -> Sequence[Hashable]:
+    """Returns all paths in 'item' from 'start' to 'stop'.
+
+    The code here is adapted from: https://www.python.org/doc/essays/graphs/
     
     Args:
-        item (Adjacency): item to convert to a Serial.
+        item (Adjacency): item in which to find paths.
+        start (Hashable): node to start paths from.
+        stop (Hashable): node to stop paths.
+        path (Optional[Sequence[Hashable]]): a path from 'start' to 'stop'. 
+            Defaults to None. 
 
     Returns:
-        Serial: derived from 'item'.
-
-    """ 
-    pass
-
-@to_adjacency.register # type: ignore
+        Sequence[Hashable]: a list of possible paths (each path is a list nodes) 
+            from 'start' to 'stop'.
+        
+    """            
+    if path is None:
+        path = []
+    path = path + [start]
+    if start == stop:
+        return [path]
+    if start not in item:
+        return []
+    paths = []
+    for node in item[start]:
+        if node not in path:
+            new_paths = walk_adjacency(
+                item = item,
+                start = node, 
+                stop = stop, 
+                path = path)
+            for new_path in new_paths:
+                paths.append(new_path)
+    return paths
+    
+# @to_adjacency.register # type: ignore
 def edges_to_adjacency(item: Edges) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -923,7 +1079,7 @@ def edges_to_adjacency(item: Edges) -> Adjacency:
             adjacency[edge_pair[1]] = set()
     return adjacency
     
-@to_matrix.register # type: ignore 
+# @to_matrix.register # type: ignore 
 def edges_to_matrix(item: Edges) -> Matrix:
     """Converts 'item' to a Matrix.
 
@@ -936,7 +1092,7 @@ def edges_to_matrix(item: Edges) -> Matrix:
     """
     raise NotImplementedError
  
-@to_parallel.register # type: ignore 
+# @to_parallel.register # type: ignore 
 def edges_to_parallel(item: Edges) -> Parallel:
     """Converts 'item' to a Parallel.
 
@@ -949,7 +1105,7 @@ def edges_to_parallel(item: Edges) -> Parallel:
     """
     raise NotImplementedError
    
-@to_serial.register # type: ignore 
+# @to_serial.register # type: ignore 
 def edges_to_serial(item: Edges) -> Serial:
     """Converts 'item' to a Serial.
 
@@ -962,7 +1118,7 @@ def edges_to_serial(item: Edges) -> Serial:
     """
     raise NotImplementedError
 
-@to_adjacency.register # type: ignore 
+# @to_adjacency.register # type: ignore 
 def matrix_to_adjacency(item: Matrix) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -988,7 +1144,7 @@ def matrix_to_adjacency(item: Matrix) -> Adjacency:
         adjacency[new_key] = new_values
     return adjacency
     
-@to_edges.register # type: ignore 
+# @to_edges.register # type: ignore 
 def matrix_to_edges(item: Matrix) -> Edges:
     """Converts 'item' to an Edges.
 
@@ -1001,7 +1157,7 @@ def matrix_to_edges(item: Matrix) -> Edges:
     """
     raise NotImplementedError
  
-@to_parallel.register # type: ignore 
+# @to_parallel.register # type: ignore 
 def matrix_to_parallel(item: Matrix) -> Parallel:
     """Converts 'item' to a Parallel.
 
@@ -1014,7 +1170,7 @@ def matrix_to_parallel(item: Matrix) -> Parallel:
     """
     raise NotImplementedError
    
-@to_serial.register # type: ignore 
+# @to_serial.register # type: ignore 
 def matrix_to_serial(item: Matrix) -> Serial:
     """Converts 'item' to a Serial.
 
@@ -1027,7 +1183,7 @@ def matrix_to_serial(item: Matrix) -> Serial:
     """
     raise NotImplementedError
 
-@to_adjacency.register # type: ignore 
+# @to_adjacency.register # type: ignore 
 def parallel_to_adjacency(item: Parallel) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -1039,7 +1195,7 @@ def parallel_to_adjacency(item: Parallel) -> Adjacency:
 
     """
     adjacency = collections.defaultdict(set)
-    for _, serial in item.items():
+    for serial in item:
         pipe_adjacency = serial_to_adjacency(item = serial)
         for key, value in pipe_adjacency.items():
             if key in adjacency:
@@ -1050,7 +1206,7 @@ def parallel_to_adjacency(item: Parallel) -> Adjacency:
                 adjacency[key] = value
     return adjacency  
     
-@to_edges.register # type: ignore 
+# @to_edges.register # type: ignore 
 def parallel_to_edges(item: Parallel) -> Edges:
     """Converts 'item' to an Edges.
 
@@ -1063,7 +1219,7 @@ def parallel_to_edges(item: Parallel) -> Edges:
     """
     raise NotImplementedError
  
-@to_matrix.register # type: ignore 
+# @to_matrix.register # type: ignore 
 def parallel_to_matrix(item: Parallel) -> Matrix:
     """Converts 'item' to a Matrix.
 
@@ -1076,7 +1232,7 @@ def parallel_to_matrix(item: Parallel) -> Matrix:
     """
     raise NotImplementedError
    
-@to_serial.register # type: ignore 
+# @to_serial.register # type: ignore 
 def parallel_to_serial(item: Parallel) -> Serial:
     """Converts 'item' to a Serial.
 
@@ -1089,7 +1245,7 @@ def parallel_to_serial(item: Parallel) -> Serial:
     """
     raise NotImplementedError
     
-@to_adjacency.register # type: ignore 
+# @to_adjacency.register # type: ignore 
 def serial_to_adjacency(item: Serial) -> Adjacency:
     """Converts 'item' to an Adjacency.
 
@@ -1107,18 +1263,17 @@ def serial_to_adjacency(item: Serial) -> Adjacency:
             item = [item]
         adjacency = collections.defaultdict(set)
         if len(item) == 1:
-            adjacency.update({item: set()})
+            adjacency.update({item[0]: set()})
         else:
-            edges = amos.windowify(item, 2)
+            edges = list(amos.windowify(item, 2))
             for edge_pair in edges:
                 if edge_pair[0] in adjacency:
                     adjacency[edge_pair[0]].add(edge_pair[1])
                 else:
-                    adjacency[edge_pair[0]] = {edge_pair[1]}
-                    
+                    adjacency[edge_pair[0]] = {edge_pair[1]} 
         return adjacency
     
-@to_edges.register # type: ignore 
+# @to_edges.register # type: ignore 
 def serial_to_edges(item: Serial) -> Edges:
     """Converts 'item' to an Edges.
 
@@ -1131,7 +1286,7 @@ def serial_to_edges(item: Serial) -> Edges:
     """
     raise NotImplementedError
     
-@to_matrix.register # type: ignore 
+# @to_matrix.register # type: ignore 
 def serial_to_matrix(item: Serial) -> Matrix:
     """Converts 'item' to a Matrix.
 
@@ -1144,7 +1299,7 @@ def serial_to_matrix(item: Serial) -> Matrix:
     """
     raise NotImplementedError
  
-@to_parallel.register # type: ignore 
+# @to_parallel.register # type: ignore 
 def serial_to_parallel(item: Serial) -> Parallel:
     """Converts 'item' to a Parallel.
 
@@ -1157,7 +1312,18 @@ def serial_to_parallel(item: Serial) -> Parallel:
     """
     raise NotImplementedError
 
-# # @to_adjacency.register # type: ignore 
+_BASE_ADJACENCY: Type[base.Graph] = Adjacency
+_BASE_EDGES: Type[base.Graph] = Edges
+_BASE_MATRIX: Type[base.Graph] = Matrix
+_BASE_PARALLEL: Type[base.Graph] = Parallel
+_BASE_SERIAL: Type[base.Graph] = Serial
+
+def set_base(name: str, value: base.Graph) -> None:
+    variable = f'(_BASE_{name.upper()})'
+    locals()[variable] = value
+    return
+
+# # # @to_adjacency.register # type: ignore 
 # def tree_to_adjacency(item: Tree) -> Adjacency:
 #     """Converts 'item' to an Adjacency.
 
@@ -1170,7 +1336,7 @@ def serial_to_parallel(item: Serial) -> Parallel:
 #     """
 #     raise NotImplementedError
              
-# # @to_adjacency.register # type: ignore 
+# # # @to_adjacency.register # type: ignore 
 # def nodes_to_adjacency(item: Collection[Hashable]) -> Adjacency:
 #     """Converts 'item' to an Adjacency.
 

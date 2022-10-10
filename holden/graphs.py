@@ -17,7 +17,7 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    Directed (Adjacency): a directed graph with unweighted edges.
+     
         
 To Do:
     Complete Network which will use an adjacency matrix for internal storage.
@@ -40,7 +40,7 @@ from . import traits
     
 
 @dataclasses.dataclass # type: ignore
-class Path(traits.Directed, forms.Serial):
+class Path(forms.Serial, traits.Fungible, traits.Directed):
     """Linear path graph.
     
     Args:
@@ -110,7 +110,7 @@ class Path(traits.Directed, forms.Serial):
 
 
 @dataclasses.dataclass # type: ignore
-class Paths(forms.Parallel):
+class Paths(forms.Parallel, traits.Fungible, traits.Directed):
     """List of linear path graphs.
     
     Args:
@@ -167,7 +167,7 @@ class Paths(forms.Parallel):
 
 
 @dataclasses.dataclass
-class System(traits.Fungible, traits.Directed, traits.Storage, forms.Adjacency):
+class System(forms.Adjacency, traits.Fungible, traits.Directed, traits.Storage):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -184,81 +184,26 @@ class System(traits.Fungible, traits.Directed, traits.Storage, forms.Adjacency):
     """ Properties """
 
     @property
-    def endpoint(self) -> Union[Hashable, Collection[Hashable]]:
-        """Returns the endpoint(s) of the stored graph."""
-        return {k for k in self.contents.keys() if not self.contents[k]}
+    def endpoint(self) -> MutableSequence[Hashable]:
+        """Returns the endpoints of the stored graph."""
+        return forms.get_endpoints_adjacency(item = self.contents)
                     
     @property
-    def root(self) -> Union[Hashable, Collection[Hashable]]:
-        """Returns the root(s) of the stored graph."""
-        stops = list(itertools.chain.from_iterable(self.contents.values()))
-        return {k for k in self.contents.keys() if k not in stops}
+    def root(self) -> MutableSequence[Hashable]:
+        """Returns the roots of the stored graph."""
+        return forms.get_roots_adjacency(item = self.contents)
 
     @property
     def parallel(self) -> Collection[Hashable]:
         """Returns all paths through the stored as a list of paths."""
-        return self._find_all_paths(starts = self.root, stops = self.endpoint)
+        return forms.adjacency_to_parallel(item = self.contents)
     
     @property
     def serial(self) -> base.Path:
         """Returns stored graph as a path."""
-        if len(self.parallel) == 1:
-            return self.parallel[0]
-        else:
-            return itertools.chain_from_iterable(self.parallel)
+        return forms.adjacency_to_serial(item = self.contents)
              
     """ Public Methods """
-
-    def add(
-        self, 
-        item: Union[Hashable, Collection[Hashable]], 
-        ancestors: Collection[Hashable] = None,
-        descendants: Collection[Hashable] = None) -> None:
-        """Adds 'node' to the stored graph.
-        
-        Args:
-            node (Hashable): a node to add to the stored graph.
-            ancestors (Collection[Hashable]): node(s) from which 'node' should be 
-                connected.
-            descendants (Collection[Hashable]): node(s) to which 'node' should be 
-                connected.
-
-        Raises:
-            KeyError: if some nodes in 'descendants' or 'ancestors' are not in 
-                the stored graph.
-                
-        """
-        if base.is_node(item = item):
-            name = item.name
-            self.library.deposit(item = node, name = name)
-        else:
-            name = item
-        if descendants is None:
-            self.contents[name] = set()
-        else:
-            descendants = list(amos.iterify(item = descendants))
-            descendants = [amos.namify(item = n) for n in descendants]
-            missing = [n for n in descendants if n not in self.contents]
-            if missing:
-                raise KeyError(
-                    f'descendants {str(missing)} are not in '
-                    f'{self.__class__.__name__}')
-            else:
-                self.contents[name] = set(descendants)
-        if ancestors is not None:  
-            # if utilities.is_property(item = ancestors, instance = self):
-            #     start = list(getattr(self, ancestors))
-            # else:
-            ancestors = list(amos.iterify(item = ancestors))
-            missing = [n for n in ancestors if n not in self.contents]
-            if missing:
-                raise KeyError(
-                    f'ancestors {str(missing)} are not in '
-                    f'{self.__class__.__name__}')
-            for start in ancestors:
-                if node not in self[start]:
-                    self.connect(start = start, stop = node)                 
-        return 
 
     def append(self, item: base.Graph) -> None:
         """Appends 'item' to the endpoints of the stored graph.
@@ -277,64 +222,19 @@ class System(traits.Fungible, traits.Directed, traits.Storage, forms.Adjacency):
                 
         """
         if isinstance(item, base.Graph):
-            current_endpoints = list(self.endpoint)
-            new_graph = self.create(item = item)
-            self.merge(item = new_graph)
+            current_endpoints = self.endpoint
+            form = forms.what_form(item = item)
+            if form is 'adjacency':
+                other = item
+            else:
+                transformer = globals()[f'{form}_to_adjacency']
+                other = transformer(item = item)
+            self.merge(item = other)
             for endpoint in current_endpoints:
-                for root in new_graph.root:
-                    self.connect(start = endpoint, stop = root)
+                for root in forms.get_roots_adjacency(item = other):
+                    self.connect((endpoint, root))
         else:
-            raise TypeError('item must be a Node, Nodes, or Graph type')
-        return
-  
-    def delete(self, node: Hashable) -> None:
-        """Deletes node from graph.
-        
-        Args:
-            node (Hashable): node to delete from 'contents'.
-        
-        Raises:
-            KeyError: if 'node' is not in 'contents'.
-            
-        """
-        try:
-            del self.contents[node]
-        except KeyError:
-            raise KeyError(f'{node} does not exist in the graph')
-        self.contents = {k: v.discard(node) for k, v in self.contents.items()}
-        return
-
-    def merge(self, item: base.Graph) -> None:
-        """Adds 'item' to this Graph.
-
-        This method is roughly equivalent to a dict.update, just adding the
-        new keys and values to the existing graph. It converts 'item' to an 
-        adjacency list that is then added to the existing 'contents'.
-        
-        Args:
-            item (base.Graph): another Graph, an adjacency 
-                list, an edge list, an adjacency matrix, or one or more nodes.
-            
-        Raises:
-            TypeError: if 'item' is neither a System, Adjacency, 
-                Edges, Matrix, or Collection[Hashable] type.
-            
-        """
-        if isinstance(item, System):
-            adjacency = item.adjacency
-        elif isinstance(item, forms.Adjacency):
-            adjacency = item
-        elif isinstance(item, forms.Edges):
-            adjacency = forms.edges_to_adjacency(item = item)
-        elif isinstance(item, forms.Matrix):
-            adjacency = forms.matrix_to_adjacency(item = item)
-        elif isinstance(item, (list, tuple, set)):
-            adjacency = forms.path_to_adjacency(item = item)
-        elif isinstance(item, Hashable):
-            adjacency = {item: set()}
-        else:
-            raise TypeError('item must be a Node, Nodes, or Graph type')
-        self.contents.update(adjacency)
+            raise TypeError('item is not a recognized graph type')
         return
 
     def prepend(self, item: base.Graph) -> None:
@@ -353,58 +253,22 @@ class System(traits.Fungible, traits.Directed, traits.Storage, forms.Adjacency):
                 
         """
         if isinstance(item, base.Graph):
-            current_roots = list(self.root)
-            new_graph = self.create(item = item)
-            self.merge(item = new_graph)
-            for root in current_roots:
-                for endpoint in new_graph.endpoints:
-                    self.connect(start = endpoint, stop = root)
-        else:
-            raise TypeError(
-                'item must be a System, Adjacency, Edges, Matrix, Path, '
-                'Paths, or Node type')
-        return
-      
-    def subset(
-        self, 
-        include: Union[Any, Sequence[Any]] = None,
-        exclude: Union[Any, Sequence[Any]] = None) -> System:
-        """Returns a new System without a subset of 'contents'.
-        
-        All edges will be removed that include any nodes that are not part of
-        the new subgraph.
-        
-        Any extra attributes that are part of a System (or a subclass) will be
-        maintained in the returned subgraph.
-
-        Args:
-            include (Union[Any, Sequence[Any]]): nodes which should be included
-                with any applicable edges in the new subgraph.
-            exclude (Union[Any, Sequence[Any]]): nodes which should not be 
-                included with any applicable edges in the new subgraph.
-
-        Returns:
-           System: with only key/value pairs with keys not in 'subset'.
-
-        """
-        if include is None and exclude is None:
-            raise ValueError('Either include or exclude must not be None')
-        else:
-            if include:
-                excludables = [k for k in self.contents if k not in include]
+            current_roots = self.root
+            form = forms.what_form(item = item)
+            if form is 'adjacency':
+                other = item
             else:
-                excludables = []
-            excludables.extend([i for i in self.contents if i in exclude])
-            new_graph = copy.deepcopy(self)
-            for node in amos.iterify(item = excludables):
-                new_graph.delete(node = node)
-        return new_graph
+                transformer = globals()[f'{form}_to_adjacency']
+                other = transformer(item = item)
+            self.merge(item = other)
+            for root in current_roots:
+                for endpoint in other.endpoint:
+                    self.connect((endpoint, root))
+        else:
+            raise TypeError('item is not a recognized graph type')
+        return
     
-    def walk(
-        self, 
-        start: Hashable,
-        stop: Hashable, 
-        path: Optional[base.Path] = None) -> base.Path:
+    def walk(self, start: Hashable, stop: Hashable) -> Path:
         """Returns all paths in graph from 'start' to 'stop'.
 
         The code here is adapted from: https://www.python.org/doc/essays/graphs/
@@ -412,63 +276,35 @@ class System(traits.Fungible, traits.Directed, traits.Storage, forms.Adjacency):
         Args:
             start (Hashable): node to start paths from.
             stop (Hashable): node to stop paths.
-            path (Path): a path from 'start' to 'stop'. Defaults 
-                to an empty list. 
-
+            
         Returns:
-            Path: a list of possible paths (each path is a list 
-                nodes) from 'start' to 'stop'.
+            Path: a list of possible paths (each path is a list nodes) from 
+                'start' to 'stop'.
             
         """
-        if path is None:
-            path = []
-        path = path + [start]
-        if start == stop:
-            return [path]
-        if start not in self.contents:
-            return []
-        paths = []
-        for node in self.contents[start]:
-            if node not in path:
-                new_paths = self.walk(
-                    start = node, 
-                    stop = stop, 
-                    path = path)
-                for new_path in new_paths:
-                    paths.append(new_path)
-        return paths
+        return forms.walk_adjacency(
+            item = self.contents, 
+            start = start, 
+            stop = stop)
 
     """ Private Methods """
-
-    def _find_all_paths(
-        self, 
-        starts: Collection[Hashable], 
-        stops: Collection[Hashable]) -> base.Path:
-        """Returns all paths between 'starts' and 'stops'.
-
+    
+    def add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Adds node to the stored graph.
+                   
         Args:
-            start (Collection[Hashable]): starting point(s) for paths through the 
-                System.
-            ends (Collection[Hashable]): ending point(s) for paths through the 
-                System.
-
-        Returns:
-            base.Path: list of all paths through the System from all 
-                'starts' to all 'ends'.
-            
+            item (Hashable): node to add to the stored graph.
+                
         """
-        all_paths = []
-        for start in amos.iterify(item = starts):
-            for end in amos.iterify(item = stops):
-                paths = self.walk(start = start, stop = end)
-                if paths:
-                    if all(isinstance(path, Hashable) for path in paths):
-                        all_paths.append(paths)
-                    else:
-                        all_paths.extend(paths)
-        return all_paths
+        if not base.is_node(item = item):
+            name = item.name
+            self.nodes.deposit(item = item, name = name)
+        else:
+            name = item
+        self.contents[name] = set()
+        return
 
-   
+ 
 # @dataclasses.dataclass
 # class Network(Graph):
 #     """composites class for undirected graphs with unweighted edges.
@@ -569,7 +405,7 @@ class System(traits.Fungible, traits.Directed, traits.Storage, forms.Adjacency):
 #             list[Hashable]: root nodes.
             
 #         """
-#         stops = list(itertools.chain.from_iterable(self.contents.values()))
+#         stops = list(itertools.chain(self.contents.values()))
 #         return [k for k in self.contents.keys() if k not in stops]
     
 #     """ Class Methods """

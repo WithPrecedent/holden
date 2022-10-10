@@ -1,5 +1,5 @@
 """
-traits: characteristics of graphs
+traits: characteristics of graphs, edges, and nodes
 Corey Rayburn Yung <coreyrayburnyung@gmail.com>
 Copyright 2020-2022, Corey Rayburn Yung
 License: Apache-2.0
@@ -18,7 +18,11 @@ License: Apache-2.0
 
 Contents:
     Directed (Protocol): a directed graph with unweighted edges.
+    Fungible (Protocol):
     Labeled (Protocol):    
+    Storage (Protocol):
+    Weighted (Protocol):
+    
 To Do:
 
     
@@ -42,7 +46,13 @@ if TYPE_CHECKING:
 @dataclasses.dataclass
 @runtime_checkable
 class Directed(Protocol):
-    """Base class for directed graph data structures."""  
+    """Base class for directed graph data structures.
+    
+    Args:
+        contents (Collection[Any]): stored collection of nodes and/or edges.
+                                      
+    """  
+    contents: Collection[Any]
     
     """ Required Subclass Properties """
         
@@ -207,19 +217,18 @@ class Fungible(Protocol):
  
  
 @dataclasses.dataclass
-@runtime_checkable
-class Labeled(Protocol):
+class Labeled(object):
     """Mixin for labeling parts of a composite object. 
 
     Args:
         name (Optional[str]): designates the name of a class instance that is 
             used for internal and external referencing in a composite object.
             Defaults to None.
-        # contents (Optional[Any]): any stored item(s). Defaults to None.
+        contents (Optional[Any]): any stored item(s). Defaults to None.
             
     """
     name: Optional[str] = None
-    # contents: Optional[Any] = None
+    contents: Optional[Any] = None
     
     """ Initialization Methods """
 
@@ -278,17 +287,17 @@ class Labeled(Protocol):
         except AttributeError:
             return str(self.name) == other
 
-    def __ne__(self, other: object) -> bool:
-        """Determines inequality based on 'name' attribute.
+    # def __ne__(self, other: object) -> bool:
+    #     """Determines inequality based on 'name' attribute.
 
-        Args:
-            other (object): other object to test for equivalance.
+    #     Args:
+    #         other (object): other object to test for equivalance.
            
-        Returns:
-            bool: whether 'name' is not the same as 'other.name'.
+    #     Returns:
+    #         bool: whether 'name' is not the same as 'other.name'.
             
-        """
-        return not(self == other)
+    #     """
+    #     return not(self == other)
  
 
 @dataclasses.dataclass
@@ -296,9 +305,10 @@ class Storage(Protocol):
     """Mixin for storage of nodes in a Library with the composite object.
     
     Args:
-
-                  
+        contents (Collection[Any]): stored collection of nodes and/or edges.
+                                      
     """  
+    contents: Collection[Any]
     nodes: amos.Library = dataclasses.field(default_factory = amos.Library)
  
 

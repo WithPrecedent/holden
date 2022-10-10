@@ -24,21 +24,21 @@ import holden
 
 
 @dataclasses.dataclass
-class Something(holden.Labeled, holden.Node):
+class Something(holden.Labeled):
     
-    pass
+    name = 'something'
 
 
 @dataclasses.dataclass
-class AnotherThing(holden.Labeled, holden.Node):
+class AnotherThing(holden.Labeled):
     
-    pass
+    name = 'another_thing'
 
 
 @dataclasses.dataclass
-class EvenAnother(holden.Labeled, holden.Node):
+class EvenAnother(holden.Labeled):
     
-    pass
+    name = 'even_another'
 
 
 def test_graph():
@@ -75,10 +75,10 @@ def test_graph():
     workflow.add('butch')
     workflow.add('sundance')
     workflow.add('henchman')
-    workflow.connect('bonnie', 'clyde')
-    workflow.connect('butch', 'sundance')
-    workflow.connect('bonnie', 'henchman')
-    workflow.connect('sundance', 'henchman')
+    workflow.connect(('bonnie', 'clyde'))
+    workflow.connect(('butch', 'sundance'))
+    workflow.connect(('bonnie', 'henchman'))
+    workflow.connect(('sundance', 'henchman'))
     assert 'clyde' in workflow['bonnie']
     assert 'henchman' in workflow ['bonnie']
     assert 'henchman' not in workflow['butch']
@@ -97,40 +97,39 @@ def test_graph():
     something = Something()
     another_thing = AnotherThing()
     even_another = EvenAnother()
-    new_workflow.add(node = something)
-    new_workflow.add(node = another_thing)
-    new_workflow.add(node= even_another)
-    new_workflow.connect('something', 'another_thing')
-    print('test new workflow', new_workflow)
+    new_workflow.add(item = something)
+    new_workflow.add(item = another_thing)
+    new_workflow.add(item = even_another)
+    new_workflow.connect(('something', 'another_thing'))
     # assert 'another_thing' in new_workflow['something']
-    assert 'another_thing' in new_workflow[something]
-    assert another_thing in new_workflow[something]
-    assert something in new_workflow
+    assert 'another_thing' in new_workflow['something']
+    assert 'something' in new_workflow
     return
 
 def test_graph_again() -> None:
     edges = tuple([('a', 'b'), ('c', 'd'), ('a', 'd'), ('d', 'e')])
-    dag = holden.System.create(item = edges)
-    dag.add(node = 'cat')
-    dag.add(node = 'dog', ancestors = 'e', descendants = ['cat'])
-    assert dag['dog'] == {'cat'}
-    assert dag['e'] == {'dog'}
+    dag = holden.System.from_edges(item = edges)
+    dag.add(item = 'cat')
+    dag.connect(('e', 'cat'))
+    # dag.add(item = 'dog', ancestors = 'e', descendants = ['cat'])
+    # assert dag['dog'] == {'cat'}
+    # assert dag['e'] == {'dog'}
     adjacency = {
         'tree': {'house', 'yard'},
         'house': set(),
         'yard': set()}
-    assert holden.Adjacency.__instancecheck__(adjacency)
-    another_dag = holden.System.create(item = adjacency)
+    assert holden.is_adjacency(adjacency)
+    another_dag = holden.System.from_adjacency(item = adjacency)
     dag.append(item = another_dag)
     assert dag['cat'] == {'tree'}
     paths = dag.parallel 
     assert len(paths) == 6
-    assert dag.endpoint == {'house', 'yard'}
-    assert dag.root == {'a', 'c'}
-    assert dag.nodes == {
-        'tree', 'b', 'c', 'a', 'yard', 'cat', 'd', 'house', 'dog', 'e'}
-    path = dag.path
-    new_dag = holden.System.from_path(item = path)
+    assert dag.endpoint == ['house', 'yard']
+    assert dag.root == ['a', 'c']
+    # assert dag.nodes == {
+    #     'tree', 'b', 'c', 'a', 'yard', 'cat', 'd', 'house', 'dog', 'e'}
+    path = dag.serial
+    new_dag = holden.System.from_serial(item = path)
     assert new_dag['tree'] == dag['tree']
     another_dag = holden.System.from_parallel(item = paths)
     assert another_dag['tree'] == dag['tree']
