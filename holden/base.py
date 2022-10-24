@@ -396,76 +396,76 @@ class Edge(Sequence):
         return 2
 
 
-# @dataclasses.dataclass
-# class Node(Hashable):
-#     """Vertex wrapper to provide hashability to any object.
+@dataclasses.dataclass
+class Node(Hashable):
+    """Vertex wrapper to provide hashability to any object.
     
-#     Node acts a basic wrapper for any item stored in a graph structure.
+    Node acts a basic wrapper for any item stored in a graph structure.
     
-#     Args:
-#         contents (Optional[Any]): any stored item(s). Defaults to None.
+    Args:
+        contents (Optional[Any]): any stored item(s). Defaults to None.
             
-#     """
-#     contents: Optional[Any] = None
+    """
+    contents: Optional[Any] = None
 
-#     """ Initialization Methods """
+    """ Initialization Methods """
     
-#     def __init_subclass__(cls, *args: Any, **kwargs: Any):
-#         """Forces subclasses to use the same hash methods as Node.
+    def __init_subclass__(cls, *args: Any, **kwargs: Any):
+        """Forces subclasses to use the same hash methods as Node.
         
-#         This is necessary because dataclasses, by design, do not automatically 
-#         inherit the hash and equivalance dunder methods from their super 
-#         classes.
+        This is necessary because dataclasses, by design, do not automatically 
+        inherit the hash and equivalance dunder methods from their super 
+        classes.
         
-#         """
-#         # Calls other '__init_subclass__' methods for parent and mixin classes.
-#         with contextlib.suppress(AttributeError):
-#             super().__init_subclass__(*args, **kwargs) # type: ignore
-#         # Copies hashing related methods to a subclass.
-#         cls.__hash__ = Node.__hash__ # type: ignore
-#         cls.__eq__ = Node.__eq__ # type: ignore
-#         cls.__ne__ = Node.__ne__ # type: ignore
+        """
+        # Calls other '__init_subclass__' methods for parent and mixin classes.
+        with contextlib.suppress(AttributeError):
+            super().__init_subclass__(*args, **kwargs) # type: ignore
+        # Copies hashing related methods to a subclass.
+        cls.__hash__ = Node.__hash__ # type: ignore
+        cls.__eq__ = Node.__eq__ # type: ignore
+        cls.__ne__ = Node.__ne__ # type: ignore
                 
-#     """ Dunder Methods """
+    """ Dunder Methods """
     
-#     @classmethod
-#     def __subclasshook__(cls, subclass: Type[Any]) -> bool:
-#         """Returns whether 'subclass' is a virtual or real subclass.
+    @classmethod
+    def __subclasshook__(cls, subclass: Type[Any]) -> bool:
+        """Returns whether 'subclass' is a virtual or real subclass.
 
-#         Args:
-#             subclass (Type[Any]): item to test as a subclass.
+        Args:
+            subclass (Type[Any]): item to test as a subclass.
 
-#         Returns:
-#             bool: whether 'subclass' is a real or virtual subclass.
+        Returns:
+            bool: whether 'subclass' is a real or virtual subclass.
             
-#         """
-#         return is_node(item = subclass)
+        """
+        return is_node(item = subclass)
                
-#     @classmethod
-#     def __instancecheck__(cls, instance: object) -> bool:
-#         """Returns whether 'instance' meets criteria to be a subclass.
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
 
-#         Args:
-#             instance (object): item to test as an instance.
+        Args:
+            instance (object): item to test as an instance.
 
-#         Returns:
-#             bool: whether 'instance' meets criteria to be a subclass.
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
             
-#         """
-#         return is_node(item = instance)
+        """
+        return is_node(item = instance)
     
-#     def __hash__(self) -> int:
-#         """Makes Node hashable so that it can be used as a key in a dict.
+    def __hash__(self) -> int:
+        """Makes Node hashable so that it can be used as a key in a dict.
 
-#         Rather than using the object ID, this method prevents two Nodes with
-#         the same name from being used in a graph object that uses a dict as
-#         its base storage type.
+        Rather than using the object ID, this method prevents two Nodes with
+        the same name from being used in a graph object that uses a dict as
+        its base storage type.
         
-#         Returns:
-#             int: hashable of 'name'.
+        Returns:
+            int: hashable of 'name'.
             
-#         """
-#         return hash(self)
+        """
+        return hash(self)
 
 
 # @dataclasses.dataclass
@@ -499,21 +499,6 @@ class Edge(Sequence):
 
 """ Base Class Type Checkers """
 
-# def is_graph(item: Union[object, Type[Any]]) -> bool:
-#     """Returns whether 'item' is a collection of node connections.
-
-#     Args:
-#         item (Union[object, Type[Any]]): instance or class to test.
-
-#     Returns:
-#         bool: whether 'item' is a collection of node connections.
-        
-#     """
-#     return amos.has_traits(
-#         item = item,
-#         attributes = ['contents'],
-#         methods = ['merge'])
-
 def is_graph(item: Union[Type[Any], object]) -> bool:
     """Returns whether 'item' is a graph.
 
@@ -539,7 +524,7 @@ def is_edge(item: object) -> bool:
         
     """
     return (
-        isinstance(item, Sequence) 
+        miller.is_sequence(item)
         and len(item) == 2
         and is_node(item = item[0])
         and is_node(item = item[1]))
@@ -554,34 +539,23 @@ def is_node(item: Union[object, Type[Any]]) -> bool:
         bool: whether 'item' is a node.
     
     """
-    return isinstance(item, Hashable)
+    if inspect.isclass(item):
+        return issubclass(item, Hashable)
+    else:
+        return isinstance(item, Hashable)
 
-    # if not inspect.isclass(item):
-    #     item = item.__class__
-    # return issubclass(item, Hashable)
+def is_nodes(item: object) -> bool:
+    """Returns whether 'item' is a collection of nodes.
 
-    # if inspect.isclass(item):
-    #     return type(item) is str or hasattr(item, 'name')
-    # return (
-    #     isinstance(item, str) 
-    #     or (hasattr(item, 'name') and isinstance(item.name, str)))
+    Args:
+        item (object): instance to test.
 
-# def is_nodes(item: Union[object, Type[Any]]) -> bool:
-#     """Returns whether 'item' is a collection of nodes.
-
-#     Args:
-#         item (Union[object, Type[Any]]): instance or class to test.
-
-#     Returns:
-#         bool: whether 'item' is a collection of nodes.
+    Returns:
+        bool: whether 'item' is a collection of nodes.
     
-#     """
-#     if inspect.isclass(item):
-#         return issubclass(Nodes)
-#     else:
-#         return (
-#             isinstance(item, Collection) 
-#             and all(is_node(item = i) for i in item))
+    """
+    return (
+        isinstance(item, Collection) and all(is_node(item = i) for i in item))
 
 # """ Base Class Converters """
 

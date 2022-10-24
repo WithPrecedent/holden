@@ -289,7 +289,7 @@ class System(forms.Adjacency, traits.Fungible, traits.Directed, traits.Storage):
 
     """ Private Methods """
     
-    def add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
         """Adds node to the stored graph.
                    
         Args:
