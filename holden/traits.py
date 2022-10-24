@@ -320,5 +320,5 @@ class Weighted(Protocol):
 
                   
     """  
-    weight: Optional[float] = 1   
+    weight: Optional[float] = 1.0   
    

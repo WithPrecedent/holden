@@ -59,6 +59,7 @@ Contents:
           
 To Do:
     Add the remainder of the conversion methods between different forms
+    Add private methods that currently raise NotImplementedError
     Integrate Kinds system when it is finished
     
 """
@@ -91,8 +92,10 @@ class Adjacency(base.Graph, amos.Dictionary):
     
     Args:
         contents (MutableMapping[Hashable, set[Hashable]]): keys are hashable 
-            representations of nodes. Defaults to a defaultdict that has a set 
-            for its value type.
+            representations of nodes. Values are the nodes to which the key node
+            are connected. In a directed graph, the key node is assumed to come
+            before the value node in order. Defaults to a defaultdict that has a 
+            set for its value type.
                                       
     """  
     contents: MutableMapping[Hashable, set[Hashable]] = dataclasses.field(
@@ -176,13 +179,7 @@ class Adjacency(base.Graph, amos.Dictionary):
       
     def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
         """Deletes node from the stored graph.
-
-        Subclasses must provide their own specific methods for deleting a single
-        node. The provided 'delete' method offers all of the error checking and
-        the ability to delete multiple nodes at once. Subclasses just need to 
-        provide the mechanism for deleting a single node without worrying about
-        validation or error-checking.
-                
+          
         Args:
             item (Hashable): node to delete from 'contents'.
         
@@ -204,11 +201,6 @@ class Adjacency(base.Graph, amos.Dictionary):
 
     def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
         """Combines 'item' with the stored graph.
-
-        Subclasses must provide their own specific methods for merging with
-        another graph. The provided 'merge' method offers all of the error 
-        checking. Subclasses just need to provide the mechanism for merging 
-        ithout worrying about validation or error-checking.
         
         Args:
             item (Graph): another Graph object to add to the stored graph.
@@ -231,12 +223,8 @@ class Adjacency(base.Graph, amos.Dictionary):
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
         exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
-        """Returns a new Graph without a subset of 'contents'.
+        """Returns a new graph without a subset of 'contents'.
 
-        Subclasses must provide their own specific methods for deleting a single
-        edge. Subclasses just need to provide the mechanism for returning a
-        subset without worrying about validation or error-checking.
-        
         Args:
             include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
                 should be included in the new graph.
@@ -341,7 +329,16 @@ class Edges(amos.Listing, base.Graph):
 
     """ Private Methods """   
     
-    @abc.abstractmethod 
+    def _add(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+                   
+        Args:
+            item (base.Edge): edge to add to the stored graph.
+            
+        """
+        self.contents.append(item)
+        return
+            
     def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Adds edge to the stored graph.
         
@@ -352,7 +349,16 @@ class Edges(amos.Listing, base.Graph):
         self.contents.append(item)
         return
 
-    @abc.abstractmethod 
+    def _delete(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        self.contents.remove(item) 
+        return    
+            
     def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Removes edge from the stored graph.
         
@@ -362,7 +368,41 @@ class Edges(amos.Listing, base.Graph):
         """
         self.contents.remove(item) 
         return    
-                    
+
+    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored graph.
+        
+        Args:
+            item (Graph): another Graph object to add to the stored graph.
+                
+        """
+        form = what_form(item = item)
+        if form is 'edges':
+            other = item
+        else:
+            transformer = globals()[f'{form}_to_edges']
+            other = transformer(item = item)
+        self.contents.extend(other)
+        return
+    
+    def _subset(
+        self, 
+        include: Union[Hashable, Sequence[Hashable]] = None,
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
+        """Returns a new graph without a subset of 'contents'.
+
+        Args:
+            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should be included in the new graph.
+            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should not be included in the new graph.
+
+        Returns:
+           Adjacency: with only selected nodes and edges.
+            
+        """
+        raise NotImplementedError 
+                              
     """ Dunder Methods """
            
     @classmethod
@@ -452,7 +492,15 @@ class Matrix(amos.Listing, base.Graph):
 
     """ Private Methods """   
     
-    @abc.abstractmethod 
+    def _add(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+                   
+        Args:
+            item (base.Edge): edge to add to the stored graph.
+            
+        """
+        raise NotImplementedError
+            
     def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Adds edge to the stored graph.
         
@@ -462,12 +510,47 @@ class Matrix(amos.Listing, base.Graph):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod 
+    def _delete(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        raise NotImplementedError   
+            
     def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Removes edge from the stored graph.
         
         Args:
             item (Edge): edge to delete from the stored graph.
+            
+        """
+        raise NotImplementedError   
+
+    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored graph.
+        
+        Args:
+            item (Graph): another Graph object to add to the stored graph.
+                
+        """
+        raise NotImplementedError
+    
+    def _subset(
+        self, 
+        include: Union[Hashable, Sequence[Hashable]] = None,
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
+        """Returns a new graph without a subset of 'contents'.
+
+        Args:
+            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should be included in the new graph.
+            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should not be included in the new graph.
+
+        Returns:
+           Adjacency: with only selected nodes and edges.
             
         """
         raise NotImplementedError 
@@ -556,7 +639,16 @@ class Parallel(amos.Listing, base.Graph):
 
     """ Private Methods """   
     
-    @abc.abstractmethod 
+    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Adds node to the stored graph.
+                   
+        Args:
+            item (Hashable): node to add to the stored graph.
+            
+        """
+        self.contents.append(item)
+        return
+        
     def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Adds edge to the stored graph.
         
@@ -566,8 +658,18 @@ class Parallel(amos.Listing, base.Graph):
         """
         raise NotImplementedError(
             'Parallel graphs cannot connect edges because it changes the form')
-
-    @abc.abstractmethod 
+      
+    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Deletes node from the stored graph.
+                
+        Args:
+            item (Hashable): node to delete from 'contents'.
+        
+            
+        """
+        del self.contents[item]
+        return
+    
     def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Removes edge from the stored graph.
         
@@ -578,7 +680,51 @@ class Parallel(amos.Listing, base.Graph):
         raise NotImplementedError(
             'Parallel graphs cannot disconnect edges because it changes the '
             'form')
-                        
+
+    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored graph.
+
+        Subclasses must provide their own specific methods for merging with
+        another graph. The provided 'merge' method offers all of the error 
+        checking. Subclasses just need to provide the mechanism for merging 
+        ithout worrying about validation or error-checking.
+        
+        Args:
+            item (Graph): another Graph object to add to the stored graph.
+                
+        """
+        form = what_form(item = item)
+        if form is 'parallel':
+            other = item
+        else:
+            transformer = globals()[f'{form}_to_parallel']
+            other = transformer(item = item)
+        for serial in other.contents:
+            self.contents.append(serial)
+        return
+    
+    def _subset(
+        self, 
+        include: Union[Hashable, Sequence[Hashable]] = None,
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
+        """Returns a new graph without a subset of 'contents'.
+
+        Subclasses must provide their own specific methods for deleting a single
+        edge. Subclasses just need to provide the mechanism for returning a
+        subset without worrying about validation or error-checking.
+        
+        Args:
+            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should be included in the new graph.
+            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should not be included in the new graph.
+
+        Returns:
+           Adjacency: with only selected nodes and edges.
+            
+        """
+        raise NotImplementedError   
+                               
     """ Dunder Methods """
         
     @classmethod
@@ -663,7 +809,16 @@ class Serial(amos.Hybrid, base.Graph):
 
     """ Private Methods """   
     
-    @abc.abstractmethod 
+    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Adds node to the stored graph.
+                   
+        Args:
+            item (Hashable): node to add to the stored graph.
+            
+        """
+        self.contents.append(item)
+        return
+        
     def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Adds edge to the stored graph.
         
@@ -673,8 +828,18 @@ class Serial(amos.Hybrid, base.Graph):
         """
         raise NotImplementedError(
             'Serial graphs cannot connect edges because it changes the form')
-
-    @abc.abstractmethod 
+      
+    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Deletes node from the stored graph.
+                
+        Args:
+            item (Hashable): node to delete from 'contents'.
+        
+            
+        """
+        del self.contents[item]
+        return
+    
     def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
         """Removes edge from the stored graph.
         
@@ -684,6 +849,49 @@ class Serial(amos.Hybrid, base.Graph):
         """
         raise NotImplementedError(
             'Serial graphs cannot disconnect edges because it changes the form')
+
+    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored graph.
+
+        Subclasses must provide their own specific methods for merging with
+        another graph. The provided 'merge' method offers all of the error 
+        checking. Subclasses just need to provide the mechanism for merging 
+        ithout worrying about validation or error-checking.
+        
+        Args:
+            item (Graph): another Graph object to add to the stored graph.
+                
+        """
+        form = what_form(item = item)
+        if form is 'serial':
+            other = item
+        else:
+            transformer = globals()[f'{form}_to_serial']
+            other = transformer(item = item)
+        self.contents.extend(other)
+        return
+    
+    def _subset(
+        self, 
+        include: Union[Hashable, Sequence[Hashable]] = None,
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
+        """Returns a new graph without a subset of 'contents'.
+
+        Subclasses must provide their own specific methods for deleting a single
+        edge. Subclasses just need to provide the mechanism for returning a
+        subset without worrying about validation or error-checking.
+        
+        Args:
+            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should be included in the new graph.
+            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should not be included in the new graph.
+
+        Returns:
+           Adjacency: with only selected nodes and edges.
+            
+        """
+        raise NotImplementedError   
                         
     """ Dunder Methods """
         
@@ -804,12 +1012,19 @@ def get_roots_adjacency(item: Adjacency) -> MutableSequence[Hashable]:
 """ Form Type Classifier """
 
 def what_form(item: object) -> str:
+    """Determines which form of graph that 'item' is.
+    
+    Args:
+        item (object): object to classify.
+        
+    Returns:
+        str: name of form that 'item' is.
+        
+    """
     for form in FORMS:
         if globals()[f'is_{form}']:
             return form
     raise TypeError(f'{item} is not a recognized graph form')
-
-
         
 """ Form Type Converters """
    
@@ -1312,16 +1527,6 @@ def serial_to_parallel(item: Serial) -> Parallel:
     """
     raise NotImplementedError
 
-_BASE_ADJACENCY: Type[base.Graph] = Adjacency
-_BASE_EDGES: Type[base.Graph] = Edges
-_BASE_MATRIX: Type[base.Graph] = Matrix
-_BASE_PARALLEL: Type[base.Graph] = Parallel
-_BASE_SERIAL: Type[base.Graph] = Serial
-
-def set_base(name: str, value: base.Graph) -> None:
-    variable = f'(_BASE_{name.upper()})'
-    locals()[variable] = value
-    return
 
 # # # @to_adjacency.register # type: ignore 
 # def tree_to_adjacency(item: Tree) -> Adjacency:

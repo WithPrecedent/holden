@@ -59,7 +59,7 @@ import miller
 @dataclasses.dataclass
 @runtime_checkable
 class Graph(amos.Bunch, Protocol):
-    """Base class for composite data structures.
+    """Base class for holden graphs.
     
     Args:
         contents (Collection[Any]): stored collection of nodes and/or edges.
@@ -329,10 +329,7 @@ class Graph(amos.Bunch, Protocol):
         """
         return is_graph(item = instance)
 
-     
-# @dataclasses.dataclass(frozen = True, order = True)
-# class Edge(collections.namedtuple('Edge', ['start', 'stop'])):
-         
+       
 @dataclasses.dataclass(frozen = True, order = True)
 class Edge(Sequence):
     """Base class for an edge in a graph structure.
