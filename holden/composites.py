@@ -42,36 +42,6 @@ if TYPE_CHECKING:
     from . import forms  
        
 
-def is_tree(item: object) -> bool:
-    """Returns whether 'item' is a tree.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a tree.
-    
-    """
-    return (
-        isinstance(item, MutableSequence)
-        and all(isinstance(i, (MutableSequence, Hashable)) for i in item)) 
-    
-# def is_forest(item: object) -> bool:
-#     """Returns whether 'item' is a dict of tree.
-
-#     Args:
-#         item (object): instance to test.
-
-#     Returns:
-#         bool: whether 'item' is a dict of tree.
-    
-#     """
-#     return (
-#         isinstance(item, MutableMapping)
-#         and all(base.is_node(item = i) for i in item.keys())
-#         and all(is_tree(item = i) for i in item.values())) 
-
-
 @dataclasses.dataclass # type: ignore
 class Tree(amos.Hybrid, traits.Directed, base.Graph):
     """Base class for an tree data structures.
@@ -152,6 +122,37 @@ class Tree(amos.Hybrid, traits.Directed, base.Graph):
             
         """
         return self.__class__()
+
+
+def is_tree(item: object) -> bool:
+    """Returns whether 'item' is a tree.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a tree.
+    
+    """
+    return (
+        isinstance(item, MutableSequence)
+        and all(isinstance(i, (MutableSequence, Hashable)) for i in item)) 
+    
+# def is_forest(item: object) -> bool:
+#     """Returns whether 'item' is a dict of tree.
+
+#     Args:
+#         item (object): instance to test.
+
+#     Returns:
+#         bool: whether 'item' is a dict of tree.
+    
+#     """
+#     return (
+#         isinstance(item, MutableMapping)
+#         and all(base.is_node(item = i) for i in item.keys())
+#         and all(is_tree(item = i) for i in item.values())) 
+
 
 # # @functools.singledispatch 
 # def to_tree(item: Any) -> forms.Tree:

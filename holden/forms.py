@@ -64,13 +64,12 @@ To Do:
     
 """
 from __future__ import annotations
-import abc
 import collections
 from collections.abc import (
     Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
 import copy
 import dataclasses
-import functools
+# import functools
 import itertools
 from typing import Any, ClassVar, Optional, Type, TYPE_CHECKING, Union
 

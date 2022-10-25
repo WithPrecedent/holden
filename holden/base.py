@@ -22,8 +22,8 @@ Contents:
     Edge (Sequence): base class for an edge in a graph. Many graphs will not
         require edge instances, but the class is made available for more complex 
         graphs and type checking.
-    # Node (amos.Proxy): wrapper for items that can be stored in a Graph or other
-    #     data structure.  
+    Node (amos.Proxy): wrapper for items that can be stored in a Graph or other
+        data structure.  
     # Nodes (amos.Bunch): any collection of Node instances. This is primarily
     #     intended for easy type checking of any arbitrary group of objects to 
     #     make sure they meet the requirements of being a Node (real or virtual) 
@@ -31,7 +31,7 @@ Contents:
     is_graph
     is_edge
     is_node
-    # is_nodes
+    is_nodes
     # to_node
 
                  
