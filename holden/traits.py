@@ -317,8 +317,18 @@ class Weighted(Protocol):
     """Mixin for weighted nodes.
     
     Args:
-
+        weight (Optional[float]): the weight of the object. Defaults to 1.0.
                   
     """  
     weight: Optional[float] = 1.0   
-   
+
+    """ Dunder Methods """  
+        
+    def __len__(self) -> float:
+        """Returns 'weight'.
+        
+        Returns:
+            float: weight of the edge.
+            
+        """
+        return self.weight

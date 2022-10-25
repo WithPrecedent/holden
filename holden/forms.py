@@ -79,14 +79,11 @@ import miller
 from . import base
 
 
-FORMS: MutableSequence[str] = [
-    'adjacency', 'edges', 'matrix', 'parallel', 'serial']
-
 
 """ Graph Form Base Classes """
 
 @dataclasses.dataclass
-class Adjacency(base.Graph, amos.Dictionary):
+class Adjacency(amos.Dictionary, base.Graph):
     """Base class for adjacency-list graphs.
     
     Args:
@@ -568,346 +565,8 @@ class Matrix(amos.Listing, base.Graph):
             
         """
         return is_matrix(item = instance)
-    
-   
-@dataclasses.dataclass
-class Parallel(amos.Listing, base.Graph):
-    """Base class for a list of serial graphs.
-    
-    Args:
-        contents (MutableSequence[Serial]): Listing of Serial instances. 
-            Defaults to an empty list.
-                                      
-    """   
-    contents: MutableSequence[Serial] = dataclasses.field(
-        default_factory = list)
-                                
-    """ Properties """
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return parallel_to_adjacency(item = self.contents)
-
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return parallel_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return parallel_to_matrix(item = self.contents)
-
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return self.contents
-
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return parallel_to_serial(item = self.contents)
-    
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Parallel:
-        """Creates a Parallel instance from an Adjacency."""
-        return cls(contents = adjacency_to_parallel(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: Edges) -> Serial:
-        """Creates a Parallel instance from an Edges."""
-        return cls(contents = edges_to_parallel(item = item))
-        
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Serial:
-        """Creates a Parallel instance from a Matrix."""
-        return cls(contents = matrix_to_parallel(item = item))
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Serial:
-        """Creates a Parallel instance from a Parallel."""
-        return cls(contents = item)
-     
-    @classmethod
-    def from_serial(cls, item: Serial) -> Serial:
-        """Creates a Parallel instance from a Serial."""
-        return cls(contents = item)
-
-    """ Private Methods """   
-    
-    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
-                   
-        Args:
-            item (Hashable): node to add to the stored graph.
-            
-        """
-        self.contents.append(item)
-        return
-        
-    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored graph.
-        
-        Args:
-            item (Edge): edge to add to the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Parallel graphs cannot connect edges because it changes the form')
-      
-    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Deletes node from the stored graph.
-                
-        Args:
-            item (Hashable): node to delete from 'contents'.
-        
-            
-        """
-        del self.contents[item]
-        return
-    
-    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored graph.
-        
-        Args:
-            item (Edge): edge to delete from the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Parallel graphs cannot disconnect edges because it changes the '
-            'form')
-
-    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored graph.
-
-        Subclasses must provide their own specific methods for merging with
-        another graph. The provided 'merge' method offers all of the error 
-        checking. Subclasses just need to provide the mechanism for merging 
-        ithout worrying about validation or error-checking.
-        
-        Args:
-            item (Graph): another Graph object to add to the stored graph.
-                
-        """
-        form = what_form(item = item)
-        if form is 'parallel':
-            other = item
-        else:
-            transformer = globals()[f'{form}_to_parallel']
-            other = transformer(item = item)
-        for serial in other.contents:
-            self.contents.append(serial)
-        return
-    
-    def _subset(
-        self, 
-        include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
-        """Returns a new graph without a subset of 'contents'.
-
-        Subclasses must provide their own specific methods for deleting a single
-        edge. Subclasses just need to provide the mechanism for returning a
-        subset without worrying about validation or error-checking.
-        
-        Args:
-            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new graph.
-            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new graph.
-
-        Returns:
-           Adjacency: with only selected nodes and edges.
-            
-        """
-        raise NotImplementedError   
-                               
-    """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_parallel(item = instance)
-     
-    
-@dataclasses.dataclass
-class Serial(amos.Hybrid, base.Graph):
-    """Base class for serial graphs.
-    
-    Args:
-        contents (MutableSequence[Hashable]): list of nodes. Defaults to 
-            an empty list.
-                                      
-    """   
-    contents: MutableSequence[Hashable] = dataclasses.field(
-        default_factory = list)
-                                
-    """ Properties """
-
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return serial_to_adjacency(item = self.contents)
-
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return serial_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return serial_to_matrix(item = self.contents)
-
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return serial_to_parallel(item = self.contents)
-
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return self.contents
-    
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Serial:
-        """Creates a Serial instance from an Adjacency."""
-        return cls(contents = adjacency_to_serial(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: Edges) -> Serial:
-        """Creates a Serial instance from an Edges."""
-        return cls(contents = edges_to_serial(item = item))
-        
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Serial:
-        """Creates a Serial instance from a Matrix."""
-        return cls(contents = matrix_to_serial(item = item))
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Serial:
-        """Creates a Serial instance from a Serial."""
-        return cls(contents = parallel_to_serial(item = item))
-     
-    @classmethod
-    def from_serial(cls, item: Serial) -> Serial:
-        """Creates a Serial instance from a Serial."""
-        return cls(contents = item)
-
-    """ Private Methods """   
-    
-    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
-                   
-        Args:
-            item (Hashable): node to add to the stored graph.
-            
-        """
-        self.contents.append(item)
-        return
-        
-    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored graph.
-        
-        Args:
-            item (Edge): edge to add to the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Serial graphs cannot connect edges because it changes the form')
-      
-    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Deletes node from the stored graph.
-                
-        Args:
-            item (Hashable): node to delete from 'contents'.
-        
-            
-        """
-        del self.contents[item]
-        return
-    
-    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored graph.
-        
-        Args:
-            item (Edge): edge to delete from the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Serial graphs cannot disconnect edges because it changes the form')
-
-    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored graph.
-
-        Subclasses must provide their own specific methods for merging with
-        another graph. The provided 'merge' method offers all of the error 
-        checking. Subclasses just need to provide the mechanism for merging 
-        ithout worrying about validation or error-checking.
-        
-        Args:
-            item (Graph): another Graph object to add to the stored graph.
-                
-        """
-        form = what_form(item = item)
-        if form is 'serial':
-            other = item
-        else:
-            transformer = globals()[f'{form}_to_serial']
-            other = transformer(item = item)
-        self.contents.extend(other)
-        return
-    
-    def _subset(
-        self, 
-        include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
-        """Returns a new graph without a subset of 'contents'.
-
-        Subclasses must provide their own specific methods for deleting a single
-        edge. Subclasses just need to provide the mechanism for returning a
-        subset without worrying about validation or error-checking.
-        
-        Args:
-            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new graph.
-            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new graph.
-
-        Returns:
-           Adjacency: with only selected nodes and edges.
-            
-        """
-        raise NotImplementedError   
-                        
-    """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return is_serial(item = instance)
-
-""" Form Type Checkers """
+""" Type Checkers """
 
 def is_adjacency(item: object) -> bool:
     """Returns whether 'item' is an adjacency list.
@@ -921,10 +580,10 @@ def is_adjacency(item: object) -> bool:
     """
     if isinstance(item, MutableMapping):
         connections = list(item.values())
-        nodes = list(itertools.chain(item.values()))
+        nodes = list(itertools.chain.from_iterable(item.values()))
         return (
-            all(isinstance(e, set) for e in connections))
-            # and all(base.is_node(item = i) for i in nodes))
+            all(isinstance(e, set) for e in connections)
+            and all(base.is_node(item = i) for i in nodes))
     else:
         return False
 
@@ -940,8 +599,7 @@ def is_edges(item: object) -> bool:
     """
         
     return (
-        isinstance(item, Collection) 
-        and not isinstance(item, str)
+        isinstance(item, MutableSequence) 
         and all(base.is_edge(item = i) for i in item))
     
 def is_matrix(item: object) -> bool:
@@ -960,42 +618,12 @@ def is_matrix(item: object) -> bool:
         connections = list(itertools.chain(matrix))
         return (
             isinstance(matrix, MutableSequence)
-            and isinstance(labels, Sequence) 
-            and not isinstance(labels, str)
+            and isinstance(labels, MutableSequence) 
             and all(isinstance(i, MutableSequence) for i in matrix)
             and all(isinstance(n, Hashable) for n in labels)
-            and all(isinstance(e, int) for e in connections))
+            and all(isinstance(c, int) for c in connections))
     else:
         return False
-
-def is_parallel(item: object) -> bool:
-    """Returns whether 'item' is sequence of parallel.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a sequence of parallel.
-    
-    """
-    return (
-        isinstance(item, Sequence)
-        and all(is_serial(item = i) for i in item))
-
-def is_serial(item: object) -> bool:
-    """Returns whether 'item' is a serial.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a serial.
-    
-    """
-    return (
-        isinstance(item, Sequence)
-        and not isinstance(item, str)
-        and all(base.is_node(item = i) for i in item))
 
 """ Form Inspectors """
 

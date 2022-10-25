@@ -24,147 +24,141 @@ Contents:
         graphs and type checking.
     Node (amos.Proxy): wrapper for items that can be stored in a Graph or other
         data structure.  
-    # Nodes (amos.Bunch): any collection of Node instances. This is primarily
-    #     intended for easy type checking of any arbitrary group of objects to 
-    #     make sure they meet the requirements of being a Node (real or virtual) 
-    #     instance.
-    is_graph
-    is_edge
-    is_node
-    is_nodes
-    # to_node
-
+    transform: general subtype transformer that allows any form of a Graph to
+        be changed to any other recognized form.
+    is_graph: returns whether the passed item is a graph.
+    is_edge: returns whether the passed item is an edge.
+    is_node: returns whether the passed item is a node.
+    is_nodes: returns whether the passed item is a collection of nodes.
                  
 To Do:
     Integrate Kinds system when it is finished.
-
     
 """
 from __future__ import annotations
 import abc
-# import collections
 from collections.abc import Collection, Hashable, Sequence
 import contextlib
 import dataclasses
 import inspect
-from typing import (
-    Any, Optional, Protocol, runtime_checkable, Type, TYPE_CHECKING, Union)
+from typing import Any, ClassVar, Optional, Type, Union
 
 import amos 
 import miller
 
+from . import check
+from . import workshop
 
+
+""" Graph Form Registry """
+
+@dataclasses.dataclass
+class Forms(object):
+    """Registry of composite data structures.
+    
+    Args:
+        registry (amos.Dictionary): keys are names of graph forms and values are
+            Graph subclasses.
+                          
+    """
+    registry: ClassVar[amos.Dictionary] = amos.Dictionary()
+    
+    """ Public Methods """
+    
+    @classmethod
+    def classify(cls, item: object) -> str:
+        """Determines which form of graph that 'item' is.
+        
+        Args:
+            item (object): object to classify.
+            
+        Returns:
+            str: name of form that 'item' is.
+            
+        """
+        # Chcecks for a matching parent clas in 'registry'.
+        for name, form in cls.registry.items():
+            if issubclass(item.__class__, form):
+                return name
+        # Chaecks for matching raw form using functions in the 'check' module.
+        for name in cls.registry.keys():
+            try:
+                checker = getattr(check, f'is_{name}')
+                if checker(item = item):
+                    return name
+            except AttributeError:
+                pass
+        raise TypeError('The passed item is not a recognized Graph form')
+    
+    @classmethod
+    def transform(
+        cls,
+        item: Graph, 
+        output: str, 
+        raise_same_error: Optional[bool] = True) -> Graph:
+        """General transform method that will call appropriate transformer.
+        
+        Unlike the 'transform' function, this method will return a Graph wrapped
+        in the form type stored in the Forms registry (as opposed to the raw
+        type). So, if 'output' is 'edges', this method will return an edge list
+        in the Edges class. In contrast, the 'transform' method will return the
+        structural type of an edge list without using the Edges class. The rest
+        of the logic is identical between the function and method.
+
+        Args:
+            item Graph): Graph to transform.
+            output (str): name of form to transform 'item' to.
+            raise_same_error(Optional[bool]): whether to return an error if the 
+                form of 'item' is the same as 'output'. If True, a ValueError 
+                will be returned. If False, item will be return without any 
+                change. Defaults to True.
+        
+        Raises:
+            ValueError: if the form of 'item' is the same as 'output' and 
+                'raise_same_error' is True.
+                
+        Returns:
+            base.Graph: transformed graph.
+            
+        """
+        form = Forms.classify(item = item)
+        if form == output and raise_same_error:
+            raise ValueError('The passed item and output are the same type')
+        elif form == output:
+            return item
+        else:
+            transformer = getattr(workshop, [f'{form}_to_{output}'])
+            base = cls.registry[output]
+            return base(transformer(item = item))        
+            
 """ Base Classes for Graph Data Structures """
       
 @dataclasses.dataclass
-@runtime_checkable
-class Graph(amos.Bunch, Protocol):
+class Graph(amos.Bunch, abc.ABC):
     """Base class for holden graphs.
     
     Args:
-        contents (Collection[Any]): stored collection of nodes and/or edges.
+        contents (Optional[Collection[Any]]): stored collection of nodes and/or 
+            edges.
                                      
     """  
-    contents: Collection[Any]
-             
-    """ Required Subclass Methods """
+    contents: Optional[Collection[Any]] = None
+
+    """ Initialization Methods """
     
-    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
- 
-        Subclasses must provide their own specific methods for adding a single
-        node. The provided 'add' method offers all of the error checking and
-        the ability to add multiple nodes at once. Subclasses just need to 
-        provide the mechanism for adding a single node without worrying about
-        validation or error-checking.
-                   
-        Args:
-            item (Hashable): node to add to the stored graph.
-                
-        """
-        raise NotImplementedError
-
-    def _connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored graph.
-
-        Subclasses must provide their own specific methods for adding a single
-        edge. The provided 'connect' method offers all of the error checking and
-        the ability to add multiple edges at once. Subclasses just need to 
-        provide the mechanism for adding a single edge without worrying about
-        validation or error-checking.
-        
-        Args:
-            item (Edge): edge to add to the stored graph.
-            
-        """
-        raise NotImplementedError
-      
-    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Deletes node from the stored graph.
-
-        Subclasses must provide their own specific methods for deleting a single
-        node. The provided 'delete' method offers all of the error checking and
-        the ability to delete multiple nodes at once. Subclasses just need to 
-        provide the mechanism for deleting a single node without worrying about
-        validation or error-checking.
-                
-        Args:
-            item (Hashable): node to delete from 'contents'.
-            
-        """
-        raise NotImplementedError
-  
-    def _disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored graph.
-
-        Subclasses must provide their own specific methods for deleting a single
-        edge. The provided 'disconnect' method offers all of the error checking 
-        and the ability to delete multiple edges at once. Subclasses just need 
-        to provide the mechanism for deleting a single edge without worrying 
-        about validation or error-checking.
-        
-        Args:
-            item (Edge): edge to delete from the stored graph.
-            
-        """
-        raise NotImplementedError  
-
-    def _merge(self, item: Graph, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored graph.
-
-        Subclasses must provide their own specific methods for merging with
-        another graph. The provided 'merge' method offers all of the error 
-        checking. Subclasses just need to provide the mechanism for merging 
-        ithout worrying about validation or error-checking.
-        
-        Args:
-            item (Graph): another Graph object to add to the stored graph.
-                
-        """
-        raise NotImplementedError
-    
-    def _subset(
-        self, 
-        include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Graph:
-        """Returns a new Graph without a subset of 'contents'.
-
-        Subclasses must provide their own specific methods for deleting a single
-        edge. Subclasses just need to provide the mechanism for returning a
-        subset without worrying about validation or error-checking.
-        
-        Args:
-            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new graph.
-            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new graph.
-
-        Returns:
-           Graph: with only selected nodes and edges.
-            
-        """
-        raise NotImplementedError  
-         
+    @classmethod
+    def __init_subclass__(cls, *args: Any, **kwargs: Any):
+        """Automatically registers subclass.."""
+        # Because Graph will be used with mixins, it is important to call other 
+        # '__init_subclass__' methods, if they exist.
+        with contextlib.suppress(AttributeError):
+            super().__init_subclass__(*args, **kwargs) # type: ignore
+        # Adds a subclass to the Forms registry only if it is a direct subclass
+        # of Graph.
+        if Graph in cls.__bases__:
+            name = amos.namify(item = cls)
+            Forms.registry.add(item = {name: cls})
+                          
     """ Public Methods """
 
     def add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
@@ -181,7 +175,7 @@ class Graph(amos.Bunch, Protocol):
         if not is_node(item = item):
             raise TypeError(f'{item} is not a node type')
         elif item in self.contents:
-            raise ValueError(f'{item} already in the graph') 
+            raise ValueError(f'{item} is already in the graph') 
         else:  
             self._add(item, *args, **kwargs)
         return
@@ -313,7 +307,105 @@ class Graph(amos.Bunch, Protocol):
         if not all(i for i in exclude if i in self.contents):
             raise ValueError('Some values in exclude are not in the graph')
         return self._subset(include, exclude)
-                      
+    
+    """ Private Methods """
+    
+    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Adds node to the stored graph.
+ 
+        Subclasses must provide their own specific methods for adding a single
+        node. The provided 'add' method offers all of the error checking and
+        the ability to add multiple nodes at once. Subclasses just need to 
+        provide the mechanism for adding a single node without worrying about
+        validation or error-checking.
+                   
+        Args:
+            item (Hashable): node to add to the stored graph.
+                
+        """
+        raise NotImplementedError
+
+    def _connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+
+        Subclasses must provide their own specific methods for adding a single
+        edge. The provided 'connect' method offers all of the error checking and
+        the ability to add multiple edges at once. Subclasses just need to 
+        provide the mechanism for adding a single edge without worrying about
+        validation or error-checking.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        """
+        raise NotImplementedError
+      
+    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+        """Deletes node from the stored graph.
+
+        Subclasses must provide their own specific methods for deleting a single
+        node. The provided 'delete' method offers all of the error checking and
+        the ability to delete multiple nodes at once. Subclasses just need to 
+        provide the mechanism for deleting a single node without worrying about
+        validation or error-checking.
+                
+        Args:
+            item (Hashable): node to delete from 'contents'.
+            
+        """
+        raise NotImplementedError
+  
+    def _disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+
+        Subclasses must provide their own specific methods for deleting a single
+        edge. The provided 'disconnect' method offers all of the error checking 
+        and the ability to delete multiple edges at once. Subclasses just need 
+        to provide the mechanism for deleting a single edge without worrying 
+        about validation or error-checking.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        raise NotImplementedError  
+
+    def _merge(self, item: Graph, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored graph.
+
+        Subclasses must provide their own specific methods for merging with
+        another graph. The provided 'merge' method offers all of the error 
+        checking. Subclasses just need to provide the mechanism for merging 
+        ithout worrying about validation or error-checking.
+        
+        Args:
+            item (Graph): another Graph object to add to the stored graph.
+                
+        """
+        raise NotImplementedError
+    
+    def _subset(
+        self, 
+        include: Union[Hashable, Sequence[Hashable]] = None,
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Graph:
+        """Returns a new Graph without a subset of 'contents'.
+
+        Subclasses must provide their own specific methods for deleting a single
+        edge. Subclasses just need to provide the mechanism for returning a
+        subset without worrying about validation or error-checking.
+        
+        Args:
+            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should be included in the new graph.
+            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
+                should not be included in the new graph.
+
+        Returns:
+           Graph: with only selected nodes and edges.
+            
+        """
+        raise NotImplementedError  
+                              
     """ Dunder Methods """
     
     @classmethod
@@ -333,11 +425,8 @@ class Graph(amos.Bunch, Protocol):
 @dataclasses.dataclass(frozen = True, order = True)
 class Edge(Sequence):
     """Base class for an edge in a graph structure.
-    
-    If a subclass adds other attributes, it is important that they are not 
-    declared as dataclass fields to allow indexing to work properly.
-    
-    Edges are not required for most of the base graph classes in amos. But
+        
+    Edges are not required for most of the base graph classes in holden. But
     they can be used by subclasses of those base classes for more complex data
     structures.
     
@@ -462,38 +551,41 @@ class Node(Hashable):
             int: hashable of 'name'.
             
         """
-        return hash(self)
+        return hash(dataclasses.astuple(self))
 
+""" Graph Transformer """
 
-# @dataclasses.dataclass
-# @runtime_checkable
-# class Nodes(amos.Bunch, Protocol):
-#     """Collection of Nodes.
+def transform(
+    item: Graph, 
+    output: str, 
+    raise_same_error: Optional[bool] = True) -> Graph:
+    """General transform function that will call appropriate transformer.
+
+    Args:
+        item Graph): Graph to transform.
+        output (str): name of form to transform 'item' to.
+        raise_same_error(Optional[bool]): whether to return an error if the form
+            of 'item' is the same as 'output'. If True, a ValueError will be 
+            returned. If False, item will be return without any change. Defaults
+            to True.
     
-#     Nodes are not guaranteed to be in order. 
-
-#     Args:
-#         contents (Optional[Any]): any stored item(s). Defaults to None.
+    Raises:
+        ValueError: if the form of 'item' is the same as 'output' and 
+            'raise_same_error' is True.
             
-#     """
-#     contents: Optional[Collection[Node]] = None
+    Returns:
+        base.Graph: transformed graph.
+        
+    """
+    form = Forms.classify(item = item)
+    if form == output and raise_same_error:
+        raise ValueError('The passed item and output are the same type')
+    elif form == output:
+        return item
+    else:
+        transformer = getattr(workshop, [f'{form}_to_{output}'])
+        return transformer(item = item)
     
-#     """ Dunder Methods """ 
-    
-#     @classmethod
-#     def __instancecheck__(cls, instance: object) -> bool:
-#         """Returns whether 'instance' meets criteria to be a subclass.
-
-#         Args:
-#             instance (object): item to test as an instance.
-
-#         Returns:
-#             bool: whether 'instance' meets criteria to be a subclass.
-            
-#         """
-#         return is_nodes(item = instance)
-
-
 """ Base Class Type Checkers """
 
 def is_graph(item: Union[Type[Any], object]) -> bool:
@@ -553,26 +645,3 @@ def is_nodes(item: object) -> bool:
     """
     return (
         isinstance(item, Collection) and all(is_node(item = i) for i in item))
-
-# """ Base Class Converters """
-
-# def to_node(
-#     item: Union[Type[Any], object], 
-#     base: Optional[Type[Node]] = Node) -> Node:
-#     """Converts 'item' into a Node, if it is not already a Node instance.
-
-#     Args:
-#         item (Union[Type[Any], object]): class or instance to transform into a  
-#             Node.
-#         base (Optional[Type[Node]]): base class to wrap 'item' in if 'item'
-#              is not a Node.
-
-#     Returns:
-#         Node: a Node or Node subclass instance.
-        
-#     """
-#     if is_node(item = item):
-#         return item
-#     else:
-#         return base(contents = item)    
-          
