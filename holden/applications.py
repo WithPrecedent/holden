@@ -171,7 +171,7 @@ class Paths(composites.Parallel, traits.Fungible, traits.Directed):
 
 
 @dataclasses.dataclass
-class System(traits.Directed, forms.Adjacency, traits.Fungible, traits.Storage):
+class System(forms.Adjacency, traits.Directed, traits.Fungible, traits.Storage):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -197,15 +197,15 @@ class System(traits.Directed, forms.Adjacency, traits.Fungible, traits.Storage):
         """Returns the roots of the stored graph."""
         return workshop.get_roots_adjacency(item = self.contents)
 
-    @property
-    def parallel(self) -> Collection[Hashable]:
-        """Returns all paths through the stored as a list of paths."""
-        return traverse.adjacency_to_parallel(item = self.contents)
+    # @property
+    # def parallel(self) -> Collection[Hashable]:
+    #     """Returns all paths through the stored as a list of paths."""
+    #     return traverse.adjacency_to_parallel(item = self.contents)
     
-    @property
-    def serial(self) -> base.Path:
-        """Returns stored graph as a path."""
-        return traverse.adjacency_to_serial(item = self.contents)
+    # @property
+    # def serial(self) -> base.Path:
+    #     """Returns stored graph as a path."""
+    #     return traverse.adjacency_to_serial(item = self.contents)
              
     """ Public Methods """
 
@@ -225,15 +225,19 @@ class System(traits.Directed, forms.Adjacency, traits.Fungible, traits.Storage):
                 or Collection[Hashable] type.
                 
         """
-        if isinstance(item, base.Graph):
-            current_endpoints = self.endpoint
+        current_endpoints = self.endpoint
+        if check.is_graph(item = item):
             self.merge(item = item)
             for endpoint in current_endpoints:
                 for root in workshop.get_roots_adjacency(item = item):
                     self.connect((endpoint, root))
+        elif check.is_node(item = item):
+            self.add(item = item)
+            for endpoint in current_endpoints:
+                self.connect((endpoint, item))
         else:
-            raise TypeError('item is not a recognized graph type')
-        return
+            raise TypeError('item is not a recognized graph or node type')
+        return                    
 
     def prepend(self, item: base.Graph) -> None:
         """Prepends 'item' to the roots of the stored graph.
@@ -250,20 +254,24 @@ class System(traits.Directed, forms.Adjacency, traits.Fungible, traits.Storage):
                 or Collection[Hashable] type.
                 
         """
-        if isinstance(item, base.Graph):
-            current_roots = self.root
+        current_roots = self.root
+        if check.is_graph(item = item):
             self.merge(item = item)
             for root in current_roots:
                 for endpoint in item.endpoint:
                     self.connect((endpoint, root))
+        elif check.is_node(item = item):
+            self.add(item = item)
+            for root in current_roots:
+                self.connect((item, root))
         else:
-            raise TypeError('item is not a recognized graph type')
+            raise TypeError('item is not a recognized graph or node type')
         return
     
     def walk(
         self, 
         start: Optional[Hashable] = None, 
-        stop: Optional[Hashable] = None) -> Path:
+        stop: Optional[Hashable] = None) -> Paths:
         """Returns all paths in graph from 'start' to 'stop'.
 
         The code here is adapted from: https://www.python.org/doc/essays/graphs/

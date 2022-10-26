@@ -88,7 +88,7 @@ def test_graph():
     # breadth_search = workflow.search(depth_first = False)
     # print(breadth_search)
     # assert breadth_search == ['clyde', 'bonnie', 'henchman']
-    all_paths = workflow.parallel
+    all_paths = workflow.walk()
     assert ['butch', 'sundance', 'henchman'] in all_paths
     assert ['bonnie', 'clyde'] in all_paths
     assert ['bonnie', 'henchman'] in all_paths
@@ -123,7 +123,7 @@ def test_graph_again() -> None:
     another_dag = holden.System.from_adjacency(item = adjacency)
     dag.append(item = another_dag)
     assert dag['cat'] == {'tree'}
-    paths = dag.parallel 
+    paths = dag.walk()
     assert len(paths) == 6
     assert dag.endpoint == ['house', 'yard']
     assert dag.root == ['a', 'c']
