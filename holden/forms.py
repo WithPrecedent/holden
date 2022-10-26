@@ -84,7 +84,7 @@ from . import workshop
 """ Graph Form Base Classes """
 
 @dataclasses.dataclass
-class Adjacency(amos.Dictionary, base.Graph):
+class Adjacency(base.Graph, amos.Dictionary):
     """Base class for adjacency-list graphs.
     
     Args:
@@ -100,37 +100,37 @@ class Adjacency(amos.Dictionary, base.Graph):
    
     """ Properties """
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return self.contents
+    # @property
+    # def adjacency(self) -> Adjacency:
+    #     """Returns the stored graph as an Adjacency."""
+    #     return self.contents
 
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return workshop.adjacency_to_edges(item = self.contents)
+    # @property
+    # def edges(self) -> Edges:
+    #     """Returns the stored graph as an Edges."""
+    #     return workshop.adjacency_to_edges(item = self.contents)
          
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return workshop.adjacency_to_matrix(item = self.contents)
+    # @property
+    # def matrix(self) -> Matrix:
+    #     """Returns the stored graph as a Matrix."""
+    #     return workshop.adjacency_to_matrix(item = self.contents)
             
-    """ Class Methods """
+    # """ Class Methods """
     
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Adjacency:
-        """Creates an Adjacency instance from an Adjacency."""
-        return cls(contents = item)
+    # @classmethod
+    # def from_adjacency(cls, item: Adjacency) -> Adjacency:
+    #     """Creates an Adjacency instance from an Adjacency."""
+    #     return cls(contents = item)
     
-    @classmethod
-    def from_edges(cls, item: Edges) -> Adjacency:
-        """Creates an Adjacency instance from an Edges."""
-        return cls(contents = workshop.edges_to_adjacency(item = item))
+    # @classmethod
+    # def from_edges(cls, item: Edges) -> Adjacency:
+    #     """Creates an Adjacency instance from an Edges."""
+    #     return cls(contents = workshop.edges_to_adjacency(item = item))
         
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Adjacency:
-        """Creates an Adjacency instance from a Matrix."""
-        return cls(contents = workshop.matrix_to_adjacency(item = item))
+    # @classmethod
+    # def from_matrix(cls, item: Matrix) -> Adjacency:
+    #     """Creates an Adjacency instance from a Matrix."""
+        # return cls(contents = workshop.matrix_to_adjacency(item = item))
 
     """ Public Methods """   
     
@@ -183,12 +183,10 @@ class Adjacency(amos.Dictionary, base.Graph):
             item (Graph): another Graph object to add to the stored graph.
                 
         """
-        form = base.classify(item = item)
-        if form is 'adjacency':
-            other = item
-        else:
-            transformer = globals()[f'{form}_to_adjacency']
-            other = transformer(item = item)
+        other = base.transform(
+            item = item, 
+            output = 'adjacency', 
+            raise_same_error = False)
         for node, edges in other.items():
             if node in self:
                 self[node].update(edges)
@@ -239,7 +237,7 @@ class Adjacency(amos.Dictionary, base.Graph):
 
 
 @dataclasses.dataclass
-class Edges(amos.Listing, base.Graph):
+class Edges(base.Graph, amos.Listing):
     """Base class for edge-list graphs.
 
     Args:
@@ -252,37 +250,37 @@ class Edges(amos.Listing, base.Graph):
    
     """ Properties """
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return workshop.edges_to_adjacency(item = self.contents)
+    # @property
+    # def adjacency(self) -> Adjacency:
+    #     """Returns the stored graph as an Adjacency."""
+    #     return workshop.edges_to_adjacency(item = self.contents)
 
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return self.contents
+    # @property
+    # def edges(self) -> Edges:
+    #     """Returns the stored graph as an Edges."""
+    #     return self.contents
      
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return workshop.edges_to_matrix(item = self.contents)
+    # @property
+    # def matrix(self) -> Matrix:
+    #     """Returns the stored graph as a Matrix."""
+    #     return workshop.edges_to_matrix(item = self.contents)
                             
-    """ Class Methods """
+    # """ Class Methods """
     
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Edges:
-        """Creates an Edges instance from an Adjacency."""
-        return cls(contents = workshop.adjacency_to_edges(item = item))
+    # @classmethod
+    # def from_adjacency(cls, item: Adjacency) -> Edges:
+    #     """Creates an Edges instance from an Adjacency."""
+    #     return cls(contents = workshop.adjacency_to_edges(item = item))
     
-    @classmethod
-    def from_edges(cls, item: Edges) -> Edges:
-        """Creates an Edges instance from an Edges."""
-        return cls(contents = item)
+    # @classmethod
+    # def from_edges(cls, item: Edges) -> Edges:
+    #     """Creates an Edges instance from an Edges."""
+    #     return cls(contents = item)
            
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Edges:
-        """Creates an Edges instance from a Matrix."""
-        return cls(contents = workshop.matrix_to_edges(item = item))
+    # @classmethod
+    # def from_matrix(cls, item: Matrix) -> Edges:
+    #     """Creates an Edges instance from a Matrix."""
+    #     return cls(contents = workshop.matrix_to_edges(item = item))
 
     """ Private Methods """   
     
@@ -377,7 +375,7 @@ class Edges(amos.Listing, base.Graph):
 
    
 @dataclasses.dataclass
-class Matrix(amos.Listing, base.Graph):
+class Matrix(base.Graph, amos.Listing):
     """Base class for adjacency-matrix graphs.
     
     Args:
@@ -395,37 +393,37 @@ class Matrix(amos.Listing, base.Graph):
    
     """ Properties """
 
-    @property
-    def adjacency(self) -> Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return workshop.matrix_to_adjacency(item = self.contents)
+    # @property
+    # def adjacency(self) -> Adjacency:
+    #     """Returns the stored graph as an Adjacency."""
+    #     return workshop.matrix_to_adjacency(item = self.contents)
 
-    @property
-    def edges(self) -> Edges:
-        """Returns the stored graph as an Edges."""
-        return workshop.matrix_to_edges(item = self.contents)
+    # @property
+    # def edges(self) -> Edges:
+    #     """Returns the stored graph as an Edges."""
+    #     return workshop.matrix_to_edges(item = self.contents)
           
-    @property
-    def matrix(self) -> Matrix:
-        """Returns the stored graph as a Matrix."""
-        return self.contents
+    # @property
+    # def matrix(self) -> Matrix:
+    #     """Returns the stored graph as a Matrix."""
+    #     return self.contents
      
-    """ Class Methods """
+    # """ Class Methods """
     
-    @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Matrix:
-        """Creates a Matrix instance from an Adjacency."""
-        return cls(contents = workshop.adjacency_to_matrix(item = item))
+    # @classmethod
+    # def from_adjacency(cls, item: Adjacency) -> Matrix:
+    #     """Creates a Matrix instance from an Adjacency."""
+    #     return cls(contents = workshop.adjacency_to_matrix(item = item))
     
-    @classmethod
-    def from_edges(cls, item: Edges) -> Matrix:
-        """Creates a Matrix instance from an Edges."""
-        return cls(contents = workshop.edges_to_matrix(item = item))
+    # @classmethod
+    # def from_edges(cls, item: Edges) -> Matrix:
+    #     """Creates a Matrix instance from an Edges."""
+    #     return cls(contents = workshop.edges_to_matrix(item = item))
           
-    @classmethod
-    def from_matrix(cls, item: Matrix) -> Matrix:
-        """Creates a Matrix instance from a Matrix."""
-        return cls(contents = item[0], labels = item[1])
+    # @classmethod
+    # def from_matrix(cls, item: Matrix) -> Matrix:
+    #     """Creates a Matrix instance from a Matrix."""
+    #     return cls(contents = item[0], labels = item[1])
 
     """ Private Methods """   
     
@@ -510,14 +508,6 @@ class Matrix(amos.Listing, base.Graph):
 
 """ Form Inspectors """
 
-def get_endpoints_adjacency(item: Adjacency) -> MutableSequence[Hashable]:
-    """Returns the endpoints in 'item'."""
-    return [k for k in item.keys() if not item[k]]
-
-def get_roots_adjacency(item: Adjacency) -> MutableSequence[Hashable]:
-    """Returns the roots in 'item'."""
-    stops = list(itertools.chain.from_iterable(item.values()))
-    return [k for k in item.keys() if k not in stops]  
 
 """ Form Type Classifier """
 

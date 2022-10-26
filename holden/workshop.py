@@ -31,13 +31,18 @@ To Do:
 """
 from __future__ import annotations
 import collections
+from collections.abc import (
+    Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
 # import functools
+import itertools
 from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from . import base
     from . import forms
 
+
+""" Transformers """
 
 def add_transformer(name: str, item: Callable[[base.Graph]]) -> None:
     """Adds a transformer to the local namespace.
@@ -169,7 +174,18 @@ def matrix_to_edges(item: forms.Matrix) -> forms.Edges:
             if matrix[i][j] > 0:
                 edges.append((labels[i], labels[j]))
     return edges
-  
+
+""" Introspection Tools """
+
+def get_endpoints_adjacency(item: forms.Adjacency) -> MutableSequence[Hashable]:
+    """Returns the endpoints in 'item'."""
+    return [k for k in item.keys() if not item[k]]
+
+def get_roots_adjacency(item: forms.Adjacency) -> MutableSequence[Hashable]:
+    """Returns the roots in 'item'."""
+    stops = list(itertools.chain.from_iterable(item.values()))
+    return [k for k in item.keys() if k not in stops]  
+
 """ 
 These are functions design to implement a dispatch system for the form
 tranformers. However, functools.singledispatch has some shortcomings. If a new

@@ -30,14 +30,15 @@ from __future__ import annotations
 from typing import Type
 
 from . import base
+from . import composites
 from . import forms
 
 
 _BASE_ADJACENCY: Type[base.Graph] = forms.Adjacency
 _BASE_EDGES: Type[base.Graph] = forms.Edges
 _BASE_MATRIX: Type[base.Graph] = forms.Matrix
-_BASE_PARALLEL: Type[base.Graph] = forms.Parallel
-_BASE_SERIAL: Type[base.Graph] = forms.Serial
+_BASE_PARALLEL: Type[base.Graph] = composites.Parallel
+_BASE_SERIAL: Type[base.Graph] = composites.Serial
 
 def set_base(name: str, value: Type[base.Graph]) -> None:
     """Sets default base class for a form of graph.

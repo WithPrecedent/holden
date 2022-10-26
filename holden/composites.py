@@ -37,6 +37,8 @@ from typing import (
 import amos
 
 from . import base
+from . import check
+from . import forms
 from . import traits  
 
 if TYPE_CHECKING:
@@ -45,7 +47,7 @@ if TYPE_CHECKING:
     
    
 @dataclasses.dataclass
-class Parallel(amos.Listing, base.Graph):
+class Parallel(amos.Listing):
     """Base class for a list of serial graphs.
     
     Args:
@@ -59,17 +61,17 @@ class Parallel(amos.Listing, base.Graph):
     """ Properties """
 
     @property
-    def adjacency(self) -> Adjacency:
+    def adjacency(self) -> forms.Adjacency:
         """Returns the stored graph as an Adjacency."""
         return parallel_to_adjacency(item = self.contents)
 
     @property
-    def edges(self) -> Edges:
+    def edges(self) -> forms.Edges:
         """Returns the stored graph as an Edges."""
         return parallel_to_edges(item = self.contents)
           
     @property
-    def matrix(self) -> Matrix:
+    def matrix(self) -> forms.Matrix:
         """Returns the stored graph as a Matrix."""
         return parallel_to_matrix(item = self.contents)
 
@@ -86,17 +88,17 @@ class Parallel(amos.Listing, base.Graph):
     """ Class Methods """
     
     @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Parallel:
+    def from_adjacency(cls, item: forms.Adjacency) -> Parallel:
         """Creates a Parallel instance from an Adjacency."""
         return cls(contents = adjacency_to_parallel(item = item))
     
     @classmethod
-    def from_edges(cls, item: Edges) -> Serial:
+    def from_edges(cls, item: forms.Edges) -> Serial:
         """Creates a Parallel instance from an Edges."""
         return cls(contents = edges_to_parallel(item = item))
         
     @classmethod
-    def from_matrix(cls, item: Matrix) -> Serial:
+    def from_matrix(cls, item: forms.Matrix) -> Serial:
         """Creates a Parallel instance from a Matrix."""
         return cls(contents = matrix_to_parallel(item = item))
     
@@ -215,7 +217,7 @@ class Parallel(amos.Listing, base.Graph):
      
     
 @dataclasses.dataclass
-class Serial(amos.Hybrid, base.Graph):
+class Serial(amos.Hybrid):
     """Base class for serial graphs.
     
     Args:
@@ -347,7 +349,7 @@ class Serial(amos.Hybrid, base.Graph):
     def _subset(
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Serial:
         """Returns a new graph without a subset of 'contents'.
 
         Subclasses must provide their own specific methods for deleting a single
@@ -379,39 +381,11 @@ class Serial(amos.Hybrid, base.Graph):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return is_serial(item = instance)      
+        return check.is_serial(item = instance)      
 
 
 """ Type Checkers """
 
-def is_parallel(item: object) -> bool:
-    """Returns whether 'item' is sequence of parallel.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a sequence of parallel.
-    
-    """
-    return (
-        isinstance(item, Sequence)
-        and all(is_serial(item = i) for i in item))
-
-def is_serial(item: object) -> bool:
-    """Returns whether 'item' is a serial.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a serial.
-    
-    """
-    return (
-        isinstance(item, Sequence)
-        and not isinstance(item, str)
-        and all(base.is_node(item = i) for i in item))
     
 # @dataclasses.dataclass # type: ignore
 # class Tree(amos.Hybrid, traits.Directed, base.Graph):

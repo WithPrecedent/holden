@@ -38,8 +38,9 @@ from typing import (
 
 import amos
 
+from . import base
+
 if TYPE_CHECKING:
-    from . import base
     from . import forms
     
     
@@ -171,33 +172,47 @@ class Fungible(Protocol):
             output = 'adjacency', 
             raise_same_error = False)
         
-
     @property
     def edges(self) -> forms.Edges:
         """Returns the stored graph as an Edges."""
-        pass
+        return base.transform(
+            item = self, 
+            output = 'edges', 
+            raise_same_error = False)
            
     @property
     def matrix(self) -> forms.Matrix:
         """Returns the stored graph as a Matrix."""
-        pass
+        return base.transform(
+            item = self, 
+            output = 'matrix', 
+            raise_same_error = False)
 
     """ Class Methods """
     
     @classmethod
     def from_adjacency(cls, item: forms.Adjacency) -> Fungible:
         """Creates a Graph instance from an Adjacency."""
-        pass
+        return cls(contents = base.transform(
+            item = item, 
+            output = base.classify(item = cls),
+            raise_same_error = False))
     
     @classmethod
     def from_edges(cls, item: forms.Edges) -> Fungible:
         """Creates a Graph instance from an Edges."""
-        pass
+        return cls(contents = base.transform(
+            item = item, 
+            output = base.classify(item = cls), 
+            raise_same_error = False))
         
     @classmethod
     def from_matrix(cls, item: forms.Matrix) -> Fungible:
         """Creates a Graph instance from a Matrix."""
-        pass
+        return cls(contents = base.transform(
+            item = item, 
+            output = base.classify(item = cls), 
+            raise_same_error = False))
  
  
 @dataclasses.dataclass

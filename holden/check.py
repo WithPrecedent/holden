@@ -25,6 +25,8 @@ Contents:
     is_matrix
     is_node: returns whether the passed item is a node.
     is_nodes: returns whether the passed item is a collection of nodes.
+    is_parallel:
+    is_serial:
               
 To Do:
 
@@ -35,7 +37,7 @@ from collections.abc import (
     Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
 import inspect
 import itertools
-from typing import Any, Callable, ClassVar, Optional, Type, TYPE_CHECKING, Union
+from typing import Any, Callable, Type, TYPE_CHECKING, Union
 
 import miller
 
@@ -72,8 +74,8 @@ def is_adjacency(item: object) -> bool:
         connections = list(item.values())
         nodes = list(itertools.chain.from_iterable(item.values()))
         return (
-            all(isinstance(e, set) for e in connections)
-            and all(base.is_node(item = i) for i in nodes))
+            all(isinstance(e, Collection) for e in connections)
+            and all(is_node(item = i) for i in nodes))
     else:
         return False
 
@@ -88,7 +90,8 @@ def is_edge(item: object) -> bool:
         
     """
     return (
-        miller.is_sequence(item)
+        isinstance(item, Sequence)
+        and not isinstance(item, str)
         and len(item) == 2
         and is_node(item = item[0])
         and is_node(item = item[1]))
@@ -106,7 +109,7 @@ def is_edges(item: object) -> bool:
         
     return (
         isinstance(item, MutableSequence) 
-        and all(base.is_edge(item = i) for i in item))
+        and all(is_edge(item = i) for i in item))
 
 def is_graph(item: Union[Type[Any], object]) -> bool:
     """Returns whether 'item' is a graph.
@@ -135,13 +138,13 @@ def is_matrix(item: object) -> bool:
     if isinstance(item, Sequence) and len(item) == 2:
         matrix = item[0]
         labels = item[1]
-        connections = list(itertools.chain(matrix))
+        connections = list(itertools.chain.from_iterable(matrix))
         return (
             isinstance(matrix, MutableSequence)
             and isinstance(labels, MutableSequence) 
             and all(isinstance(i, MutableSequence) for i in matrix)
             and all(isinstance(n, Hashable) for n in labels)
-            and all(isinstance(c, int) for c in connections))
+            and all(isinstance(c, (int, float)) for c in connections))
     else:
         return False
    
@@ -172,3 +175,32 @@ def is_nodes(item: object) -> bool:
     """
     return (
         isinstance(item, Collection) and all(is_node(item = i) for i in item))
+
+def is_parallel(item: object) -> bool:
+    """Returns whether 'item' is sequence of parallel.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a sequence of parallel.
+    
+    """
+    return (
+        isinstance(item, Sequence)
+        and all(is_serial(item = i) for i in item))
+
+def is_serial(item: object) -> bool:
+    """Returns whether 'item' is a serial.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a serial.
+    
+    """
+    return (
+        isinstance(item, Sequence)
+        and not isinstance(item, str)
+        and all(is_node(item = i) for i in item))

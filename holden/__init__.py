@@ -59,7 +59,7 @@ from .check import *
 # from .composites import *
 from .defaults import *
 from .forms import *
-from .graphs import *
+from .applications import *
 from .traits import *
-from .walk import *
+from .traverse import *
 from .workshop import *

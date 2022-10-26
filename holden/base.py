@@ -37,6 +37,7 @@ import abc
 from collections.abc import Collection, Hashable, Sequence
 import contextlib
 import dataclasses
+import inspect
 from typing import Any, ClassVar, Optional, Type, Union
 
 import amos 
@@ -74,19 +75,7 @@ class Forms(object):
             str: name of form that 'item' is.
             
         """
-        # Chcecks for a matching parent clas in 'registry'.
-        for name, form in cls.registry.items():
-            if issubclass(item.__class__, form):
-                return name
-        # Chaecks for matching raw form using functions in the 'check' module.
-        for name in cls.registry.keys():
-            try:
-                checker = getattr(check, f'is_{name}')
-                if checker(item = item):
-                    return name
-            except AttributeError:
-                pass
-        raise TypeError('The passed item is not a recognized Graph form')
+        return classify(item = item)
     
     @classmethod
     def transform(
@@ -140,7 +129,7 @@ class Graph(amos.Bunch, abc.ABC):
             edges.
                                      
     """  
-    contents: Optional[Collection[Any]] = None
+    # contents: Optional[Collection[Any]] = None
 
     """ Initialization Methods """
     
@@ -512,31 +501,31 @@ class Node(Hashable):
                 
     """ Dunder Methods """
     
-    @classmethod
-    def __subclasshook__(cls, subclass: Type[Any]) -> bool:
-        """Returns whether 'subclass' is a virtual or real subclass.
+    # @classmethod
+    # def __subclasshook__(cls, subclass: Type[Any]) -> bool:
+    #     """Returns whether 'subclass' is a virtual or real subclass.
 
-        Args:
-            subclass (Type[Any]): item to test as a subclass.
+    #     Args:
+    #         subclass (Type[Any]): item to test as a subclass.
 
-        Returns:
-            bool: whether 'subclass' is a real or virtual subclass.
+    #     Returns:
+    #         bool: whether 'subclass' is a real or virtual subclass.
             
-        """
-        return check.is_node(item = subclass)
+    #     """
+    #     return check.is_node(item = subclass)
                
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+    # @classmethod
+    # def __instancecheck__(cls, instance: object) -> bool:
+    #     """Returns whether 'instance' meets criteria to be a subclass.
 
-        Args:
-            instance (object): item to test as an instance.
+    #     Args:
+    #         instance (object): item to test as an instance.
 
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
+    #     Returns:
+    #         bool: whether 'instance' meets criteria to be a subclass.
             
-        """
-        return check.is_node(item = instance)
+    #     """
+    #     return check.is_node(item = instance)
     
     def __hash__(self) -> int:
         """Makes Node hashable so that it can be used as a key in a dict.
@@ -564,8 +553,12 @@ def classify(item: object) -> str:
         
     """
     # Chcecks for a matching parent clas in 'registry'.
+    if inspect.isclass(item):
+        subtype = item
+    else:
+        subtype = item.__class__       
     for name, form in Forms.registry.items():
-        if issubclass(item.__class__, form):
+        if issubclass(subtype, form):
             return name
     # Chaecks for matching raw form using functions in the 'check' module.
     for name in Forms.registry.keys():
@@ -607,5 +600,5 @@ def transform(
     elif form == output:
         return item
     else:
-        transformer = getattr(workshop, [f'{form}_to_{output}'])
+        transformer = getattr(workshop, f'{form}_to_{output}')
         return transformer(item = item)
