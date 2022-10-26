@@ -24,12 +24,9 @@ Contents:
         graphs and type checking.
     Node (amos.Proxy): wrapper for items that can be stored in a Graph or other
         data structure.  
+    classify: returns str name of the subtype a subtype of the passed graph.
     transform: general subtype transformer that allows any form of a Graph to
         be changed to any other recognized form.
-    is_graph: returns whether the passed item is a graph.
-    is_edge: returns whether the passed item is an edge.
-    is_node: returns whether the passed item is a node.
-    is_nodes: returns whether the passed item is a collection of nodes.
                  
 To Do:
     Integrate Kinds system when it is finished.
@@ -40,11 +37,9 @@ import abc
 from collections.abc import Collection, Hashable, Sequence
 import contextlib
 import dataclasses
-import inspect
 from typing import Any, ClassVar, Optional, Type, Union
 
 import amos 
-import miller
 
 from . import check
 from . import workshop
@@ -68,6 +63,9 @@ class Forms(object):
     @classmethod
     def classify(cls, item: object) -> str:
         """Determines which form of graph that 'item' is.
+        
+        There is no difference between this classmethod and the 'classify'
+        function.
         
         Args:
             item (object): object to classify.
@@ -131,7 +129,7 @@ class Forms(object):
             base = cls.registry[output]
             return base(transformer(item = item))        
             
-""" Base Classes for Graph Data Structures """
+""" Base Classes for Composite Data Structures """
       
 @dataclasses.dataclass
 class Graph(amos.Bunch, abc.ABC):
@@ -172,7 +170,7 @@ class Graph(amos.Bunch, abc.ABC):
             ValueError: if 'item' is already in the stored graph.
             
         """
-        if not is_node(item = item):
+        if not check.is_node(item = item):
             raise TypeError(f'{item} is not a node type')
         elif item in self.contents:
             raise ValueError(f'{item} is already in the graph') 
@@ -191,7 +189,7 @@ class Graph(amos.Bunch, abc.ABC):
                 edge ends does not currently exist in the stored graph.
             
         """
-        if not is_edge(item = item):
+        if not check.is_edge(item = item):
             raise TypeError(f'{item} is not an edge type') 
         elif item[0] == item[1]:
             raise ValueError(
@@ -222,7 +220,7 @@ class Graph(amos.Bunch, abc.ABC):
             TypeError: if 'item' is not in 'contents'.
             
         """
-        if not is_node(item = item):
+        if not check.is_node(item = item):
             raise TypeError(f'{item} is not a node type')
         try:
             self._delete(item, *args **kwargs)
@@ -240,7 +238,7 @@ class Graph(amos.Bunch, abc.ABC):
             ValueError: if the edge does not exist in the stored graph.
             
         """
-        if not is_edge(item = item):
+        if not check.is_edge(item = item):
             raise TypeError(f'{item} is not an edge type') 
         elif item[0] == item[1]:
             raise ValueError(
@@ -268,7 +266,7 @@ class Graph(amos.Bunch, abc.ABC):
             TypeError: if 'item' is not compatible graph type.
             
         """
-        if not is_graph(item = item):
+        if not check.is_graph(item = item):
             raise TypeError(f'{item} is not a compatible graph type') 
         else:
             self._merge(item, *args, **kwargs)
@@ -419,7 +417,7 @@ class Graph(amos.Bunch, abc.ABC):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return is_graph(item = instance)
+        return check.is_graph(item = instance)
 
        
 @dataclasses.dataclass(frozen = True, order = True)
@@ -451,7 +449,7 @@ class Edge(Sequence):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return is_edge(item = instance)
+        return check.is_edge(item = instance)
     
     def __getitem__(self, index: int) -> Hashable:
         """Allows Edge subclass to be accessed by index.
@@ -525,7 +523,7 @@ class Node(Hashable):
             bool: whether 'subclass' is a real or virtual subclass.
             
         """
-        return is_node(item = subclass)
+        return check.is_node(item = subclass)
                
     @classmethod
     def __instancecheck__(cls, instance: object) -> bool:
@@ -538,7 +536,7 @@ class Node(Hashable):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return is_node(item = instance)
+        return check.is_node(item = instance)
     
     def __hash__(self) -> int:
         """Makes Node hashable so that it can be used as a key in a dict.
@@ -552,6 +550,32 @@ class Node(Hashable):
             
         """
         return hash(dataclasses.astuple(self))
+
+""" Subtype Checker """
+
+def classify(item: object) -> str:
+    """Determines which form of graph that 'item' is.
+    
+    Args:
+        item (object): object to classify.
+        
+    Returns:
+        str: name of form that 'item' is.
+        
+    """
+    # Chcecks for a matching parent clas in 'registry'.
+    for name, form in Forms.registry.items():
+        if issubclass(item.__class__, form):
+            return name
+    # Chaecks for matching raw form using functions in the 'check' module.
+    for name in Forms.registry.keys():
+        try:
+            checker = getattr(check, f'is_{name}')
+            if checker(item = item):
+                return name
+        except AttributeError:
+            pass
+    raise TypeError('The passed item is not a recognized Graph form')
 
 """ Graph Transformer """
 
@@ -585,63 +609,3 @@ def transform(
     else:
         transformer = getattr(workshop, [f'{form}_to_{output}'])
         return transformer(item = item)
-    
-""" Base Class Type Checkers """
-
-def is_graph(item: Union[Type[Any], object]) -> bool:
-    """Returns whether 'item' is a graph.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a graph.
-    
-    """
-    return miller.has_methods(
-        item = item, 
-        methods = ['add', 'connect', 'delete', 'disconnect', 'merge'])
-
-def is_edge(item: object) -> bool:
-    """Returns whether 'item' is an edge.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is an edge.
-        
-    """
-    return (
-        miller.is_sequence(item)
-        and len(item) == 2
-        and is_node(item = item[0])
-        and is_node(item = item[1]))
-      
-def is_node(item: Union[object, Type[Any]]) -> bool:
-    """Returns whether 'item' is a node.
-
-    Args:
-        item (Union[object, Type[Any]]): instance or class to test.
-
-    Returns:
-        bool: whether 'item' is a node.
-    
-    """
-    if inspect.isclass(item):
-        return issubclass(item, Hashable)
-    else:
-        return isinstance(item, Hashable)
-
-def is_nodes(item: object) -> bool:
-    """Returns whether 'item' is a collection of nodes.
-
-    Args:
-        item (object): instance to test.
-
-    Returns:
-        bool: whether 'item' is a collection of nodes.
-    
-    """
-    return (
-        isinstance(item, Collection) and all(is_node(item = i) for i in item))

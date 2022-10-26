@@ -19,9 +19,13 @@ License: Apache-2.0
 Contents:
     add_checker
     is_adjacency
+    is_edge: returns whether the passed item is an edge.
     is_edges
+    is_graph: returns whether the passed item is a graph.
     is_matrix
-          
+    is_node: returns whether the passed item is a node.
+    is_nodes: returns whether the passed item is a collection of nodes.
+              
 To Do:
 
     
@@ -29,8 +33,11 @@ To Do:
 from __future__ import annotations
 from collections.abc import (
     Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
+import inspect
 import itertools
-from typing import Callable, TYPE_CHECKING
+from typing import Any, Callable, ClassVar, Optional, Type, TYPE_CHECKING, Union
+
+import miller
 
 if TYPE_CHECKING:
     from . import base
@@ -70,6 +77,22 @@ def is_adjacency(item: object) -> bool:
     else:
         return False
 
+def is_edge(item: object) -> bool:
+    """Returns whether 'item' is an edge.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is an edge.
+        
+    """
+    return (
+        miller.is_sequence(item)
+        and len(item) == 2
+        and is_node(item = item[0])
+        and is_node(item = item[1]))
+   
 def is_edges(item: object) -> bool:
     """Returns whether 'item' is an edge list.
 
@@ -84,6 +107,20 @@ def is_edges(item: object) -> bool:
     return (
         isinstance(item, MutableSequence) 
         and all(base.is_edge(item = i) for i in item))
+
+def is_graph(item: Union[Type[Any], object]) -> bool:
+    """Returns whether 'item' is a graph.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a graph.
+    
+    """
+    return miller.has_methods(
+        item = item, 
+        methods = ['add', 'connect', 'delete', 'disconnect', 'merge'])
     
 def is_matrix(item: object) -> bool:
     """Returns whether 'item' is an adjacency matrix.
@@ -107,3 +144,31 @@ def is_matrix(item: object) -> bool:
             and all(isinstance(c, int) for c in connections))
     else:
         return False
+   
+def is_node(item: Union[object, Type[Any]]) -> bool:
+    """Returns whether 'item' is a node.
+
+    Args:
+        item (Union[object, Type[Any]]): instance or class to test.
+
+    Returns:
+        bool: whether 'item' is a node.
+    
+    """
+    if inspect.isclass(item):
+        return issubclass(item, Hashable)
+    else:
+        return isinstance(item, Hashable)
+
+def is_nodes(item: object) -> bool:
+    """Returns whether 'item' is a collection of nodes.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a collection of nodes.
+    
+    """
+    return (
+        isinstance(item, Collection) and all(is_node(item = i) for i in item))

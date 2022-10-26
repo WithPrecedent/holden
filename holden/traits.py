@@ -161,58 +161,42 @@ class Fungible(Protocol):
     """  
     contents: Collection[Any]
    
-    """ Required Subclass Properties """
+    """ Properties """
 
-    @abc.abstractproperty
+    @property
     def adjacency(self) -> forms.Adjacency:
         """Returns the stored graph as an Adjacency."""
-        pass
+        return base.transform(
+            item = self, 
+            output = 'adjacency', 
+            raise_same_error = False)
+        
 
-    @abc.abstractproperty
+    @property
     def edges(self) -> forms.Edges:
         """Returns the stored graph as an Edges."""
         pass
            
-    @abc.abstractproperty
+    @property
     def matrix(self) -> forms.Matrix:
         """Returns the stored graph as a Matrix."""
         pass
 
-    @abc.abstractproperty
-    def parallel(self) -> forms.Parallel:
-        """Returns the stored graph as a Parallel."""
-        pass
-
-    @abc.abstractproperty
-    def serial(self) -> forms.Serial:
-        """Returns the stored graph as a Serial."""
-        pass
-
-    """ Required Subclass Methods """
+    """ Class Methods """
     
-    @abc.abstractclassmethod
+    @classmethod
     def from_adjacency(cls, item: forms.Adjacency) -> Fungible:
         """Creates a Graph instance from an Adjacency."""
         pass
     
-    @abc.abstractclassmethod
+    @classmethod
     def from_edges(cls, item: forms.Edges) -> Fungible:
         """Creates a Graph instance from an Edges."""
         pass
         
-    @abc.abstractclassmethod
+    @classmethod
     def from_matrix(cls, item: forms.Matrix) -> Fungible:
         """Creates a Graph instance from a Matrix."""
-        pass
-              
-    @abc.abstractclassmethod
-    def from_parallel(cls, item: forms.Parallel) -> Fungible:
-        """Creates a Graph instance from a Parallel."""
-        pass
-              
-    @abc.abstractclassmethod
-    def from_serial(cls, item: forms.Serial) -> Fungible:
-        """Creates a Graph instance from a Serial."""
         pass
  
  

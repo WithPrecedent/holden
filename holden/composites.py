@@ -1,5 +1,5 @@
 """
-composites: base types of composite data structures
+composites: base types of other composite data structures
 Corey Rayburn Yung <coreyrayburnyung@gmail.com>
 Copyright 2020-2022, Corey Rayburn Yung
 License: Apache-2.0
