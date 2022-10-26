@@ -38,16 +38,15 @@ import amos
 
 from . import base
 from . import check
-from . import forms
-from . import traits  
+from . import traits
+from . import traverse
 
 if TYPE_CHECKING:
     from . import forms  
 
     
-   
 @dataclasses.dataclass
-class Parallel(amos.Listing):
+class Parallel(amos.Listing, traits.Directed):
     """Base class for a list of serial graphs.
     
     Args:
@@ -59,21 +58,30 @@ class Parallel(amos.Listing):
         default_factory = list)
                                 
     """ Properties """
-
+    @property
+    def endpoint(self) -> MutableSequence[Hashable]:
+        """Returns the endpoints of the stored graph."""
+        return [p[-1] for p in self.contents]
+                    
+    @property
+    def root(self) -> MutableSequence[Hashable]:
+        """Returns the roots of the stored graph."""
+        return [p[0] for p in self.contents]
+    
     @property
     def adjacency(self) -> forms.Adjacency:
         """Returns the stored graph as an Adjacency."""
-        return parallel_to_adjacency(item = self.contents)
+        return traverse.parallel_to_adjacency(item = self.contents)
 
     @property
     def edges(self) -> forms.Edges:
         """Returns the stored graph as an Edges."""
-        return parallel_to_edges(item = self.contents)
+        return traverse.parallel_to_edges(item = self.contents)
           
     @property
     def matrix(self) -> forms.Matrix:
         """Returns the stored graph as a Matrix."""
-        return parallel_to_matrix(item = self.contents)
+        return traverse.parallel_to_matrix(item = self.contents)
 
     @property
     def parallel(self) -> Parallel:
@@ -83,24 +91,24 @@ class Parallel(amos.Listing):
     @property
     def serial(self) -> Serial:
         """Returns the stored graph as a Serial."""
-        return parallel_to_serial(item = self.contents)
+        return traverse.parallel_to_serial(item = self.contents)
     
     """ Class Methods """
     
     @classmethod
     def from_adjacency(cls, item: forms.Adjacency) -> Parallel:
         """Creates a Parallel instance from an Adjacency."""
-        return cls(contents = adjacency_to_parallel(item = item))
+        return cls(contents = traverse.adjacency_to_parallel(item = item))
     
     @classmethod
     def from_edges(cls, item: forms.Edges) -> Serial:
         """Creates a Parallel instance from an Edges."""
-        return cls(contents = edges_to_parallel(item = item))
+        return cls(contents = traverse.edges_to_parallel(item = item))
         
     @classmethod
     def from_matrix(cls, item: forms.Matrix) -> Serial:
         """Creates a Parallel instance from a Matrix."""
-        return cls(contents = matrix_to_parallel(item = item))
+        return cls(contents = traverse.matrix_to_parallel(item = item))
     
     @classmethod
     def from_parallel(cls, item: Parallel) -> Serial:
@@ -168,8 +176,8 @@ class Parallel(amos.Listing):
             item (Graph): another Graph object to add to the stored graph.
                 
         """
-        form = what_form(item = item)
-        if form is 'parallel':
+        form = base.classify(item = item)
+        if form == 'parallel':
             other = item
         else:
             transformer = globals()[f'{form}_to_parallel']
@@ -181,7 +189,7 @@ class Parallel(amos.Listing):
     def _subset(
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Adjacency:
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> forms.Adjacency:
         """Returns a new graph without a subset of 'contents'.
 
         Subclasses must provide their own specific methods for deleting a single
@@ -213,11 +221,11 @@ class Parallel(amos.Listing):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
-        return is_parallel(item = instance)
+        return check.is_parallel(item = instance)
      
     
 @dataclasses.dataclass
-class Serial(amos.Hybrid):
+class Serial(amos.Hybrid, traits.Directed):
     """Base class for serial graphs.
     
     Args:
@@ -227,28 +235,38 @@ class Serial(amos.Hybrid):
     """   
     contents: MutableSequence[Hashable] = dataclasses.field(
         default_factory = list)
-                                
+                   
     """ Properties """
 
     @property
-    def adjacency(self) -> Adjacency:
+    def endpoint(self) -> MutableSequence[Hashable]:
+        """Returns the endpoints of the stored graph."""
+        return [self.contents[-1]]
+                    
+    @property
+    def root(self) -> MutableSequence[Hashable]:
+        """Returns the roots of the stored graph."""
+        return [self.contents[0]]
+    
+    @property
+    def adjacency(self) -> forms.Adjacency:
         """Returns the stored graph as an Adjacency."""
-        return serial_to_adjacency(item = self.contents)
+        return traverse.serial_to_adjacency(item = self.contents)
 
     @property
-    def edges(self) -> Edges:
+    def edges(self) -> forms.Edges:
         """Returns the stored graph as an Edges."""
-        return serial_to_edges(item = self.contents)
+        return traverse.serial_to_edges(item = self.contents)
           
     @property
-    def matrix(self) -> Matrix:
+    def matrix(self) -> forms.Matrix:
         """Returns the stored graph as a Matrix."""
-        return serial_to_matrix(item = self.contents)
+        return traverse.serial_to_matrix(item = self.contents)
 
     @property
     def parallel(self) -> Parallel:
         """Returns the stored graph as a Parallel."""
-        return serial_to_parallel(item = self.contents)
+        return traverse.serial_to_parallel(item = self.contents)
 
     @property
     def serial(self) -> Serial:
@@ -258,24 +276,24 @@ class Serial(amos.Hybrid):
     """ Class Methods """
     
     @classmethod
-    def from_adjacency(cls, item: Adjacency) -> Serial:
+    def from_adjacency(cls, item: forms.Adjacency) -> Serial:
         """Creates a Serial instance from an Adjacency."""
-        return cls(contents = adjacency_to_serial(item = item))
+        return cls(contents = traverse.adjacency_to_serial(item = item))
     
     @classmethod
-    def from_edges(cls, item: Edges) -> Serial:
+    def from_edges(cls, item: forms.Edges) -> Serial:
         """Creates a Serial instance from an Edges."""
-        return cls(contents = edges_to_serial(item = item))
+        return cls(contents = traverse.edges_to_serial(item = item))
         
     @classmethod
-    def from_matrix(cls, item: Matrix) -> Serial:
+    def from_matrix(cls, item: forms.Matrix) -> Serial:
         """Creates a Serial instance from a Matrix."""
-        return cls(contents = matrix_to_serial(item = item))
+        return cls(contents = traverse.matrix_to_serial(item = item))
     
     @classmethod
     def from_parallel(cls, item: Parallel) -> Serial:
         """Creates a Serial instance from a Serial."""
-        return cls(contents = parallel_to_serial(item = item))
+        return cls(contents = traverse.parallel_to_serial(item = item))
      
     @classmethod
     def from_serial(cls, item: Serial) -> Serial:
@@ -337,8 +355,8 @@ class Serial(amos.Hybrid):
             item (Graph): another Graph object to add to the stored graph.
                 
         """
-        form = what_form(item = item)
-        if form is 'serial':
+        form = base.classify(item = item)
+        if form == 'serial':
             other = item
         else:
             transformer = globals()[f'{form}_to_serial']

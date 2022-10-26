@@ -74,7 +74,7 @@ def is_adjacency(item: object) -> bool:
         connections = list(item.values())
         nodes = list(itertools.chain.from_iterable(item.values()))
         return (
-            all(isinstance(e, Collection) for e in connections)
+            all(isinstance(e, set) for e in connections)
             and all(is_node(item = i) for i in nodes))
     else:
         return False

@@ -52,7 +52,7 @@ def test_graph():
     # Tests adjacency list constructor
     adjacency = {
         'grumpy': {'sleepy'},
-        'doc': {},
+        'doc': set(),
         'sneezy': {'grumpy', 'bashful'}}
     workflow = holden.System.from_adjacency(item = adjacency)
     assert 'sleepy' in workflow['grumpy']
@@ -108,8 +108,8 @@ def test_graph():
 
 def test_graph_again() -> None:
     edges = [('a', 'b'), ('c', 'd'), ('a', 'd'), ('d', 'e')]
-    print('test about to create from edges')
     dag = holden.System.from_edges(item = edges)
+    assert dag.walk() == [['a', 'b'], ['a', 'd', 'e'], ['c', 'd', 'e']]
     dag.add(item = 'cat')
     dag.connect(('e', 'cat'))
     # dag.add(item = 'dog', ancestors = 'e', descendants = ['cat'])
@@ -127,9 +127,17 @@ def test_graph_again() -> None:
     assert len(paths) == 6
     assert dag.endpoint == ['house', 'yard']
     assert dag.root == ['a', 'c']
+    assert dag.walk() == [
+        ['a', 'd', 'e', 'cat', 'tree', 'house'], 
+        ['a', 'b', 'tree', 'house'], 
+        ['a', 'd', 'e', 'cat', 'tree', 'yard'], 
+        ['a', 'b', 'tree', 'yard'], 
+        ['c', 'd', 'e', 'cat', 'tree', 'house'], 
+        ['c', 'd', 'e', 'cat', 'tree', 'yard']]
+    print('test walk', dag.walk())
     # assert dag.nodes == {
     #     'tree', 'b', 'c', 'a', 'yard', 'cat', 'd', 'house', 'dog', 'e'}
-    path = dag.serial
+    # path = dag.serial
     # new_dag = holden.System.from_serial(item = path)
     # assert new_dag['tree'] == dag['tree']
     # another_dag = holden.System.from_parallel(item = paths)

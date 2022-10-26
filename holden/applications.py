@@ -171,7 +171,7 @@ class Paths(composites.Parallel, traits.Fungible, traits.Directed):
 
 
 @dataclasses.dataclass
-class System(forms.Adjacency, traits.Fungible, traits.Directed, traits.Storage):
+class System(traits.Directed, forms.Adjacency, traits.Fungible, traits.Storage):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -260,7 +260,10 @@ class System(forms.Adjacency, traits.Fungible, traits.Directed, traits.Storage):
             raise TypeError('item is not a recognized graph type')
         return
     
-    def walk(self, start: Hashable, stop: Hashable) -> Path:
+    def walk(
+        self, 
+        start: Optional[Hashable] = None, 
+        stop: Optional[Hashable] = None) -> Path:
         """Returns all paths in graph from 'start' to 'stop'.
 
         The code here is adapted from: https://www.python.org/doc/essays/graphs/
@@ -274,7 +277,27 @@ class System(forms.Adjacency, traits.Fungible, traits.Directed, traits.Storage):
                 'start' to 'stop'.
             
         """
-        return self.parallel
+        if start is None:
+            roots = self.root
+        else:
+            roots = amos.listify(item = start)
+        if stop is None:
+            endpoints = self.endpoint
+        else:
+            endpoints = self.amos.listify(item = stop)
+        all_paths = []
+        for root in roots:
+            for end in endpoints:
+                paths = traverse.walk_adjacency(
+                    item = self.contents, 
+                    start = root, 
+                    stop = end)
+                if paths:
+                    if all(isinstance(path, Hashable) for path in paths):
+                        all_paths.append(paths)
+                    else:
+                        all_paths.extend(paths)
+        return all_paths
 
     """ Private Methods """
     

@@ -29,12 +29,10 @@ To Do:
 """
 from __future__ import annotations
 import abc
-from collections.abc import (
-    Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
+from collections.abc import Collection, Hashable
 import contextlib
 import dataclasses
-from typing import (
-    Any, Optional, Protocol, runtime_checkable, Type, TYPE_CHECKING, Union)
+from typing import Any, Optional, Type, TYPE_CHECKING, Union
 
 import amos
 
@@ -45,8 +43,7 @@ if TYPE_CHECKING:
     
     
 @dataclasses.dataclass
-@runtime_checkable
-class Directed(Protocol):
+class Directed(abc.ABC):
     """Base class for directed graph data structures.
     
     Args:
@@ -152,8 +149,7 @@ class Directed(Protocol):
        
     
 @dataclasses.dataclass # type: ignore
-@runtime_checkable
-class Fungible(Protocol):
+class Fungible(abc.ABC):
     """Mixin requirements for graphs that can be internally transformed.
     
     Args:
@@ -216,7 +212,7 @@ class Fungible(Protocol):
  
  
 @dataclasses.dataclass
-class Labeled(object):
+class Labeled(abc.ABC):
     """Mixin for labeling parts of a composite object. 
 
     Args:
@@ -300,7 +296,7 @@ class Labeled(object):
  
 
 @dataclasses.dataclass
-class Storage(Protocol):
+class Storage(abc.ABC):
     """Mixin for storage of nodes in a Library with the composite object.
     
     Args:
@@ -312,7 +308,7 @@ class Storage(Protocol):
  
 
 @dataclasses.dataclass
-class Weighted(Protocol):
+class Weighted(abc.ABC):
     """Mixin for weighted nodes.
     
     Args:
