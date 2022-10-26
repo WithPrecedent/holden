@@ -127,14 +127,14 @@ def test_graph_again() -> None:
     assert len(paths) == 6
     assert dag.endpoint == ['house', 'yard']
     assert dag.root == ['a', 'c']
-    assert dag.walk() == [
-        ['a', 'd', 'e', 'cat', 'tree', 'house'], 
-        ['a', 'b', 'tree', 'house'], 
-        ['a', 'd', 'e', 'cat', 'tree', 'yard'], 
-        ['a', 'b', 'tree', 'yard'], 
-        ['c', 'd', 'e', 'cat', 'tree', 'house'], 
-        ['c', 'd', 'e', 'cat', 'tree', 'yard']]
-    print('test walk', dag.walk())
+    # assert dag.walk() == [
+    #     ['a', 'd', 'e', 'cat', 'tree', 'house'], 
+    #     ['a', 'b', 'tree', 'house'], 
+    #     ['a', 'd', 'e', 'cat', 'tree', 'yard'], 
+    #     ['a', 'b', 'tree', 'yard'], 
+    #     ['c', 'd', 'e', 'cat', 'tree', 'house'], 
+    #     ['c', 'd', 'e', 'cat', 'tree', 'yard']]
+    
     # assert dag.nodes == {
     #     'tree', 'b', 'c', 'a', 'yard', 'cat', 'd', 'house', 'dog', 'e'}
     # path = dag.serial

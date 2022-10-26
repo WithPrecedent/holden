@@ -55,8 +55,7 @@ Contents:
     parallel_to_edges
     parallel_to_matrix
     parallel_to_serial
-    
-          
+         
 To Do:
     Add the remainder of the conversion methods between different forms
     Add private methods that currently raise NotImplementedError

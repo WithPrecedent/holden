@@ -1,5 +1,5 @@
 """
-forms: internal storage formats for graphs
+traverse: internal storage formats for graphs
 Corey Rayburn Yung <coreyrayburnyung@gmail.com>
 Copyright 2020-2022, Corey Rayburn Yung
 License: Apache-2.0
@@ -25,7 +25,6 @@ Contents:
     matrix_to_parallel
     serial_to_parallel
     parallel_to_serial
-    
           
 To Do:
     Add the remainder of the conversion methods between different forms

@@ -58,6 +58,7 @@ class Parallel(amos.Listing, traits.Directed):
         default_factory = list)
                                 
     """ Properties """
+    
     @property
     def endpoint(self) -> MutableSequence[Hashable]:
         """Returns the endpoints of the stored graph."""
