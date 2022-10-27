@@ -36,6 +36,7 @@ from . import base
 from . import check
 from . import composites
 from . import graphs
+from . import report
 from . import traits
 from . import traverse
 from . import workshop
@@ -54,7 +55,19 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
     contents: MutableMapping[Hashable, Set[Hashable]] = (
         dataclasses.field(
             default_factory = lambda: collections.defaultdict(set)))
-             
+                                
+    """ Properties """
+    
+    @property
+    def endpoint(self) -> MutableSequence[Hashable]:
+        """Returns the endpoints of the stored composite."""
+        return report.get_endpoints_adjacency(item = self.contents)
+                    
+    @property
+    def root(self) -> MutableSequence[Hashable]:
+        """Returns the roots of the stored composite."""
+        return report.get_roots_adjacency(item = self.contents)
+                 
     """ Public Methods """
 
     def append(self, item: base.Graph) -> None:

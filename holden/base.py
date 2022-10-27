@@ -167,7 +167,7 @@ class Composite(abc.ABC):
             super().__init_subclass__(*args, **kwargs) # type: ignore
         # Adds a subclass to the Forms registry only if it is a direct subclass
         # of Composite.
-        if Composite in cls.__bases__:
+        if Composite in cls.__bases__ and abc.ABC not in cls.__bases__:
             Forms.register(item = cls)
                           
     """ Public Methods """

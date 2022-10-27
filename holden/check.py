@@ -203,7 +203,7 @@ def is_parallel(item: object) -> bool:
     
     """
     return (
-        isinstance(item, Sequence)
+        isinstance(item, MutableSequence)
         and all(is_serial(item = i) for i in item))
 
 def is_serial(item: object) -> bool:
@@ -217,6 +217,6 @@ def is_serial(item: object) -> bool:
     
     """
     return (
-        isinstance(item, Sequence)
-        and not isinstance(item, str)
-        and all(is_node(item = i) for i in item))
+        isinstance(item, MutableSequence)
+        and all(is_node(item = i) for i in item)
+        and all(not isinstance(i, tuple) for i in item))
