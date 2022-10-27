@@ -54,12 +54,13 @@ __package__ = 'holden'
 __author__ = 'Corey Rayburn Yung'
 
 
+from .applications import *
 from .base import *
 from .check import *
 from .composites import *
 from .defaults import *
-from .forms import *
-from .applications import *
+from .graphs import *
+from .report import *
 from .traits import *
 from .traverse import *
 from .workshop import *

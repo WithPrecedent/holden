@@ -31,12 +31,12 @@ from typing import Type
 
 from . import base
 from . import composites
-from . import forms
+from . import graphs
 
 
-_BASE_ADJACENCY: Type[base.Graph] = forms.Adjacency
-_BASE_EDGES: Type[base.Graph] = forms.Edges
-_BASE_MATRIX: Type[base.Graph] = forms.Matrix
+_BASE_ADJACENCY: Type[base.Graph] = graphs.Adjacency
+_BASE_EDGES: Type[base.Graph] = graphs.Edges
+_BASE_MATRIX: Type[base.Graph] = graphs.Matrix
 _BASE_PARALLEL: Type[base.Graph] = composites.Parallel
 _BASE_SERIAL: Type[base.Graph] = composites.Serial
 

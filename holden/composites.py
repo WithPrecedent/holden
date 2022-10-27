@@ -17,37 +17,32 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-
+    Parallel (amos.Listing, traits.Directed, base.Composite):
+    Serial (amos.Hybrid, traits.Directed, base.Composite):
                   
 To Do:
     Complete Tree class and related functions
     Integrate Kinds system when it is finished
-
-    
+  
 """
 from __future__ import annotations
-import abc
-from collections.abc import (
-    Collection, Hashable, MutableMapping, MutableSequence, Sequence)
-import contextlib
+from collections.abc import Hashable, MutableSequence, Sequence
+import copy
 import dataclasses
-from typing import (
-    Any, Optional, Protocol, runtime_checkable, Type, TYPE_CHECKING, Union)
+from typing import Any, Optional, Union
 
 import amos
 
 from . import base
 from . import check
+from . import report
 from . import traits
 from . import traverse
 
-if TYPE_CHECKING:
-    from . import forms  
-
     
 @dataclasses.dataclass
-class Parallel(amos.Listing, traits.Directed):
-    """Base class for a list of serial graphs.
+class Parallel(amos.Listing, traits.Directed, base.Composite):
+    """Base class for a list of serial composites.
     
     Args:
         contents (MutableSequence[Serial]): Listing of Serial instances. 
@@ -61,90 +56,58 @@ class Parallel(amos.Listing, traits.Directed):
     
     @property
     def endpoint(self) -> MutableSequence[Hashable]:
-        """Returns the endpoints of the stored graph."""
-        return [p[-1] for p in self.contents]
+        """Returns the endpoints of the stored composite."""
+        return report.get_endpoints_parallel(item = self)
                     
     @property
     def root(self) -> MutableSequence[Hashable]:
-        """Returns the roots of the stored graph."""
-        return [p[0] for p in self.contents]
-    
-    @property
-    def adjacency(self) -> forms.Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return traverse.parallel_to_adjacency(item = self.contents)
+        """Returns the roots of the stored composite."""
+        return report.get_roots_parallel(item = self)
 
-    @property
-    def edges(self) -> forms.Edges:
-        """Returns the stored graph as an Edges."""
-        return traverse.parallel_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> forms.Matrix:
-        """Returns the stored graph as a Matrix."""
-        return traverse.parallel_to_matrix(item = self.contents)
-
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return self.contents
-
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return traverse.parallel_to_serial(item = self.contents)
+    """ Public Methods """
     
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: forms.Adjacency) -> Parallel:
-        """Creates a Parallel instance from an Adjacency."""
-        return cls(contents = traverse.adjacency_to_parallel(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: forms.Edges) -> Serial:
-        """Creates a Parallel instance from an Edges."""
-        return cls(contents = traverse.edges_to_parallel(item = item))
+    def walk(
+        self, 
+        start: Optional[Hashable] = None, 
+        stop: Optional[Hashable] = None) -> Parallel:
+        """Returns all paths in graph from 'start' to 'stop'.
         
-    @classmethod
-    def from_matrix(cls, item: forms.Matrix) -> Serial:
-        """Creates a Parallel instance from a Matrix."""
-        return cls(contents = traverse.matrix_to_parallel(item = item))
+        Args:
+            start (Hashable): node to start paths from.
+            stop (Hashable): node to stop paths.
+            
+        Returns:
+            Paralle: a list of possible paths (each path is a list nodes) from 
+                'start' to 'stop'.
+            
+        """
+        if start is None:
+            root = self.root
+        else:
+            root = amos.listify(item = start)
+        if stop is None:
+            endpoint = self.endpoint
+        else:
+            endpoint = self.amos.listify(item = stop)
+        return traverse.walk_parallel(
+            item = self, 
+            start = root, 
+            stop = endpoint) 
     
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Serial:
-        """Creates a Parallel instance from a Parallel."""
-        return cls(contents = item)
-     
-    @classmethod
-    def from_serial(cls, item: Serial) -> Serial:
-        """Creates a Parallel instance from a Serial."""
-        return cls(contents = item)
-
     """ Private Methods """   
     
     def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
+        """Adds node to the stored composite.
                    
         Args:
-            item (Hashable): node to add to the stored graph.
+            item (Hashable): node to add to the stored composite.
             
         """
         self.contents.append(item)
         return
-        
-    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored graph.
-        
-        Args:
-            item (Edge): edge to add to the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Parallel graphs cannot connect edges because it changes the form')
       
     def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Deletes node from the stored graph.
+        """Deletes node from the stored composite.
                 
         Args:
             item (Hashable): node to delete from 'contents'.
@@ -153,45 +116,33 @@ class Parallel(amos.Listing, traits.Directed):
         """
         del self.contents[item]
         return
-    
-    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored graph.
-        
-        Args:
-            item (Edge): edge to delete from the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Parallel graphs cannot disconnect edges because it changes the '
-            'form')
 
-    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored graph.
+    def _merge(self, item: base.Composite, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored composite.
 
         Subclasses must provide their own specific methods for merging with
-        another graph. The provided 'merge' method offers all of the error 
+        another composite. The provided 'merge' method offers all of the error 
         checking. Subclasses just need to provide the mechanism for merging 
         ithout worrying about validation or error-checking.
         
         Args:
-            item (Graph): another Graph object to add to the stored graph.
+            item (base.Composite): another Composite object to add to the 
+                stored composite.
                 
         """
-        form = base.classify(item = item)
-        if form == 'parallel':
-            other = item
-        else:
-            transformer = globals()[f'{form}_to_parallel']
-            other = transformer(item = item)
-        for serial in other.contents:
+        other = base.transform(
+            item = item, 
+            output = 'parallel', 
+            raise_same_error = False)
+        for serial in other:
             self.contents.append(serial)
         return
     
     def _subset(
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> forms.Adjacency:
-        """Returns a new graph without a subset of 'contents'.
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Parallel:
+        """Returns a new composite without a subset of 'contents'.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. Subclasses just need to provide the mechanism for returning a
@@ -199,12 +150,12 @@ class Parallel(amos.Listing, traits.Directed):
         
         Args:
             include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new graph.
+                should be included in the new composite.
             exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new graph.
+                should not be included in the new composite.
 
         Returns:
-           Adjacency: with only selected nodes and edges.
+           Parallel: with only selected nodes and edges.
             
         """
         raise NotImplementedError   
@@ -226,8 +177,8 @@ class Parallel(amos.Listing, traits.Directed):
      
     
 @dataclasses.dataclass
-class Serial(amos.Hybrid, traits.Directed):
-    """Base class for serial graphs.
+class Serial(amos.Hybrid, traits.Directed, base.Composite):
+    """Base class for serial composites.
     
     Args:
         contents (MutableSequence[Hashable]): list of nodes. Defaults to 
@@ -241,90 +192,51 @@ class Serial(amos.Hybrid, traits.Directed):
 
     @property
     def endpoint(self) -> MutableSequence[Hashable]:
-        """Returns the endpoints of the stored graph."""
-        return [self.contents[-1]]
+        """Returns the endpoints of the stored composite."""
+        return report.get_endpoints_serial(item = self)
                     
     @property
     def root(self) -> MutableSequence[Hashable]:
-        """Returns the roots of the stored graph."""
-        return [self.contents[0]]
-    
-    @property
-    def adjacency(self) -> forms.Adjacency:
-        """Returns the stored graph as an Adjacency."""
-        return traverse.serial_to_adjacency(item = self.contents)
+        """Returns the roots of the stored composite."""
+        return report.get_roots_serial(item = self)
 
-    @property
-    def edges(self) -> forms.Edges:
-        """Returns the stored graph as an Edges."""
-        return traverse.serial_to_edges(item = self.contents)
-          
-    @property
-    def matrix(self) -> forms.Matrix:
-        """Returns the stored graph as a Matrix."""
-        return traverse.serial_to_matrix(item = self.contents)
-
-    @property
-    def parallel(self) -> Parallel:
-        """Returns the stored graph as a Parallel."""
-        return traverse.serial_to_parallel(item = self.contents)
-
-    @property
-    def serial(self) -> Serial:
-        """Returns the stored graph as a Serial."""
-        return self.contents
+    """ Public Methods """
     
-    """ Class Methods """
-    
-    @classmethod
-    def from_adjacency(cls, item: forms.Adjacency) -> Serial:
-        """Creates a Serial instance from an Adjacency."""
-        return cls(contents = traverse.adjacency_to_serial(item = item))
-    
-    @classmethod
-    def from_edges(cls, item: forms.Edges) -> Serial:
-        """Creates a Serial instance from an Edges."""
-        return cls(contents = traverse.edges_to_serial(item = item))
+    def walk(
+        self, 
+        start: Optional[Hashable] = None, 
+        stop: Optional[Hashable] = None) -> Parallel:
+        """Returns all paths in graph from 'start' to 'stop'.
         
-    @classmethod
-    def from_matrix(cls, item: forms.Matrix) -> Serial:
-        """Creates a Serial instance from a Matrix."""
-        return cls(contents = traverse.matrix_to_serial(item = item))
-    
-    @classmethod
-    def from_parallel(cls, item: Parallel) -> Serial:
-        """Creates a Serial instance from a Serial."""
-        return cls(contents = traverse.parallel_to_serial(item = item))
-     
-    @classmethod
-    def from_serial(cls, item: Serial) -> Serial:
-        """Creates a Serial instance from a Serial."""
-        return cls(contents = item)
-
+        Args:
+            start (Hashable): node to start paths from.
+            stop (Hashable): node to stop paths.
+            
+        Returns:
+            Paralle: a list of possible paths (each path is a list nodes) from 
+                'start' to 'stop'.
+            
+        """
+        if start is None:
+            start = self.root[0]
+        if stop is None:
+            stop = self.endpoint[0]
+        return traverse.walk_serial(item = self, start = start, stop = stop) 
+        
     """ Private Methods """   
     
     def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
+        """Adds node to the stored composite.
                    
         Args:
-            item (Hashable): node to add to the stored graph.
+            item (Hashable): node to add to the stored composite.
             
         """
         self.contents.append(item)
         return
-        
-    def _connect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored graph.
-        
-        Args:
-            item (Edge): edge to add to the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Serial graphs cannot connect edges because it changes the form')
       
     def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Deletes node from the stored graph.
+        """Deletes node from the stored composite.
                 
         Args:
             item (Hashable): node to delete from 'contents'.
@@ -333,35 +245,24 @@ class Serial(amos.Hybrid, traits.Directed):
         """
         del self.contents[item]
         return
-    
-    def _disconnect(self, item: base.Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored graph.
-        
-        Args:
-            item (Edge): edge to delete from the stored graph.
-            
-        """
-        raise NotImplementedError(
-            'Serial graphs cannot disconnect edges because it changes the form')
 
-    def _merge(self, item: base.Graph, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored graph.
+    def _merge(self, item: base.Composite, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored composite.
 
         Subclasses must provide their own specific methods for merging with
-        another graph. The provided 'merge' method offers all of the error 
+        another composite. The provided 'merge' method offers all of the error 
         checking. Subclasses just need to provide the mechanism for merging 
         ithout worrying about validation or error-checking.
         
         Args:
-            item (Graph): another Graph object to add to the stored graph.
+            item (base.Composite): another Composite object to add to the 
+                stored composite.
                 
         """
-        form = base.classify(item = item)
-        if form == 'serial':
-            other = item
-        else:
-            transformer = globals()[f'{form}_to_serial']
-            other = transformer(item = item)
+        other = base.transform(
+            item = item, 
+            output = 'serial', 
+            raise_same_error = False)
         self.contents.extend(other)
         return
     
@@ -369,7 +270,7 @@ class Serial(amos.Hybrid, traits.Directed):
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
         exclude: Union[Hashable, Sequence[Hashable]] = None) -> Serial:
-        """Returns a new graph without a subset of 'contents'.
+        """Returns a new composite without a subset of 'contents'.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. Subclasses just need to provide the mechanism for returning a
@@ -377,15 +278,21 @@ class Serial(amos.Hybrid, traits.Directed):
         
         Args:
             include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new graph.
+                should be included in the new composite.
             exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new graph.
+                should not be included in the new composite.
 
         Returns:
-           Adjacency: with only selected nodes and edges.
+           Serial: with only selected nodes and edges.
             
         """
-        raise NotImplementedError   
+        if include:
+            new_serial = [i for i in self.contents if i in include]  
+        else:
+            new_serial = copy.deepcopy(self.contents)
+        if exclude:
+            new_serial = [i for i in self.contents if i not in exclude]
+        return self.__class__(contents = new_serial)
                         
     """ Dunder Methods """
         
@@ -407,7 +314,7 @@ class Serial(amos.Hybrid, traits.Directed):
 
     
 # @dataclasses.dataclass # type: ignore
-# class Tree(amos.Hybrid, traits.Directed, base.Graph):
+# class Tree(amos.Hybrid, traits.Directed, base.Composite):
 #     """Base class for an tree data structures.
     
 #     The Tree class uses a Hybrid instead of a linked list for storing children
@@ -449,7 +356,7 @@ class Serial(amos.Hybrid, traits.Directed):
 
 #     @property
 #     def endpoint(self) -> Union[Hashable, Collection[Hashable]]:
-#         """Returns the endpoint(s) of the stored graph."""
+#         """Returns the endpoint(s) of the stored composite."""
 #         if not self.contents:
 #             return self
 #         else:
@@ -457,7 +364,7 @@ class Serial(amos.Hybrid, traits.Directed):
  
 #     @property
 #     def root(self) -> Union[Hashable, Collection[Hashable]]:
-#         """Returns the root(s) of the stored graph."""
+#         """Returns the root(s) of the stored composite."""
 #         if self.parent is None:
 #             return self
 #         else:
@@ -519,7 +426,7 @@ class Serial(amos.Hybrid, traits.Directed):
 
 
 # # @functools.singledispatch 
-# def to_tree(item: Any) -> forms.Tree:
+# def to_tree(item: Any) -> graphs.Tree:
 #     """Converts 'item' to a Tree.
     
 #     Args:
@@ -540,7 +447,7 @@ class Serial(amos.Hybrid, traits.Directed):
 #             f'{type(item).__name__}')
 
 # # @to_tree.register # type: ignore 
-# def matrix_to_tree(item: forms.Matrix) -> forms.Tree:
+# def matrix_to_tree(item: graphs.Matrix) -> graphs.Tree:
 #     """Converts 'item' to a Tree.
     
 #     Args:

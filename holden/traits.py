@@ -17,11 +17,11 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    Directed (Protocol): a directed graph with unweighted edges.
-    Fungible (Protocol):
-    Labeled (Protocol):    
-    Storage (Protocol):
-    Weighted (Protocol):
+    Directed (abc.ABC): a directed graph with unweighted edges.
+    Fungible (abc.ABC):
+    Labeled (abc.ABC):    
+    Storage (abc.ABC):
+    Weighted (abc.ABC):
     
 To Do:
 
@@ -39,7 +39,8 @@ import amos
 from . import base
 
 if TYPE_CHECKING:
-    from . import forms
+    from . import composites
+    from . import graphs
     
     
 @dataclasses.dataclass
@@ -56,12 +57,12 @@ class Directed(abc.ABC):
         
     @abc.abstractproperty
     def endpoint(self) -> Union[Hashable, Collection[Hashable]]:
-        """Returns the endpoint(s) of the stored graph."""
+        """Returns the endpoint(s) of the stored composite."""
         pass
  
     @abc.abstractproperty
     def root(self) -> Union[Hashable, Collection[Hashable]]:
-        """Returns the root(s) of the stored graph."""
+        """Returns the root(s) of the stored composite."""
         pass
             
     """ Required Subclass Methods """
@@ -72,11 +73,11 @@ class Directed(abc.ABC):
         item: Union[Hashable, base.Graph], 
         *args: Any, 
         **kwargs: Any) -> None:
-        """Appends 'item' to the endpoint(s) of the stored graph.
+        """Appends 'item' to the endpoint(s) of the stored composite.
 
         Args:
             item (Union[Hashable, base.Graph]): a Node or Graph to 
-                add to the stored graph.
+                add to the stored composite.
                 
         """
         pass
@@ -87,11 +88,11 @@ class Directed(abc.ABC):
         item: Union[Hashable, base.Graph], 
         *args: Any, 
         **kwargs: Any) -> None:
-        """Prepends 'item' to the root(s) of the stored graph.
+        """Prepends 'item' to the root(s) of the stored composite.
 
         Args:
             item (Union[Hashable, base.Graph]): a Node or Graph to 
-                add to the stored graph.
+                add to the stored composite.
                 
         """
         pass
@@ -104,7 +105,7 @@ class Directed(abc.ABC):
         path: Optional[base.Path] = None,
         *args: Any, 
         **kwargs: Any) -> base.Path:
-        """Returns path in the stored graph from 'start' to 'stop'.
+        """Returns path in the stored composite from 'start' to 'stop'.
         
         Args:
             start (Optional[Hashable]): Node to start paths from. 
@@ -126,7 +127,7 @@ class Directed(abc.ABC):
     """ Dunder Methods """
 
     def __add__(self, other: base.Graph) -> None:
-        """Adds 'other' to the stored graph using 'append'.
+        """Adds 'other' to the stored composite using 'append'.
 
         Args:
             other (Union[base.Graph]): another graph to add to the current 
@@ -137,7 +138,7 @@ class Directed(abc.ABC):
         return 
 
     def __radd__(self, other: base.Graph) -> None:
-        """Adds 'other' to the stored graph using 'prepend'.
+        """Adds 'other' to the stored composite using 'prepend'.
 
         Args:
             other (Union[base.Graph]): another graph to add to the current 
@@ -150,66 +151,92 @@ class Directed(abc.ABC):
     
 @dataclasses.dataclass # type: ignore
 class Fungible(abc.ABC):
-    """Mixin requirements for graphs that can be internally transformed.
-    
-    Args:
-        contents (Collection[Any]): stored collection of nodes and/or edges.
-                                      
-    """  
-    contents: Collection[Any]
+    """Mixin requirements for graphs that can be internally transformed."""  
    
     """ Properties """
 
     @property
-    def adjacency(self) -> forms.Adjacency:
-        """Returns the stored graph as an Adjacency."""
+    def adjacency(self) -> graphs.Adjacency:
+        """Returns the stored composite as an Adjacency."""
         return base.transform(
             item = self, 
             output = 'adjacency', 
             raise_same_error = False)
         
     @property
-    def edges(self) -> forms.Edges:
-        """Returns the stored graph as an Edges."""
+    def edges(self) -> graphs.Edges:
+        """Returns the stored composite as an Edges."""
         return base.transform(
             item = self, 
             output = 'edges', 
             raise_same_error = False)
            
     @property
-    def matrix(self) -> forms.Matrix:
-        """Returns the stored graph as a Matrix."""
+    def matrix(self) -> graphs.Matrix:
+        """Returns the stored composite as a Matrix."""
         return base.transform(
             item = self, 
             output = 'matrix', 
+            raise_same_error = False)
+     
+    @property
+    def parallel(self) -> composites.Parallel:
+        """Returns the stored composite as a Parallel."""
+        return base.transform(
+            item = self, 
+            output = 'parallel', 
+            raise_same_error = False)
+            
+    @property
+    def serial(self) -> composites.Serial:
+        """Returns the stored composite as a Serial."""
+        return base.transform(
+            item = self, 
+            output = 'serial', 
             raise_same_error = False)
 
     """ Class Methods """
     
     @classmethod
-    def from_adjacency(cls, item: forms.Adjacency) -> Fungible:
-        """Creates a Graph instance from an Adjacency."""
+    def from_adjacency(cls, item: graphs.Adjacency) -> Fungible:
+        """Creates a composite data structure from an Adjacency."""
         return cls(contents = base.transform(
             item = item, 
             output = base.classify(item = cls),
             raise_same_error = False))
     
     @classmethod
-    def from_edges(cls, item: forms.Edges) -> Fungible:
-        """Creates a Graph instance from an Edges."""
+    def from_edges(cls, item: graphs.Edges) -> Fungible:
+        """Creates a composite data structure from an Edges."""
         return cls(contents = base.transform(
             item = item, 
             output = base.classify(item = cls), 
             raise_same_error = False))
         
     @classmethod
-    def from_matrix(cls, item: forms.Matrix) -> Fungible:
-        """Creates a Graph instance from a Matrix."""
+    def from_matrix(cls, item: graphs.Matrix) -> Fungible:
+        """Creates a composite data structure from a Matrix."""
         return cls(contents = base.transform(
             item = item, 
             output = base.classify(item = cls), 
             raise_same_error = False))
- 
+        
+    @classmethod
+    def from_parallel(cls, item: composites.Parallel) -> Fungible:
+        """Creates a composite data structure from a Parallel."""
+        return cls(contents = base.transform(
+            item = item, 
+            output = base.classify(item = cls), 
+            raise_same_error = False)) 
+        
+    @classmethod
+    def from_serial(cls, item: composites.Serial) -> Fungible:
+        """Creates a composite data structure from a Serial."""
+        return cls(contents = base.transform(
+            item = item, 
+            output = base.classify(item = cls), 
+            raise_same_error = False))      
+           
  
 @dataclasses.dataclass
 class Labeled(abc.ABC):

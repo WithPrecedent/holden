@@ -17,18 +17,19 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    Forms
-    Composite
-    Graph (amos.Bunch, Protocol): base class for composite data structures. 
-        Provides some common functionality and requires subclass methods.
+    Forms (object): stores all direct subclasses of Composite and Graph and 
+        provides convenient classification and transformation methods.
+    Composite (amos.Bunch, abc.ABC): base class for all composite data 
+        structures.
+    Graph (Composite, abc.ABC): base class for graphs.
     Edge (Sequence): base class for an edge in a graph. Many graphs will not
         require edge instances, but the class is made available for more complex 
         graphs and type checking.
-    Node (amos.Proxy): wrapper for items that can be stored in a Graph or other
-        data structure.  
-    classify: returns str name of the subtype a subtype of the passed graph.
-    transform: general subtype transformer that allows any form of a Graph to
-        be changed to any other recognized form.
+    Node (Hashable): wrapper for items that can be stored in a composite data
+        structure.
+    classify: returns str name of the subtype a subtype of the passed item.
+    transform: general subtype transformer that allows any base form of a 
+        Composite or Graph to be changed to any other recognized form.
                  
 To Do:
     Integrate Kinds system when it is finished.
@@ -55,8 +56,8 @@ class Forms(object):
     """Registry of composite data structures.
     
     Args:
-        registry (amos.Dictionary): keys are names of graph forms and values are
-            Graph subclasses.
+        registry (amos.Dictionary): keys are names of composite data structure 
+            forms and values are Composite and Graph subclasses.
                           
     """
     registry: ClassVar[amos.Dictionary] = amos.Dictionary()
@@ -65,7 +66,7 @@ class Forms(object):
     
     @classmethod
     def classify(cls, item: object) -> str:
-        """Determines which form of graph that 'item' is.
+        """Determines which form of composite that 'item' is.
         
         There is no difference between this classmethod and the 'classify'
         function.
@@ -80,22 +81,42 @@ class Forms(object):
         return classify(item = item)
     
     @classmethod
+    def register(
+        cls, 
+        item: Type[Composite], 
+        name: Optional[str] = None) -> None:
+        """Adds 'item' to 'registry'.
+        
+        The key assigned for storing 'item' is determined using the amos.namify
+        method if 'name' is not passed.
+        
+        Args:
+            item (Type[Composite]): class to register.
+            name (Optional[str]): key to use for storing 'item'. Defaults to
+                None.
+            
+        """
+        name = name or amos.namify(item = item)
+        cls.registry.add(item = {name: item})
+        return
+        
+    @classmethod
     def transform(
         cls,
-        item: Graph, 
+        item: Composite, 
         output: str, 
-        raise_same_error: Optional[bool] = True) -> Graph:
+        raise_same_error: Optional[bool] = True) -> Composite:
         """General transform method that will call appropriate transformer.
         
-        Unlike the 'transform' function, this method will return a Graph wrapped
-        in the form type stored in the Forms registry (as opposed to the raw
-        type). So, if 'output' is 'edges', this method will return an edge list
-        in the Edges class. In contrast, the 'transform' method will return the
-        structural type of an edge list without using the Edges class. The rest
-        of the logic is identical between the function and method.
+        Unlike the 'transform' function, this method will return a Composite 
+        wrapped in the form type stored in the Forms registry (as opposed to the 
+        raw type). So, if 'output' is 'edges', this method will return an edge 
+        list in the Edges class. In contrast, the 'transform' method will return 
+        the structural type of an edge list without using the Edges class. The 
+        rest of the logic is identical between the function and method.
 
         Args:
-            item Graph): Graph to transform.
+            item (Composite): Composite to transform.
             output (str): name of form to transform 'item' to.
             raise_same_error(Optional[bool]): whether to return an error if the 
                 form of 'item' is the same as 'output'. If True, a ValueError 
@@ -107,7 +128,7 @@ class Forms(object):
                 'raise_same_error' is True.
                 
         Returns:
-            base.Graph: transformed graph.
+            Composite: transformed composite data structure.
             
         """
         form = Forms.classify(item = item)
@@ -124,54 +145,56 @@ class Forms(object):
 """ Base Classes for Composite Data Structures """
       
 @dataclasses.dataclass
-class Composite(amos.Bunch, abc.ABC):
+class Composite(abc.ABC):
     """Base class for composite data structures.
-    
-    Args:
-        contents (Optional[Collection[Any]]): stored collection of nodes and/or 
-            edges.
                                      
+    Args:
+         contents (Optional[Collection[Any]]): stored nodes or node labels. 
+            Subclasses should narrow the type for contents based on the internal 
+            storage format used.
+                  
     """  
-    # contents: Optional[Collection[Any]] = None
-
+    contents: Optional[Collection[Any]] = None
+    
     """ Initialization Methods """
     
     @classmethod
     def __init_subclass__(cls, *args: Any, **kwargs: Any):
         """Automatically registers subclass.."""
-        # Because Graph will be used with mixins, it is important to call other 
-        # '__init_subclass__' methods, if they exist.
+        # Because Composite will be used with mixins, it is important to call 
+        # other '__init_subclass__' methods, if they exist.
         with contextlib.suppress(AttributeError):
             super().__init_subclass__(*args, **kwargs) # type: ignore
         # Adds a subclass to the Forms registry only if it is a direct subclass
-        # of Graph.
-        if Graph in cls.__bases__:
-            name = amos.namify(item = cls)
-            Forms.registry.add(item = {name: cls})
+        # of Composite.
+        if Composite in cls.__bases__:
+            Forms.register(item = cls)
                           
     """ Public Methods """
 
     def add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
+        """Adds node to the stored composite data structure.
                    
         Args:
-            item (Hashable): node to add to the stored graph.
+            item (Hashable): node to add to the stored composite data structure.
             
         Raises:
             TypeError: if 'item' is not a node type.
-            ValueError: if 'item' is already in the stored graph.
+            ValueError: if 'item' is already in the stored composite data 
+                structure.
             
         """
         if not check.is_node(item = item):
             raise TypeError(f'{item} is not a node type')
         elif item in self.contents:
-            raise ValueError(f'{item} is already in the graph') 
+            raise ValueError(
+                f'{item} is already in the composite data structure') 
         else:  
             self._add(item, *args, **kwargs)
         return
         
     def delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Deletes node from the stored graph.
+        """Deletes node from the stored composite data structure.
 
         Subclasses must provide their own specific methods for deleting a single
         node. The provided 'delete' method offers all of the error checking and
@@ -192,25 +215,27 @@ class Composite(amos.Bunch, abc.ABC):
         try:
             self._delete(item, *args **kwargs)
         except KeyError:
-            raise KeyError(f'{item} does not exist in the graph')
+            raise KeyError(
+                f'{item} does not exist in the composite data structure')
         return
     
-    def merge(self, item: Graph, *args: Any, **kwargs: Any) -> None:
-        """Adds 'item' to this Graph.
+    def merge(self, item: Composite, *args: Any, **kwargs: Any) -> None:
+        """Adds 'item' to this Composite.
 
         This method is roughly equivalent to a dict.update, just adding 'item'
-        to the existing stored graph while maintaining its structure.
+        to the existing stored composite data structure while maintaining its 
+        structure.
         
         Args:
-            item (base.Graph): another Graph, an adjacency 
-                list, an edge list, an adjacency matrix, or one or more nodes.
+            item (base.Composite): another Composite to merge with
             
         Raises:
-            TypeError: if 'item' is not compatible graph type.
+            TypeError: if 'item' is not compatible composite data structure 
+                type.
             
         """
-        if not check.is_graph(item = item):
-            raise TypeError(f'{item} is not a compatible graph type') 
+        if not check.is_composite(item = item):
+            raise TypeError(f'{item} is not a compatible type') 
         else:
             self._merge(item, *args, **kwargs)
         return
@@ -218,41 +243,46 @@ class Composite(amos.Bunch, abc.ABC):
     def subset(
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Graph:
-        """Returns a new Graph without a subset of 'contents'.
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Composite:
+        """Returns a new Composite without a subset of 'contents'.
         
         All edges will be removed that include any nodes that are not part of
-        the new subgraph.
+        the new composite data structure.
         
-        Any extra attributes that are part of a Graph (or a subclass) should 
-        be maintained in the returned subgraph.
+        Any extra attributes that are part of a Composite (or a subclass) should 
+        be maintained in the returned composite data structure.
 
         Args:
             include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new graph.
+                should be included in the new composite data structure.
             exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new graph.
+                should not be included in the new composite data structure.
 
         Raises:
             ValueError: if include and exclude are none or if any item in
-                include or exclude is not in the stored graph.
+                include or exclude is not in the stored composite data 
+                structure.
 
         Returns:
-           Graph: with only selected nodes and edges.
+           Composite: with only selected nodes and edges.
 
         """
         if include is None and exclude is None:
             raise ValueError('Either include or exclude must not be None')
         if not all(i for i in include if i in self.contents):
-            raise ValueError('Some values in include are not in the graph')
+            raise ValueError(
+                'Some values in include are not in the composite data '
+                'structure')
         if not all(i for i in exclude if i in self.contents):
-            raise ValueError('Some values in exclude are not in the graph')
+            raise ValueError(
+                'Some values in exclude are not in the composite data '
+                'structure')
         return self._subset(include, exclude)
     
     """ Private Methods """
     
     def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
+        """Adds node to the stored composite data structure.
  
         Subclasses must provide their own specific methods for adding a single
         node. The provided 'add' method offers all of the error checking and
@@ -261,13 +291,13 @@ class Composite(amos.Bunch, abc.ABC):
         validation or error-checking.
                    
         Args:
-            item (Hashable): node to add to the stored graph.
+            item (Hashable): node to add to the stored composite data structure.
                 
         """
         raise NotImplementedError
       
     def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Deletes node from the stored graph.
+        """Deletes node from the stored composite data structure.
 
         Subclasses must provide their own specific methods for deleting a single
         node. The provided 'delete' method offers all of the error checking and
@@ -281,16 +311,17 @@ class Composite(amos.Bunch, abc.ABC):
         """
         raise NotImplementedError
 
-    def _merge(self, item: Graph, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored graph.
+    def _merge(self, item: Composite, *args: Any, **kwargs: Any) -> None:
+        """Combines 'item' with the stored composite data structure.
 
         Subclasses must provide their own specific methods for merging with
-        another graph. The provided 'merge' method offers all of the error 
-        checking. Subclasses just need to provide the mechanism for merging 
-        ithout worrying about validation or error-checking.
+        another composite data structure. The provided 'merge' method offers all 
+        of the error checking. Subclasses just need to provide the mechanism for 
+        merging ithout worrying about validation or error-checking.
         
         Args:
-            item (Graph): another Graph object to add to the stored graph.
+            item (Composite): another Composite object to add to the stored 
+                composite data structure.
                 
         """
         raise NotImplementedError
@@ -298,8 +329,8 @@ class Composite(amos.Bunch, abc.ABC):
     def _subset(
         self, 
         include: Union[Hashable, Sequence[Hashable]] = None,
-        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Graph:
-        """Returns a new Graph without a subset of 'contents'.
+        exclude: Union[Hashable, Sequence[Hashable]] = None) -> Composite:
+        """Returns a new Composite without a subset of 'contents'.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. Subclasses just need to provide the mechanism for returning a
@@ -307,9 +338,9 @@ class Composite(amos.Bunch, abc.ABC):
         
         Args:
             include (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should be included in the new graph.
+                should be included in the new composite data structure.
             exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which 
-                should not be included in the new graph.
+                should not be included in the new composite data structure.
 
         Returns:
            Graph: with only selected nodes and edges.
@@ -337,13 +368,17 @@ class Composite(amos.Bunch, abc.ABC):
 class Graph(Composite, abc.ABC):
     """Base class for holden graphs.
     
+    Graph adds the requirements of '_connect' and '_disconnect' methods in 
+    addition to the requirements of Composite.
+    
     Args:
-        contents (Optional[Collection[Any]]): stored collection of nodes and/or 
-            edges.
-                                     
+         contents (Optional[Collection[Any]]): stored nodes, node labels, edges,
+            or edge labels. Subclasses should narrow the type for contents based
+            on the internal storage format used.
+                  
     """  
-    # contents: Optional[Collection[Any]] = None
-
+    contents: Optional[Collection[Any]] = None
+    
     """ Initialization Methods """
     
     @classmethod
@@ -356,8 +391,7 @@ class Graph(Composite, abc.ABC):
         # Adds a subclass to the Forms registry only if it is a direct subclass
         # of Graph.
         if Graph in cls.__bases__:
-            name = amos.namify(item = cls)
-            Forms.registry.add(item = {name: cls})
+            Forms.register(item = cls)
                           
     """ Public Methods """
 

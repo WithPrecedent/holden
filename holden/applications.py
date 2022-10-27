@@ -17,7 +17,7 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-     
+     System
         
 To Do:
     Complete Network which will use an adjacency matrix for internal storage.
@@ -27,9 +27,7 @@ from __future__ import annotations
 import collections
 from collections.abc import (
     Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
-import copy
 import dataclasses
-import itertools
 from typing import Any, Optional, Type, TYPE_CHECKING, Union
 
 import amos
@@ -37,141 +35,14 @@ import amos
 from . import base
 from . import check
 from . import composites
-from . import forms
+from . import graphs
 from . import traits
 from . import traverse
 from . import workshop
     
 
-@dataclasses.dataclass # type: ignore
-class Path(composites.Serial, traits.Fungible, traits.Directed):
-    """Linear path graph.
-    
-    Args:
-        contents (MutableSequence[Hashable]): ordered list of stored Node 
-            instances. Defaults to an empty list.
-          
-    """
-    contents: MutableSequence[Hashable] = dataclasses.field(
-        default_factory = list)
-
-    """ Properties """
-    
-    @property
-    def endpoint(self) -> Hashable:
-        """Returns the endpoint of the stored graph."""
-        return self.contents[-1]
-    
-    @property
-    def root(self) -> Hashable:
-        """Returns the root of the stored graph."""
-        return self.contents[0]
-    
-    """ Public Methods """
-      
-    def walk(
-        self, 
-        start: Optional[Hashable] = None,
-        stop: Optional[Hashable] = None, 
-        path: Optional[Path] = None,
-        return_parallel: bool = False, 
-        *args: Any, 
-        **kwargs: Any) -> Path:
-        """Returns path in the stored composite object from 'start' to 'stop'.
-        
-        Args:
-            start (Optional[Hashable]): Hashable to start paths from. Defaults 
-                to None. If it is None, 'start' is assigned to 'root'.
-            stop (Optional[Hashable]): Hashable to stop paths. Defaults to 
-                None. If it is None, 'stop' is assigned to 'endpoint'.
-            path (Optional[Path]): a path from 'start' to 'stop'. Defaults to 
-                None. This parameter is used by recursive methods for 
-                determining a path.
-            return_parallel (bool): whether to always return a Paths instance 
-                (True) or a Path instance (False) if there is only one path. 
-                Defaults to False (because a Path should never have more than
-                one path through it).
-
-        Returns:
-            Path: derived from self.contents.
-                            
-        """
-        if start is None and stop is None:
-            path = self.contents
-        else:
-            start = start or self.root
-            stop = stop or self.endpoint
-            index_start = self.contents.index(start)
-            index_stop = self.contents.index(stop) + 1
-            if index_stop > len(self.contents):
-                path = self.contents[index_start:]
-            else:
-                path = self.contents[index_start:index_stop]
-        if return_parallel:
-            return Paths(contents = [path])
-        else:
-            return path
-
-
-@dataclasses.dataclass # type: ignore
-class Paths(composites.Parallel, traits.Fungible, traits.Directed):
-    """List of linear path graphs.
-    
-    Args:
-        contents (MutableSequence[Path]): ordered list of stored Path 
-            instances. Defaults to an empty list.
-          
-    """
-    contents: MutableSequence[Path] = dataclasses.field(default_factory = list)
-    
-    """ Public Methods """
-      
-    def walk(
-        self, 
-        start: Optional[Hashable] = None,
-        stop: Optional[Hashable] = None, 
-        path: Optional[Path] = None,
-        return_parallel: bool = False, 
-        *args: Any, 
-        **kwargs: Any) -> Path:
-        """Returns path in the stored composite object from 'start' to 'stop'.
-        
-        Args:
-            start (Optional[Hashable]): Hashable to start paths from. Defaults 
-                to None. If it is None, 'start' is assigned to 'root'.
-            stop (Optional[Hashable]): Hashable to stop paths. Defaults to 
-                None. If it is None, 'stop' is assigned to 'endpoint'.
-            path (Optional[Path]): a path from 'start' to 'stop'. Defaults to 
-                None. This parameter is used by recursive methods for 
-                determining a path.
-            return_parallel (bool): whether to always return a Paths instance 
-                (True) or a Path instance (False) if there is only one path. 
-                Defaults to False (because a Path should never have more than
-                one path through it).
-
-        Returns:
-            Path: derived from self.contents.
-                            
-        """
-        if start is None and stop is None:
-            path = self.contents
-        else:
-            start = start or self.root
-            stop = stop or self.endpoint
-            index_start = self.contents.index(start)
-            index_stop = self.contents.index(stop) + 1
-            if index_stop > len(self.contents):
-                path = self.contents[index_start:]
-            else:
-                path = self.contents[index_start:index_stop]
-        if return_parallel:
-            return Paths(contents = [path])
-        else:
-            return path
-
-
 @dataclasses.dataclass
-class System(forms.Adjacency, traits.Directed, traits.Fungible, traits.Storage):
+class System(graphs.Adjacency, traits.Directed, traits.Fungible):
     """Directed graph with unweighted edges stored as an adjacency list.
     
     Args:
@@ -183,29 +54,6 @@ class System(forms.Adjacency, traits.Directed, traits.Fungible, traits.Storage):
     contents: MutableMapping[Hashable, Set[Hashable]] = (
         dataclasses.field(
             default_factory = lambda: collections.defaultdict(set)))
-    nodes: amos.Library = dataclasses.field(default_factory = amos.Library)
-    
-    """ Properties """
-
-    @property
-    def endpoint(self) -> MutableSequence[Hashable]:
-        """Returns the endpoints of the stored graph."""
-        return workshop.get_endpoints_adjacency(item = self.contents)
-                    
-    @property
-    def root(self) -> MutableSequence[Hashable]:
-        """Returns the roots of the stored graph."""
-        return workshop.get_roots_adjacency(item = self.contents)
-
-    # @property
-    # def parallel(self) -> Collection[Hashable]:
-    #     """Returns all paths through the stored as a list of paths."""
-    #     return traverse.adjacency_to_parallel(item = self.contents)
-    
-    # @property
-    # def serial(self) -> base.Path:
-    #     """Returns stored graph as a path."""
-    #     return traverse.adjacency_to_serial(item = self.contents)
              
     """ Public Methods """
 
@@ -273,8 +121,6 @@ class System(forms.Adjacency, traits.Directed, traits.Fungible, traits.Storage):
         start: Optional[Hashable] = None, 
         stop: Optional[Hashable] = None) -> Paths:
         """Returns all paths in graph from 'start' to 'stop'.
-
-        The code here is adapted from: https://www.python.org/doc/essays/graphs/
         
         Args:
             start (Hashable): node to start paths from.
@@ -306,23 +152,6 @@ class System(forms.Adjacency, traits.Directed, traits.Fungible, traits.Storage):
                     else:
                         all_paths.extend(paths)
         return all_paths
-
-    """ Private Methods """
-    
-    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
-        """Adds node to the stored graph.
-                   
-        Args:
-            item (Hashable): node to add to the stored graph.
-                
-        """
-        if not check.is_node(item = item):
-            name = item.name
-            self.nodes.deposit(item = item, name = name)
-        else:
-            name = item
-        self.contents[name] = set()
-        return
 
  
 # @dataclasses.dataclass
