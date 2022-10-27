@@ -301,7 +301,7 @@ class System(forms.Adjacency, traits.Directed, traits.Fungible, traits.Storage):
                     start = root, 
                     stop = end)
                 if paths:
-                    if all(isinstance(path, Hashable) for path in paths):
+                    if all(isinstance(p, Hashable) for p in paths):
                         all_paths.append(paths)
                     else:
                         all_paths.extend(paths)

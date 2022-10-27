@@ -17,6 +17,8 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
+    Forms
+    Composite
     Graph (amos.Bunch, Protocol): base class for composite data structures. 
         Provides some common functionality and requires subclass methods.
     Edge (Sequence): base class for an edge in a graph. Many graphs will not
@@ -46,7 +48,7 @@ from . import check
 from . import workshop
 
 
-""" Graph Form Registry """
+""" Composite Form Registry """
 
 @dataclasses.dataclass
 class Forms(object):
@@ -117,12 +119,13 @@ class Forms(object):
             transformer = getattr(workshop, [f'{form}_to_{output}'])
             base = cls.registry[output]
             return base(transformer(item = item))        
+
             
 """ Base Classes for Composite Data Structures """
       
 @dataclasses.dataclass
-class Graph(amos.Bunch, abc.ABC):
-    """Base class for holden graphs.
+class Composite(amos.Bunch, abc.ABC):
+    """Base class for composite data structures.
     
     Args:
         contents (Optional[Collection[Any]]): stored collection of nodes and/or 
@@ -167,31 +170,6 @@ class Graph(amos.Bunch, abc.ABC):
             self._add(item, *args, **kwargs)
         return
         
-    def connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored graph.
-        
-        Args:
-            item (Edge): edge to add to the stored graph.
-            
-        Raises:
-            ValueError: if the ends of the item are the same or if one of the
-                edge ends does not currently exist in the stored graph.
-            
-        """
-        if not check.is_edge(item = item):
-            raise TypeError(f'{item} is not an edge type') 
-        elif item[0] == item[1]:
-            raise ValueError(
-                'The starting point of an edge cannot be the same as the '
-                'ending point')
-        elif item[0] not in self:
-            raise ValueError(f'{item[0]} is not in the graph')
-        elif item[1] not in self:
-            raise ValueError(f'{item[1]} is not in the graph')
-        else:
-            self._connect(item, *args, **kwargs)
-        return                         
-  
     def delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
         """Deletes node from the stored graph.
 
@@ -217,30 +195,6 @@ class Graph(amos.Bunch, abc.ABC):
             raise KeyError(f'{item} does not exist in the graph')
         return
     
-    def disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored graph.
-        
-        Args:
-            item (Edge): edge to delete from the stored graph.
-            
-        Raises:
-            ValueError: if the edge does not exist in the stored graph.
-            
-        """
-        if not check.is_edge(item = item):
-            raise TypeError(f'{item} is not an edge type') 
-        elif item[0] == item[1]:
-            raise ValueError(
-                'The starting point of an edge cannot be the same as the '
-                'ending point')
-        else:
-            try:
-                self._disconnect(item, *args, **kwargs)
-            except (KeyError, ValueError):
-                raise ValueError(
-                    f'The edge ({item[0]}, {item[1]}) is not in the graph')
-        return     
-
     def merge(self, item: Graph, *args: Any, **kwargs: Any) -> None:
         """Adds 'item' to this Graph.
 
@@ -311,21 +265,6 @@ class Graph(amos.Bunch, abc.ABC):
                 
         """
         raise NotImplementedError
-
-    def _connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Adds edge to the stored graph.
-
-        Subclasses must provide their own specific methods for adding a single
-        edge. The provided 'connect' method offers all of the error checking and
-        the ability to add multiple edges at once. Subclasses just need to 
-        provide the mechanism for adding a single edge without worrying about
-        validation or error-checking.
-        
-        Args:
-            item (Edge): edge to add to the stored graph.
-            
-        """
-        raise NotImplementedError
       
     def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
         """Deletes node from the stored graph.
@@ -341,21 +280,6 @@ class Graph(amos.Bunch, abc.ABC):
             
         """
         raise NotImplementedError
-  
-    def _disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
-        """Removes edge from the stored graph.
-
-        Subclasses must provide their own specific methods for deleting a single
-        edge. The provided 'disconnect' method offers all of the error checking 
-        and the ability to delete multiple edges at once. Subclasses just need 
-        to provide the mechanism for deleting a single edge without worrying 
-        about validation or error-checking.
-        
-        Args:
-            item (Edge): edge to delete from the stored graph.
-            
-        """
-        raise NotImplementedError  
 
     def _merge(self, item: Graph, *args: Any, **kwargs: Any) -> None:
         """Combines 'item' with the stored graph.
@@ -406,9 +330,134 @@ class Graph(amos.Bunch, abc.ABC):
             bool: whether 'instance' meets criteria to be a subclass.
             
         """
+        return check.is_composite(item = instance)
+    
+    
+@dataclasses.dataclass
+class Graph(Composite, abc.ABC):
+    """Base class for holden graphs.
+    
+    Args:
+        contents (Optional[Collection[Any]]): stored collection of nodes and/or 
+            edges.
+                                     
+    """  
+    # contents: Optional[Collection[Any]] = None
+
+    """ Initialization Methods """
+    
+    @classmethod
+    def __init_subclass__(cls, *args: Any, **kwargs: Any):
+        """Automatically registers subclass.."""
+        # Because Graph will be used with mixins, it is important to call other 
+        # '__init_subclass__' methods, if they exist.
+        with contextlib.suppress(AttributeError):
+            super().__init_subclass__(*args, **kwargs) # type: ignore
+        # Adds a subclass to the Forms registry only if it is a direct subclass
+        # of Graph.
+        if Graph in cls.__bases__:
+            name = amos.namify(item = cls)
+            Forms.registry.add(item = {name: cls})
+                          
+    """ Public Methods """
+
+    def connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        Raises:
+            ValueError: if the ends of the item are the same or if one of the
+                edge ends does not currently exist in the stored graph.
+            
+        """
+        if not check.is_edge(item = item):
+            raise TypeError(f'{item} is not an edge type') 
+        elif item[0] == item[1]:
+            raise ValueError(
+                'The starting point of an edge cannot be the same as the '
+                'ending point')
+        elif item[0] not in self:
+            raise ValueError(f'{item[0]} is not in the graph')
+        elif item[1] not in self:
+            raise ValueError(f'{item[1]} is not in the graph')
+        else:
+            self._connect(item, *args, **kwargs)
+        return                         
+
+    def disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        Raises:
+            ValueError: if the edge does not exist in the stored graph.
+            
+        """
+        if not check.is_edge(item = item):
+            raise TypeError(f'{item} is not an edge type') 
+        elif item[0] == item[1]:
+            raise ValueError(
+                'The starting point of an edge cannot be the same as the '
+                'ending point')
+        else:
+            try:
+                self._disconnect(item, *args, **kwargs)
+            except (KeyError, ValueError):
+                raise ValueError(
+                    f'The edge ({item[0]}, {item[1]}) is not in the graph')
+        return     
+
+    """ Private Methods """
+
+    def _connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+        """Adds edge to the stored graph.
+
+        Subclasses must provide their own specific methods for adding a single
+        edge. The provided 'connect' method offers all of the error checking and
+        the ability to add multiple edges at once. Subclasses just need to 
+        provide the mechanism for adding a single edge without worrying about
+        validation or error-checking.
+        
+        Args:
+            item (Edge): edge to add to the stored graph.
+            
+        """
+        raise NotImplementedError
+
+    def _disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+        """Removes edge from the stored graph.
+
+        Subclasses must provide their own specific methods for deleting a single
+        edge. The provided 'disconnect' method offers all of the error checking 
+        and the ability to delete multiple edges at once. Subclasses just need 
+        to provide the mechanism for deleting a single edge without worrying 
+        about validation or error-checking.
+        
+        Args:
+            item (Edge): edge to delete from the stored graph.
+            
+        """
+        raise NotImplementedError  
+                              
+    """ Dunder Methods """
+    
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
         return check.is_graph(item = instance)
 
-       
+        
 @dataclasses.dataclass(frozen = True, order = True)
 class Edge(Sequence):
     """Base class for an edge in a graph structure.
@@ -426,20 +475,7 @@ class Edge(Sequence):
     stop: Hashable
 
     """ Dunder Methods """
-        
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
-
-        Args:
-            instance (object): item to test as an instance.
-
-        Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
-            
-        """
-        return check.is_edge(item = instance)
-    
+   
     def __getitem__(self, index: int) -> Hashable:
         """Allows Edge subclass to be accessed by index.
         
@@ -458,7 +494,20 @@ class Edge(Sequence):
             raise IndexError('Index out of bounds - edges are only two points')
         else:
             return getattr(self, dataclasses.fields(self)[index].name)
-    
+        
+    @classmethod
+    def __instancecheck__(cls, instance: object) -> bool:
+        """Returns whether 'instance' meets criteria to be a subclass.
+
+        Args:
+            instance (object): item to test as an instance.
+
+        Returns:
+            bool: whether 'instance' meets criteria to be a subclass.
+            
+        """
+        return check.is_edge(item = instance)
+     
     def __len__(self) -> int:
         """Returns length of 2.
         
@@ -539,6 +588,7 @@ class Node(Hashable):
             
         """
         return hash(dataclasses.astuple(self))
+
 
 """ Subtype Checker """
 

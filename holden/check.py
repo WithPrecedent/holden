@@ -79,6 +79,20 @@ def is_adjacency(item: object) -> bool:
     else:
         return False
 
+def is_composite(item: Union[Type[Any], object]) -> bool:
+    """Returns whether 'item' is a composite data structure.
+
+    Args:
+        item (object): instance to test.
+
+    Returns:
+        bool: whether 'item' is a composite data structure.
+    
+    """
+    return miller.has_methods(
+        item = item, 
+        methods = ['add', 'delete', 'merge', 'subset'])
+    
 def is_edge(item: object) -> bool:
     """Returns whether 'item' is an edge.
 
@@ -121,9 +135,11 @@ def is_graph(item: Union[Type[Any], object]) -> bool:
         bool: whether 'item' is a graph.
     
     """
-    return miller.has_methods(
-        item = item, 
-        methods = ['add', 'connect', 'delete', 'disconnect', 'merge'])
+    return (
+        is_composite(item = item)
+        and miller.has_methods(
+            item = item, 
+            methods = ['connect', 'disconnect']))
     
 def is_matrix(item: object) -> bool:
     """Returns whether 'item' is an adjacency matrix.
