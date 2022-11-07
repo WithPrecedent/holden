@@ -131,7 +131,7 @@ class Forms(object):
             Composite: transformed composite data structure.
             
         """
-        form = Forms.classify(item = item)
+        form = cls.classify(item = item)
         if form == output and raise_same_error:
             raise ValueError('The passed item and output are the same type')
         elif form == output:
@@ -139,7 +139,7 @@ class Forms(object):
         else:
             transformer = getattr(workshop, [f'{form}_to_{output}'])
             base = cls.registry[output]
-            return base(transformer(item = item))        
+            return base(contents = transformer(item = item))        
 
             
 """ Base Classes for Composite Data Structures """

@@ -1,5 +1,5 @@
 """
-check: functions that type check graph forms using structural subtyping
+check: functions that type check composite forms using structural subtyping
 Corey Rayburn Yung <coreyrayburnyung@gmail.com>
 Copyright 2020-2022, Corey Rayburn Yung
 License: Apache-2.0
@@ -48,7 +48,8 @@ if TYPE_CHECKING:
 def add_checker(name: str, item: Callable[[base.Graph]]) -> None:
     """Adds a checker to the local namespace.
     
-    This allows the function to be found by the 'classify' function.
+    This allows the function to be found by the 'holden.classify' function and
+    the 'holden.Forms.classify' class method.
 
     Args:
         name (str): name of the checker function. It needs to be in the 

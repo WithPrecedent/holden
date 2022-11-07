@@ -17,11 +17,10 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    Adjacency (amos.Dictionary, base.Graph): a graph stored as an adjacency 
+    Adjacency (base.Graph, amos.Dictionary): a graph stored as an adjacency 
         list.
-    Edges (sequences.Listing, base.Graph): a graph stored as an edge list.
-    Matrix (sequences.Listing, base.Graph): a graph stored as an adjacency 
-        matrix.
+    Edges (base.Graph, amos.Listing): a graph stored as an edge list.
+    Matrix (base.Graph, amos.Listing): a graph stored as an adjacency matrix.
          
 To Do:
     Add the remainder of the conversion methods between different forms
