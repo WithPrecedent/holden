@@ -1,0 +1,11 @@
+digraph dag {
+a -> b
+a -> d
+b -> tree
+c -> d
+d -> e
+e -> cat
+cat -> tree
+tree -> house
+tree -> yard
+}

@@ -19,7 +19,7 @@ License: Apache-2.0
     
 """
 import dataclasses
-
+import pathlib
 import holden
 
 
@@ -127,6 +127,8 @@ def test_graph_again() -> None:
     assert len(paths) == 6
     assert dag.endpoint == ['house', 'yard']
     assert dag.root == ['a', 'c']
+    export = pathlib.Path('tests').joinpath('dag.dot')
+    holden.to_dot(item = dag, path = export, name = 'dag')
     # assert dag.walk() == [
     #     ['a', 'd', 'e', 'cat', 'tree', 'house'], 
     #     ['a', 'b', 'tree', 'house'], 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "holden"
-version = "0.1.4"
+version = "0.1.5"
 description = "lightweight, accessible, flexible composite data structures"
 authors = ["Corey Rayburn Yung <coreyrayburnyung@gmail.com>"]
 license = "Apache-2.0"

@@ -24,10 +24,6 @@ To Do:
     
 """
 from __future__ import annotations
-import collections
-from collections.abc import (
-    Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
-# import functools
 import pathlib
 from typing import Any, Callable, Optional
 
@@ -64,13 +60,13 @@ def to_dot(
     else:
         dot = 'graph '
         link = _UNDIRECTED_LINK
-    dot = dot +  name + {' {\n'}
+    dot = dot +  name + ' {\n'
     if settings is not None:
         for key, value in settings.items():
             dot = dot + f'{key}={value};{_LINE_BREAK}'
     for edge in edges:
         dot = dot + f'{edge[0]} {link} {edge[1]}{_LINE_BREAK}'
-    dot = dot + {'}'}
+    dot = dot + '}'
     if path is not None:
         with open(path, 'w') as a_file:
             a_file.write(dot)
