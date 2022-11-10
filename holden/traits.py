@@ -147,7 +147,32 @@ class Directed(abc.ABC):
         """
         self.prepend(item = other)     
         return 
-       
+   
+   
+@dataclasses.dataclass # type: ignore
+class Exportable(abc.ABC):
+    """Mixin requirements for exporting graphs to other packages."""  
+   
+    """ Properties """
+
+    @property
+    def to_ascii(self) -> graphs.Adjacency:
+        """Returns the stored composite as an Adjacency."""
+        return base.transform(
+            item = self, 
+            output = 'adjacency', 
+            raise_same_error = False)
+        
+    @property
+    def to_dot(self) -> str:
+        """Returns the stored composite in the graphviz dot format."""
+        item = base.transform(
+            item = self, 
+            output = 'edges', 
+            raise_same_error = False)
+        
+            
+
     
 @dataclasses.dataclass # type: ignore
 class Fungible(abc.ABC):

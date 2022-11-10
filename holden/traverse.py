@@ -25,6 +25,8 @@ Contents:
           
 To Do:
     Complete not implemented functions
+    For adjacency matrix walk, consider the efficient approach here:
+        https://www.geeksforgeeks.org/count-possible-paths-source-destination-exactly-k-edges/
     
 """
 from __future__ import annotations
@@ -49,8 +51,9 @@ def walk_adjacency(
         item (graphs.Adjacency): item in which to find paths.
         start (Hashable): node to start paths from.
         stop (Hashable): node to stop paths.
-        path (Optional[Sequence[Hashable]]): a path from 'start' to 'stop'. 
-            Defaults to None. 
+        path (Optional[Sequence[Hashable]]): a path from 'start' to 'stop'. This
+            is used for recursion within the function to accumulate all possible
+            paths. Defaults to None. 
 
     Returns:
         Sequence[Hashable]: a list of possible paths (each path is a list nodes) 

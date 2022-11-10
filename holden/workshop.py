@@ -179,7 +179,7 @@ def edges_to_adjacency(item: graphs.Edges) -> graphs.Adjacency:
         if edge_pair[1] not in adjacency:
             adjacency[edge_pair[1]] = set()
     return adjacency
-    
+
 # @to_matrix.register # type: ignore 
 def edges_to_matrix(item: graphs.Edges) -> graphs.Matrix:
     """Converts 'item' to a graphs.Matrix.
