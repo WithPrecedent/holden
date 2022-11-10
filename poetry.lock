@@ -41,7 +41,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7
 
 [[package]]
 name = "miller"
-version = "0.1.2"
+version = "0.1.4"
 description = "introspection tools using consistent, accessible syntax"
 category = "main"
 optional = false
@@ -151,8 +151,8 @@ colorama = [
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
 miller = [
-    {file = "miller-0.1.2-py3-none-any.whl", hash = "sha256:487b5756e3048d2834e768dda7987ac4a343e1647092d5fc4ef37c68069d9d27"},
-    {file = "miller-0.1.2.tar.gz", hash = "sha256:7753515c355a8e6f2d9479cd91b00909fb63d73806db43819941b4abd193996b"},
+    {file = "miller-0.1.4-py3-none-any.whl", hash = "sha256:ee1a7dac27fbc57bb26aa960a74d83b75977aa99c43bad4e5fbd9456a880bf86"},
+    {file = "miller-0.1.4.tar.gz", hash = "sha256:fcb7cf6e11bdb03a6e2979055d54942a45d4ad497060c4bfc7fe9b6f8dea702f"},
 ]
 more-itertools = [
     {file = "more-itertools-9.0.0.tar.gz", hash = "sha256:5a6257e40878ef0520b1803990e3e22303a41b5714006c32a3fd8304b26ea1ab"},
