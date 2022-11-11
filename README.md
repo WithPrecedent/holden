@@ -30,6 +30,7 @@ included forms and add mixins to expand functionality.
 * Abilty to create a graph from or convert any graph to any recognized form using properties with consistent syntax (`Fungible`)
 * Directed graphs (`Directed`)
 * Automatically names objects if a name is not passed (`Labeled`)
+* Has methods to convert and export to other graph formats (`Exportable`)
 * Ability to store node data internally for easy reuse separate from the graph structure (`Storage`)
 
 **holden** provides transformation methods between all of the internal storage forms as well as functions to convert graphs into a set of paths (`Parallel`) or a single path (`Serial`). The transformation methods can be used as class properties or with functions using an easy-to-understand naming convention (e.g., adjacency_to_edges or edges_to_parallel).

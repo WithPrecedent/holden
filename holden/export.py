@@ -43,7 +43,13 @@ def to_dot(
     """Converts 'item' to a dot format.
 
     Args:
-        item (graphs.Edges): item to convert to a dot format.
+        item (base.Composite): item to convert to a dot format.
+        path (Optional[str | pathlib.Path]): path to export 'item' to. Defaults
+            to None.
+        name (Optional[str]): name of 'item' to put in the dot str. Defaults to
+            None.
+        settings (Optional[dict[str, Any]]): any global settings to add to the
+            dot graph. Defaults to None.
 
     Returns:
         str: composite object in graphviz dot format.

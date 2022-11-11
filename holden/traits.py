@@ -18,6 +18,7 @@ License: Apache-2.0
 
 Contents:
     Directed (abc.ABC): a directed graph with unweighted edges.
+    Exportable (abc.ABC):
     Fungible (abc.ABC):
     Labeled (abc.ABC):    
     Storage (abc.ABC):
@@ -32,11 +33,13 @@ import abc
 from collections.abc import Collection, Hashable
 import contextlib
 import dataclasses
+import pathlib
 from typing import Any, Optional, Type, TYPE_CHECKING, Union
 
 import amos
 
 from . import base
+from . import export
 
 if TYPE_CHECKING:
     from . import composites
@@ -151,28 +154,36 @@ class Directed(abc.ABC):
    
 @dataclasses.dataclass # type: ignore
 class Exportable(abc.ABC):
-    """Mixin requirements for exporting graphs to other packages."""  
+    """Mixin for exporting graphs to other formats."""  
    
-    """ Properties """
-
-    @property
-    def to_ascii(self) -> graphs.Adjacency:
-        """Returns the stored composite as an Adjacency."""
-        return base.transform(
-            item = self, 
-            output = 'adjacency', 
-            raise_same_error = False)
+    """ Public Methods """
         
-    @property
-    def to_dot(self) -> str:
-        """Returns the stored composite in the graphviz dot format."""
-        item = base.transform(
-            item = self, 
-            output = 'edges', 
-            raise_same_error = False)
-        
-            
+    def to_dot(
+        self,
+        path: Optional[str | pathlib.Path] = None,
+        name: Optional[str] = None,
+        settings: Optional[dict[str, Any]] = None) -> str:
+        """Converts the stored composite to a dot format.
 
+        Args:
+            path (Optional[str | pathlib.Path]): path to export 'item' to. 
+                Defaults to None.
+            name (Optional[str]): name of 'item' to put in the dot str. Defaults 
+                to None.
+            settings (Optional[dict[str, Any]]): any global settings to add to 
+                the dot graph. Defaults to None.
+
+        Returns:
+            str: composite object in graphviz dot format.
+
+        """
+        name = name or amos.namify(item = self)
+        return export.to_dot(
+            item = self, 
+            path = path, 
+            name = name, 
+            settings = settings)
+        
     
 @dataclasses.dataclass # type: ignore
 class Fungible(abc.ABC):
