@@ -51,7 +51,7 @@ from collections.abc import (
 import itertools
 from typing import Callable, TYPE_CHECKING
 
-import amos
+import camina
 
 from . import check
 from . import traverse
@@ -373,7 +373,7 @@ def serial_to_adjacency(item: composites.Serial) -> graphs.Adjacency:
         if len(item) == 1:
             adjacency.update({item[0]: set()})
         else:
-            edges = list(amos.windowify(item, 2))
+            edges = list(camina.windowify(item, 2))
             for edge_pair in edges:
                 if edge_pair[0] in adjacency:
                     adjacency[edge_pair[0]].add(edge_pair[1])
@@ -435,7 +435,7 @@ def get_roots_adjacency(item: graphs.Adjacency) -> MutableSequence[Hashable]:
 """ 
 These are functions design to implement a dispatch system for the form
 tranformers. However, functools.singledispatch has some shortcomings. If a new
-dispatch system is developed in amos or the functools decorator is improved,
+dispatch system is developed in camina or the functools decorator is improved,
 these functions may be restored to allow more flexible function calls.
 
 """          

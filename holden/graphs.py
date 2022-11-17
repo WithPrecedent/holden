@@ -17,10 +17,10 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    Adjacency (base.Graph, amos.Dictionary): a graph stored as an adjacency 
+    Adjacency (base.Graph, camina.Dictionary): a graph stored as an adjacency 
         list.
-    Edges (base.Graph, amos.Listing): a graph stored as an edge list.
-    Matrix (base.Graph, amos.Listing): a graph stored as an adjacency matrix.
+    Edges (base.Graph, camina.Listing): a graph stored as an edge list.
+    Matrix (base.Graph, camina.Listing): a graph stored as an adjacency matrix.
          
 To Do:
     Add the remainder of the conversion methods between different forms
@@ -36,7 +36,7 @@ import copy
 import dataclasses
 from typing import Any, ClassVar, Optional, Type, TYPE_CHECKING, Union
 
-import amos
+import camina
 
 from . import base
 from . import check
@@ -45,7 +45,7 @@ from . import check
 """ Graph Form Base Classes """
 
 @dataclasses.dataclass
-class Adjacency(base.Graph, amos.Dictionary):
+class Adjacency(base.Graph, camina.Dictionary):
     """Base class for adjacency-list graphs.
     
     Args:
@@ -143,7 +143,7 @@ class Adjacency(base.Graph, amos.Dictionary):
             excludables = []
         excludables.extend([i for i in self.contents if i in exclude])
         new_graph = copy.deepcopy(self)
-        for node in amos.iterify(item = excludables):
+        for node in camina.iterify(item = excludables):
             new_graph.delete(node = node)
         return new_graph  
           
@@ -164,7 +164,7 @@ class Adjacency(base.Graph, amos.Dictionary):
 
 
 @dataclasses.dataclass
-class Edges(base.Graph, amos.Listing):
+class Edges(base.Graph, camina.Listing):
     """Base class for edge-list graphs.
 
     Args:
@@ -266,7 +266,7 @@ class Edges(base.Graph, amos.Listing):
 
    
 @dataclasses.dataclass
-class Matrix(base.Graph, amos.Listing):
+class Matrix(base.Graph, camina.Listing):
     """Base class for adjacency-matrix graphs.
     
     Args:

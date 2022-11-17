@@ -17,8 +17,8 @@ License: Apache-2.0
     limitations under the License.
 
 Contents:
-    Parallel (amos.Listing, traits.Directed, base.Composite):
-    Serial (amos.Hybrid, traits.Directed, base.Composite):
+    Parallel (camina.Listing, traits.Directed, base.Composite):
+    Serial (camina.Hybrid, traits.Directed, base.Composite):
                   
 To Do:
     Complete Tree class and related functions
@@ -31,7 +31,7 @@ import copy
 import dataclasses
 from typing import Any, Optional, Union
 
-import amos
+import camina
 
 from . import base
 from . import check
@@ -41,7 +41,7 @@ from . import traverse
 
     
 @dataclasses.dataclass
-class Parallel(amos.Listing, traits.Directed, base.Composite):
+class Parallel(camina.Listing, traits.Directed, base.Composite):
     """Base class for a list of serial composites.
     
     Args:
@@ -84,11 +84,11 @@ class Parallel(amos.Listing, traits.Directed, base.Composite):
         if start is None:
             root = self.root
         else:
-            root = amos.listify(item = start)
+            root = camina.listify(item = start)
         if stop is None:
             endpoint = self.endpoint
         else:
-            endpoint = self.amos.listify(item = stop)
+            endpoint = self.camina.listify(item = stop)
         return traverse.walk_parallel(
             item = self, 
             start = root, 
@@ -177,7 +177,7 @@ class Parallel(amos.Listing, traits.Directed, base.Composite):
      
     
 @dataclasses.dataclass
-class Serial(amos.Hybrid, traits.Directed, base.Composite):
+class Serial(camina.Hybrid, traits.Directed, base.Composite):
     """Base class for serial composites.
     
     Args:
@@ -314,7 +314,7 @@ class Serial(amos.Hybrid, traits.Directed, base.Composite):
 
     
 # @dataclasses.dataclass # type: ignore
-# class Tree(amos.Hybrid, traits.Directed, base.Composite):
+# class Tree(camina.Hybrid, traits.Directed, base.Composite):
 #     """Base class for an tree data structures.
     
 #     The Tree class uses a Hybrid instead of a linked list for storing children
@@ -348,7 +348,7 @@ class Serial(amos.Hybrid, traits.Directed, base.Composite):
 #     @children.setter
 #     def children(self, value: MutableSequence[Hashable]) -> None:
 #         """Sets child nodes of this Node."""
-#         if amos.is_sequence(value):
+#         if camina.is_sequence(value):
 #             self.contents = value
 #         else:
 #             self.contents = [value]

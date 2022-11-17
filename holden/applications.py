@@ -30,7 +30,7 @@ from collections.abc import (
 import dataclasses
 from typing import Any, Optional, Type, TYPE_CHECKING, Union
 
-import amos
+import camina
 
 from . import base
 from . import check
@@ -147,11 +147,11 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
         if start is None:
             roots = self.root
         else:
-            roots = amos.listify(item = start)
+            roots = camina.listify(item = start)
         if stop is None:
             endpoints = self.endpoint
         else:
-            endpoints = self.amos.listify(item = stop)
+            endpoints = self.camina.listify(item = stop)
         all_paths = []
         for root in roots:
             for end in endpoints:
@@ -377,7 +377,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #         if descendants is None:
 #             self.contents[node] = []
 #         elif descendants in self:
-#             self.contents[node] = amos.iterify(item = descendants)
+#             self.contents[node] = camina.iterify(item = descendants)
 #         else:
 #             missing = [n for n in descendants if n not in self.contents]
 #             raise KeyError(f'descendants {missing} are not in the stored graph.')
@@ -393,7 +393,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #             else:
 #                 missing = [n for n in ancestors if n not in self.contents]
 #                 raise KeyError(f'ancestors {missing} are not in the stored graph.')
-#             for starting in amos.iterify(item = start):
+#             for starting in camina.iterify(item = start):
 #                 if node not in [starting]:
 #                     self.connect(start = starting, stop = node)                 
 #         return 
@@ -569,7 +569,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #                 excludables = []
 #             excludables.extend([i for i in self.contents if i not in exclude])
 #             new_graph = copy.deepcopy(self)
-#             for node in amos.iterify(item = excludables):
+#             for node in camina.iterify(item = excludables):
 #                 new_graph.delete(node = node)
 #         return new_graph
 
@@ -692,8 +692,8 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
             
 #         """
 #         all_paths = []
-#         for start in amos.iterify(item = starts):
-#             for end in amos.iterify(item = stops):
+#         for start in camina.iterify(item = starts):
+#             for end in camina.iterify(item = stops):
 #                 paths = self.walk(
 #                     start = start, 
 #                     stop = end,

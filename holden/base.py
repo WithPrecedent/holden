@@ -19,7 +19,7 @@ License: Apache-2.0
 Contents:
     Forms (object): stores all direct subclasses of Composite and Graph and 
         provides convenient classification and transformation methods.
-    Composite (amos.Bunch, abc.ABC): base class for all composite data 
+    Composite (camina.Bunch, abc.ABC): base class for all composite data 
         structures.
     Graph (Composite, abc.ABC): base class for graphs.
     Edge (Sequence): base class for an edge in a graph. Many graphs will not
@@ -43,7 +43,7 @@ import dataclasses
 import inspect
 from typing import Any, ClassVar, Optional, Type, Union
 
-import amos 
+import camina 
 
 from . import check
 from . import workshop
@@ -56,11 +56,11 @@ class Forms(object):
     """Registry of composite data structures.
     
     Args:
-        registry (amos.Dictionary): keys are names of composite data structure 
+        registry (camina.Dictionary): keys are names of composite data structure 
             forms and values are Composite and Graph subclasses.
                           
     """
-    registry: ClassVar[amos.Dictionary] = amos.Dictionary()
+    registry: ClassVar[camina.Dictionary] = camina.Dictionary()
     
     """ Public Methods """
     
@@ -87,7 +87,7 @@ class Forms(object):
         name: Optional[str] = None) -> None:
         """Adds 'item' to 'registry'.
         
-        The key assigned for storing 'item' is determined using the amos.namify
+        The key assigned for storing 'item' is determined using the camina.namify
         method if 'name' is not passed.
         
         Args:
@@ -96,7 +96,7 @@ class Forms(object):
                 None.
             
         """
-        name = name or amos.namify(item = item)
+        name = name or camina.namify(item = item)
         cls.registry.add(item = {name: item})
         return
         

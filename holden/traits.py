@@ -36,7 +36,7 @@ import dataclasses
 import pathlib
 from typing import Any, Optional, Type, TYPE_CHECKING, Union
 
-import amos
+import camina
 
 from . import base
 from . import export
@@ -177,7 +177,7 @@ class Exportable(abc.ABC):
             str: composite object in graphviz dot format.
 
         """
-        name = name or amos.namify(item = self)
+        name = name or camina.namify(item = self)
         return export.to_dot(
             item = self, 
             path = path, 
@@ -304,7 +304,7 @@ class Labeled(abc.ABC):
         """Returns str name of an instance.
         
         By default, if 'contents' is None, 'none' will be returned. Otherwise, 
-        amos.namify will be called based on the value of the 'contents'
+        camina.namify will be called based on the value of the 'contents'
         attribute and its return value will be returned. 
         
         For different naming rules, subclasses should override this method, 
@@ -317,7 +317,7 @@ class Labeled(abc.ABC):
         if self.contents is None:
             return 'none'
         else:
-            return amos.namify(item = self.contents)
+            return camina.namify(item = self.contents)
                                
     """ Dunder Methods """
     
@@ -367,7 +367,7 @@ class Storage(abc.ABC):
                                       
     """  
     contents: Collection[Any]
-    nodes: amos.Library = dataclasses.field(default_factory = amos.Library)
+    nodes: camina.Library = dataclasses.field(default_factory = camina.Library)
  
 
 @dataclasses.dataclass
