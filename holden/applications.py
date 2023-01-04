@@ -147,11 +147,11 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
         if start is None:
             roots = self.root
         else:
-            roots = camina.listify(item = start)
+            roots = camina.listify(start)
         if stop is None:
             endpoints = self.endpoint
         else:
-            endpoints = self.camina.listify(item = stop)
+            endpoints = self.camina.listify(stop)
         all_paths = []
         for root in roots:
             for end in endpoints:
@@ -257,7 +257,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #                 values are the nodes themselves.
             
 #         """
-#         return {self.trait.namify(item = n): n for n in self.contents.keys()}
+#         return {self.trait.namify(n): n for n in self.contents.keys()}
   
 #     @property
 #     def roots(self) -> list[Hashable]:
@@ -377,7 +377,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #         if descendants is None:
 #             self.contents[node] = []
 #         elif descendants in self:
-#             self.contents[node] = camina.iterify(item = descendants)
+#             self.contents[node] = camina.iterify(descendants)
 #         else:
 #             missing = [n for n in descendants if n not in self.contents]
 #             raise KeyError(f'descendants {missing} are not in the stored graph.')
@@ -393,7 +393,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #             else:
 #                 missing = [n for n in ancestors if n not in self.contents]
 #                 raise KeyError(f'ancestors {missing} are not in the stored graph.')
-#             for starting in camina.iterify(item = start):
+#             for starting in camina.iterify(start):
 #                 if node not in [starting]:
 #                     self.connect(start = starting, stop = node)                 
 #         return 
@@ -465,7 +465,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #             if start not in self.contents:
 #                 self.add(node = start)
 #             if stop not in self.contents[start]:
-#                 self.contents[start].append(self.trait.namify(item = stop))
+#                 self.contents[start].append(self.trait.namify(stop))
 #         return
 
 #     def delete(self, node: Hashable) -> None:
@@ -569,7 +569,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #                 excludables = []
 #             excludables.extend([i for i in self.contents if i not in exclude])
 #             new_graph = copy.deepcopy(self)
-#             for node in camina.iterify(item = excludables):
+#             for node in camina.iterify(excludables):
 #                 new_graph.delete(node = node)
 #         return new_graph
 
@@ -692,8 +692,8 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
             
 #         """
 #         all_paths = []
-#         for start in camina.iterify(item = starts):
-#             for end in camina.iterify(item = stops):
+#         for start in camina.iterify(starts):
+#             for end in camina.iterify(stops):
 #                 paths = self.walk(
 #                     start = start, 
 #                     stop = end,

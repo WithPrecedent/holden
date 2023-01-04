@@ -84,11 +84,11 @@ class Parallel(camina.Listing, traits.Directed, base.Composite):
         if start is None:
             root = self.root
         else:
-            root = camina.listify(item = start)
+            root = camina.listify(start)
         if stop is None:
             endpoint = self.endpoint
         else:
-            endpoint = self.camina.listify(item = stop)
+            endpoint = self.camina.listify(stop)
         return traverse.walk_parallel(
             item = self, 
             start = root, 

@@ -143,7 +143,7 @@ class Adjacency(base.Graph, camina.Dictionary):
             excludables = []
         excludables.extend([i for i in self.contents if i in exclude])
         new_graph = copy.deepcopy(self)
-        for node in camina.iterify(item = excludables):
+        for node in camina.iterify(excludables):
             new_graph.delete(node = node)
         return new_graph  
           

@@ -78,7 +78,7 @@ class Forms(object):
             str: name of form that 'item' is.
             
         """
-        return classify(item = item)
+        return classify(item)
     
     @classmethod
     def register(
@@ -96,7 +96,7 @@ class Forms(object):
                 None.
             
         """
-        name = name or camina.namify(item = item)
+        name = name or camina.namify(item)
         cls.registry.add(item = {name: item})
         return
         
@@ -131,7 +131,7 @@ class Forms(object):
             Composite: transformed composite data structure.
             
         """
-        form = cls.classify(item = item)
+        form = cls.classify(item)
         if form == output and raise_same_error:
             raise ValueError('The passed item and output are the same type')
         elif form == output:
@@ -678,7 +678,7 @@ def transform(
         base.Graph: transformed graph.
         
     """
-    form = Forms.classify(item = item)
+    form = Forms.classify(item)
     if form == output and raise_same_error:
         raise ValueError('The passed item and output are the same type')
     elif form == output:

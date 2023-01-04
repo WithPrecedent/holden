@@ -19,9 +19,6 @@ License: Apache-2.0
 ToDo:
    
    
-"""
-
-"""
 For Developers:
 
 As with all of my packages, I use Google-style docstrings and follow the Google 
@@ -47,7 +44,7 @@ any other package maintainer - I want to ensure the package is as accessible and
 useful as possible.
      
 """
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 
 __package__ = 'holden'
 

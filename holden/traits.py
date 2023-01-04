@@ -177,7 +177,7 @@ class Exportable(abc.ABC):
             str: composite object in graphviz dot format.
 
         """
-        name = name or camina.namify(item = self)
+        name = name or camina.namify(self)
         return export.to_dot(
             item = self, 
             path = path, 
@@ -238,7 +238,7 @@ class Fungible(abc.ABC):
         """Creates a composite data structure from an Adjacency."""
         return cls(contents = base.transform(
             item = item, 
-            output = base.classify(item = cls),
+            output = base.classify(cls),
             raise_same_error = False))
     
     @classmethod
@@ -246,7 +246,7 @@ class Fungible(abc.ABC):
         """Creates a composite data structure from an Edges."""
         return cls(contents = base.transform(
             item = item, 
-            output = base.classify(item = cls), 
+            output = base.classify(cls), 
             raise_same_error = False))
         
     @classmethod
@@ -254,7 +254,7 @@ class Fungible(abc.ABC):
         """Creates a composite data structure from a Matrix."""
         return cls(contents = base.transform(
             item = item, 
-            output = base.classify(item = cls), 
+            output = base.classify(cls), 
             raise_same_error = False))
         
     @classmethod
@@ -262,7 +262,7 @@ class Fungible(abc.ABC):
         """Creates a composite data structure from a Parallel."""
         return cls(contents = base.transform(
             item = item, 
-            output = base.classify(item = cls), 
+            output = base.classify(cls), 
             raise_same_error = False)) 
         
     @classmethod
@@ -270,7 +270,7 @@ class Fungible(abc.ABC):
         """Creates a composite data structure from a Serial."""
         return cls(contents = base.transform(
             item = item, 
-            output = base.classify(item = cls), 
+            output = base.classify(cls), 
             raise_same_error = False))      
            
  
@@ -317,7 +317,7 @@ class Labeled(abc.ABC):
         if self.contents is None:
             return 'none'
         else:
-            return camina.namify(item = self.contents)
+            return camina.namify(self.contents)
                                
     """ Dunder Methods """
     

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "holden"
-version = "0.1.6"
+version = "0.1.7"
 description = "lightweight, accessible, flexible composite data structures"
 authors = ["Corey Rayburn Yung <coreyrayburnyung@gmail.com>"]
 license = "Apache-2.0"
@@ -10,7 +10,7 @@ repository = "https://github.com/WithPrecedent/holden"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-camina = "^0.1.10"
+camina = "^0.1.11"
 miller = "^0.1.2"
 
 [tool.poetry.dev-dependencies]
