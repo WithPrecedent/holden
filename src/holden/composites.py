@@ -1,20 +1,4 @@
-"""
-composites: base types of other composite data structures
-Corey Rayburn Yung <coreyrayburnyung@gmail.com>
-Copyright 2020-2022, Corey Rayburn Yung
-License: Apache-2.0
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+"""Base types of other composite data structures.
 
 Contents:
     Parallel (camina.Listing, traits.Directed, base.Composite):
@@ -81,14 +65,8 @@ class Parallel(camina.Listing, traits.Directed, base.Composite):
                 'start' to 'stop'.
             
         """
-        if start is None:
-            root = self.root
-        else:
-            root = camina.listify(start)
-        if stop is None:
-            endpoint = self.endpoint
-        else:
-            endpoint = self.camina.listify(stop)
+        root = self.root if start is None else camina.listify(start)
+        endpoint = self.endpoint if stop is None else self.camina.listify(stop)
         return traverse.walk_parallel(
             item = self, 
             start = root, 

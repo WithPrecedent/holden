@@ -1,5 +1,4 @@
-"""
-traverse: internal storage formats for graphs
+"""Internal storage formats for graphs.
 Corey Rayburn Yung <coreyrayburnyung@gmail.com>
 Copyright 2020-2022, Corey Rayburn Yung
 License: Apache-2.0
@@ -75,8 +74,7 @@ def walk_adjacency(
                 start = node, 
                 stop = stop, 
                 path = path)
-            for new_path in new_paths:
-                paths.append(new_path)
+            paths.extend(iter(new_paths))
     return paths
 
 def walk_edges(

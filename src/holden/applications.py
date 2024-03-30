@@ -1,20 +1,4 @@
-"""
-applications: concrete lightweight graph data structures
-Corey Rayburn Yung <coreyrayburnyung@gmail.com>
-Copyright 2020-2022, Corey Rayburn Yung
-License: Apache-2.0
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+"""Concrete lightweight graph data structures.
 
 Contents:
      System
@@ -144,22 +128,13 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
                 'start' to 'stop'.
             
         """
-        if start is None:
-            roots = self.root
-        else:
-            roots = camina.listify(start)
-        if stop is None:
-            endpoints = self.endpoint
-        else:
-            endpoints = self.camina.listify(stop)
+        roots = self.root if start is None else camina.listify(start)
+        endpoints = self.endpoint if stop is None else self.camina.listify(stop)
         all_paths = []
         for root in roots:
             for end in endpoints:
-                paths = traverse.walk_adjacency(
-                    item = self.contents, 
-                    start = root, 
-                    stop = end)
-                if paths:
+                if paths := traverse.walk_adjacency(
+                        item=self.contents, start=root, stop=end):
                     if all(isinstance(p, Hashable) for p in paths):
                         all_paths.append(paths)
                     else:

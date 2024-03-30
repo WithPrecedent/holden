@@ -1,20 +1,4 @@
-"""
-workshop: functions to change the internal storage format for a data structure
-Corey Rayburn Yung <coreyrayburnyung@gmail.com>
-Copyright 2020-2022, Corey Rayburn Yung
-License: Apache-2.0
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+"""Functions to change the internal storage format for a data structure.
 
 Contents:
     add_transformer
@@ -92,8 +76,7 @@ def adjacency_to_edges(item: graphs.Adjacency) -> graphs.Edges:
     """ 
     edges = []
     for node, connections in item.items():
-        for connection in connections:
-            edges.append(tuple([node, connection]))
+        edges.extend((node, connection) for connection in connections)
     return tuple(edges)
 
 # @to_matrix.register # type: ignore 
@@ -113,7 +96,7 @@ def adjacency_to_matrix(item: graphs.Adjacency) -> graphs.Matrix:
         matrix.append([0] * len(item))
         for j in item[i]:
             matrix[i][j] = 1
-    return tuple([matrix, names])    
+    return matrix, names    
 
 # @to_parallel.register # type: ignore 
 def adjacency_to_parallel(item: graphs.Adjacency) -> composites.Parallel:
@@ -131,11 +114,8 @@ def adjacency_to_parallel(item: graphs.Adjacency) -> composites.Parallel:
     all_paths = []
     for start in roots:
         for end in endpoints:
-            paths = traverse.walk_adjacency(
-                item = item, 
-                start = start, 
-                stop = end)
-            if paths:
+            if paths := traverse.walk_adjacency(
+                    item=item, start=start, stop=end):
                 if all(isinstance(path, Hashable) for path in paths):
                     all_paths.append(paths)
                 else:
@@ -239,9 +219,7 @@ def matrix_to_adjacency(item: graphs.Matrix) -> graphs.Adjacency:
     adjacency = collections.defaultdict(set)
     for key, value in raw_adjacency.items():
         new_key = name_mapping[key]
-        new_values = set()
-        for edge in value:
-            new_values.add(name_mapping[edge])
+        new_values = {name_mapping[edge] for edge in value}
         adjacency[new_key] = new_values
     return adjacency
     
@@ -366,20 +344,19 @@ def serial_to_adjacency(item: composites.Serial) -> graphs.Adjacency:
     """
     if check.is_parallel(item = item):
         return parallel_to_adjacency(item = item)
+    if not isinstance(item, (Collection)) or isinstance(item, str):
+        item = [item]
+    adjacency = collections.defaultdict(set)
+    if len(item) == 1:
+        adjacency.update({item[0]: set()})
     else:
-        if not isinstance(item, (Collection)) or isinstance(item, str):
-            item = [item]
-        adjacency = collections.defaultdict(set)
-        if len(item) == 1:
-            adjacency.update({item[0]: set()})
-        else:
-            edges = list(camina.windowify(item, 2))
-            for edge_pair in edges:
-                if edge_pair[0] in adjacency:
-                    adjacency[edge_pair[0]].add(edge_pair[1])
-                else:
-                    adjacency[edge_pair[0]] = {edge_pair[1]} 
-        return adjacency
+        edges = list(camina.windowify(item, 2))
+        for edge_pair in edges:
+            if edge_pair[0] in adjacency:
+                adjacency[edge_pair[0]].add(edge_pair[1])
+            else:
+                adjacency[edge_pair[0]] = {edge_pair[1]}
+    return adjacency
     
 # @to_edges.register # type: ignore 
 def serial_to_edges(item: composites.Serial) -> graphs.Edges:
