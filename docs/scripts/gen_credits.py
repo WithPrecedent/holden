@@ -46,7 +46,7 @@ def _get_deps(
     base_deps: Mapping[str, Mapping[str, str]]) -> dict[str, dict[str, str]]:
     deps = {}
     for dep in base_deps:
-        parsed = regex.match(dep).groupdict()  # type: ignore[union-attr]
+        parsed = regex.match(dep).groupdict() [union-attr]
         dep_name = parsed["dist"].lower()
         if dep_name not in lock_pkgs:
             continue
@@ -61,7 +61,7 @@ def _get_deps(
             if pkg_name in deps:
                 for pkg_dependency in lock_pkgs[pkg_name].get(
                     "dependencies", []):
-                    parsed = regex.match(pkg_dependency).groupdict()  # type: ignore[union-attr]
+                    parsed = regex.match(pkg_dependency).groupdict() [union-attr]
                     dep_name = parsed["dist"].lower()
                     if (dep_name in lock_pkgs
                         and dep_name not in deps
@@ -76,9 +76,9 @@ def _get_deps(
 
 def _render_credits() -> str:
     dev_dependencies = _get_deps(
-        chain(*pdm.get("dev-dependencies", {}).values()))  # type: ignore[arg-type]
+        chain(*pdm.get("dev-dependencies", {}).values())) [arg-type]
     prod_dependencies = _get_deps(
-        chain(  # type: ignore[arg-type]
+        chain( [arg-type]
             project.get("dependencies", []),
             chain(*project.get("optional-dependencies", {}).values()),
         ),

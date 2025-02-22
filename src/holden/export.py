@@ -2,48 +2,45 @@
 
 Contents:
 
-           
+
 To Do:
 
-    
+
 """
 from __future__ import annotations
-import pathlib
-from typing import Any, Callable, Optional
 
-from . import base
-from . import traits
+from typing import TYPE_CHECKING, Any
 
+from . import base, traits
+
+if TYPE_CHECKING:
+    import pathlib
 
 _LINE_BREAK = '\n'
 _DIRECTED_LINK = '->'
 _UNDIRECTED_LINK = '--'
 
 def to_dot(
-    item: base.Composite, 
-    path: Optional[str | pathlib.Path] = None,
-    name: Optional[str] = None,
-    settings: Optional[dict[str, Any]] = None) -> str:
+    item: base.Composite,
+    path: str | pathlib.Path | None = None,
+    name: str = 'holden',
+    settings: dict[str, Any] | None = None) -> str:
     """Converts 'item' to a dot format.
 
     Args:
-        item (base.Composite): item to convert to a dot format.
-        path (Optional[str | pathlib.Path]): path to export 'item' to. Defaults
-            to None.
-        name (Optional[str]): name of 'item' to put in the dot str. Defaults to
-            None.
-        settings (Optional[dict[str, Any]]): any global settings to add to the
-            dot graph. Defaults to None.
+        item: item to convert to a dot format.
+        path: path to export 'item' to. Defaults to None.
+        name: name of 'item' to put in the dot str. Defaults to 'holden'.
+        settings: any global settings to add to the dot graph. Defaults to None.
 
     Returns:
-        str: composite object in graphviz dot format.
+        Composite object in graphviz dot format.
 
     """
     edges = base.transform(
-        item = item, 
-        output = 'edges', 
+        item = item,
+        output = 'edges',
         raise_same_error = False)
-    name = name or 'holden'
     if isinstance(item, traits.Directed):
         dot = 'digraph '
         link = _DIRECTED_LINK
@@ -62,4 +59,23 @@ def to_dot(
             a_file.write(dot)
         a_file.close()
     return dot
- 
+
+def to_mermaid(
+    item: base.Composite,
+    path: str | pathlib.Path | None = None,
+    name: str = 'holden',
+    settings: dict[str, Any] | None = None) -> str:
+    """Converts 'item' to a mermaid format.
+
+    Args:
+        item: item to convert to a mermaid format.
+        path: path to export 'item' to. Defaults to None.
+        name: name of 'item' to put in the mermaid str. Defaults to 'holden'.
+        settings: any global settings to add to the mermaid graph. Defaults to
+            None.
+
+    Returns:
+        Composite object in mermaid format.
+
+    """
+    raise NotImplementedError('mermaid export is not yet supported')

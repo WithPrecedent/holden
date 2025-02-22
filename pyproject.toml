@@ -6,22 +6,25 @@ description = "Lightweight, easy-to-use, flexible composite data structures"
 authors = [{name = "Corey Rayburn Yung", email = "coreyrayburnyung@gmail.com"}]
 license = {text = "Apache Software License 2.0"}
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dynamic = ["version"]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Environment :: Console",
     "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development"]
 keywords = []
 dependencies = [
-    "camina",
-    "miller"]
+    "bunches",
+    "wonka"]
 
 [project.urls]
 Documentation = "https://WithPrecedent.github.io/holden"
@@ -44,26 +47,26 @@ editable-backend = "editables"
 
 [tool.pdm.dev-dependencies]
 docs = [
-    "markdown-callouts >= 0.3",
-    "markdown-exec >= 1.6.0",
-    "mkdocs >= 1.5.2",
-    "mkdocs-coverage >= 1.0.0",
-    "mkdocs-gen-files >= 0.5.0",
-    "mkdocs-git-committers-plugin-2 >= 1.1.2",
-    "mkdocs-literate-nav >= 0.6.0",
-    "mkdocs-material >= 9.1.2",
-    "mkdocs-minify-plugin >= 0.7.1",
-    "mkdocstrings[python] >= 0.22.0",
-    "toml >= 0.10.2"]
+    "markdown-callouts",
+    "markdown-exec",
+    "mkdocs",
+    "mkdocs-coverage",
+    "mkdocs-gen-files",
+    "mkdocs-git-committers-plugin-2",
+    "mkdocs-literate-nav",
+    "mkdocs-material",
+    "mkdocs-minify-plugin",
+    "mkdocstrings[python]",
+    "toml"]
 quality = [
-    "pre-commit >= 3.3.3",
-    "ruff >= 0.0.286"]
+    "pre-commit",
+    "ruff"]
 tests = [
-    "coverage >= 7.2.7",
-    "pytest >= 7.4.0",
-    "pytest-cov >= 4.1.0",
-    "pytest-randomly >= 3.13.0",
-    "pytest-xdist >= 3.3.1"]
+    "coverage",
+    "pytest",
+    "pytest-cov",
+    "pytest-randomly",
+    "pytest-xdist"]
 
 [tool.pdm.version]
 source = "file"
@@ -76,14 +79,13 @@ filterwarnings = ["ignore::DeprecationWarning"]
 pythonpath = ["src"]
 
 [tool.ruff]
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 extend-exclude = ["docs", "scripts", "site", "tests", ".*.*"]
 fix = true
+line-length = 80
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 fixable = ["ALL"]
 ignore = [
     "A001",  # Variable is shadowing a Python builtin
-    "ANN101",  # Missing type annotation for self
-    "ANN102",  # Missing type annotation for cls
     "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed
     "ARG003",  # Unused class method argument: `parameters`
     "ARG005",  # Unused lambda argument
@@ -115,7 +117,6 @@ ignore = [
     # "W0105",  # String statement has no effect
     # "W0221",  # Arguments differ
     # "W0222",]  # Access to a protected member
-line-length = 80
 select = [
     "A",  # flake8-buttons
     "ANN",  # flake8-annotations
@@ -160,7 +161,6 @@ select = [
     "T",  #
     "T10",  # flake8-debugger
     "T20",  # flake8-print
-    "TCH",  # flake8-type-checking
     "TID",  # flake8-tidy-imports
     "TRY",  # tryceratops
     "UP",  # pyupgrade
@@ -168,26 +168,25 @@ select = [
     "YTT",]  # flake8-2020
 task-tags = ["To Do:"]
 
-[tool.ruff.flake8-annotations]
+[tool.ruff.lint.flake8-annotations]
 suppress-none-returning = true
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
-inline-quotes = "single"
-multiline-quotes = "single"
+inline-quotes = "double"
+multiline-quotes = "double"
 
-[tool.ruff.flake8-type-checking]
+[tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]
 
-[tool.ruff.flake8-unused-arguments]
+[tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 case-sensitive = true
-known-first-party = ["holden"]
 required-imports = ["from __future__ import annotations"]
 split-on-trailing-comma = false
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 ignore-decorators = ["typing.overload"]

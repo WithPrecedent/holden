@@ -11,19 +11,24 @@ Contents:
     is_nodes: returns whether the passed item is a collection of nodes.
     is_parallel:
     is_serial:
-              
+
 To Do:
 
-    
+
 """
 from __future__ import annotations
-from collections.abc import (
-    Collection, Hashable, MutableMapping, MutableSequence, Sequence, Set)
+
 import inspect
 import itertools
-from typing import Any, Callable, Type, TYPE_CHECKING, Union
-
-import miller
+from collections.abc import (
+    Callable,
+    Collection,
+    Hashable,
+    MutableMapping,
+    MutableSequence,
+    Sequence,
+)
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from . import base
@@ -31,16 +36,16 @@ if TYPE_CHECKING:
 
 def add_checker(name: str, item: Callable[[base.Graph]]) -> None:
     """Adds a checker to the local namespace.
-    
+
     This allows the function to be found by the 'holden.classify' function and
     the 'holden.Forms.classify' class method.
 
     Args:
-        name (str): name of the checker function. It needs to be in the 
+        name (str): name of the checker function. It needs to be in the
             'is_{form}' format.
         item (Callable[[base.Graph]]): callable checker which should have a
             single parameter, item which should be a base.Graph type.
-        
+
     """
     globals()[name] = item
     return
@@ -53,7 +58,7 @@ def is_adjacency(item: object) -> bool:
 
     Returns:
         bool: whether 'item' is an adjacency list.
-        
+
     """
     if isinstance(item, MutableMapping):
         connections = list(item.values())
@@ -64,7 +69,7 @@ def is_adjacency(item: object) -> bool:
     else:
         return False
 
-def is_composite(item: Union[Type[Any], object]) -> bool:
+def is_composite(item: type[Any] | object) -> bool:
     """Returns whether 'item' is a composite data structure.
 
     Args:
@@ -72,12 +77,11 @@ def is_composite(item: Union[Type[Any], object]) -> bool:
 
     Returns:
         bool: whether 'item' is a composite data structure.
-    
+
     """
-    return miller.has_methods(
-        item = item, 
-        methods = ['add', 'delete', 'merge', 'subset'])
-    
+    methods = ['add', 'delete', 'merge', 'subset']
+    return all(inspect.ismethod(getattr(item, method)) for method in methods)
+
 def is_edge(item: object) -> bool:
     """Returns whether 'item' is an edge.
 
@@ -86,7 +90,7 @@ def is_edge(item: object) -> bool:
 
     Returns:
         bool: whether 'item' is an edge.
-        
+
     """
     return (
         isinstance(item, Sequence)
@@ -94,7 +98,7 @@ def is_edge(item: object) -> bool:
         and len(item) == 2
         and is_node(item = item[0])
         and is_node(item = item[1]))
-   
+
 def is_edges(item: object) -> bool:
     """Returns whether 'item' is an edge list.
 
@@ -103,14 +107,13 @@ def is_edges(item: object) -> bool:
 
     Returns:
         bool: whether 'item' is an edge list.
-    
+
     """
-        
     return (
-        isinstance(item, MutableSequence) 
+        isinstance(item, MutableSequence)
         and all(is_edge(item = i) for i in item))
 
-def is_graph(item: Union[Type[Any], object]) -> bool:
+def is_graph(item: type[Any] | object) -> bool:
     """Returns whether 'item' is a graph.
 
     Args:
@@ -118,14 +121,13 @@ def is_graph(item: Union[Type[Any], object]) -> bool:
 
     Returns:
         bool: whether 'item' is a graph.
-    
+
     """
     return (
         is_composite(item = item)
-        and miller.has_methods(
-            item = item, 
-            methods = ['connect', 'disconnect']))
-    
+        and inspect.ismethod(item.connect)
+        and inspect.ismethod(item.disconnect))
+
 def is_matrix(item: object) -> bool:
     """Returns whether 'item' is an adjacency matrix.
 
@@ -134,7 +136,7 @@ def is_matrix(item: object) -> bool:
 
     Returns:
         bool: whether 'item' is an adjacency matrix.
-        
+
     """
     if isinstance(item, Sequence) and len(item) == 2:
         matrix = item[0]
@@ -142,14 +144,14 @@ def is_matrix(item: object) -> bool:
         connections = list(itertools.chain.from_iterable(matrix))
         return (
             isinstance(matrix, MutableSequence)
-            and isinstance(labels, MutableSequence) 
+            and isinstance(labels, MutableSequence)
             and all(isinstance(i, MutableSequence) for i in matrix)
             and all(isinstance(n, Hashable) for n in labels)
-            and all(isinstance(c, (int, float)) for c in connections))
+            and all(isinstance(c, int | float) for c in connections))
     else:
         return False
-   
-def is_node(item: Union[object, Type[Any]]) -> bool:
+
+def is_node(item: object | type[Any]) -> bool:
     """Returns whether 'item' is a node.
 
     Args:
@@ -157,7 +159,7 @@ def is_node(item: Union[object, Type[Any]]) -> bool:
 
     Returns:
         bool: whether 'item' is a node.
-    
+
     """
     if inspect.isclass(item):
         return issubclass(item, Hashable)
@@ -172,7 +174,7 @@ def is_nodes(item: object) -> bool:
 
     Returns:
         bool: whether 'item' is a collection of nodes.
-    
+
     """
     return (
         isinstance(item, Collection) and all(is_node(item = i) for i in item))
@@ -185,7 +187,7 @@ def is_parallel(item: object) -> bool:
 
     Returns:
         bool: whether 'item' is a sequence of parallel.
-    
+
     """
     return (
         isinstance(item, MutableSequence)
@@ -199,7 +201,7 @@ def is_serial(item: object) -> bool:
 
     Returns:
         bool: whether 'item' is a serial.
-    
+
     """
     return (
         isinstance(item, MutableSequence)
