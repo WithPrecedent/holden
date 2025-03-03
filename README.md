@@ -14,6 +14,8 @@
 
 ## What is holden?
 
+This repository is under heavy construction.
+
 <p align="center">
 <img src="https://media.giphy.com/media/3ornjRyce6SukW8INi/giphy.gif" />
 </p>
@@ -36,7 +38,7 @@ Out of the box, Graph has several subtypes with varying internal storage formats
 * `Adjacency`: an adjacency list using a `dict(Node, set(Node))` structure
 * `Matrix`: an adjacency matrix that uses a `list[list[float | int]]` for mapping edges and a separate `list[str]` attribute that corresponds to the list of lists matrix
 * `Edges`: an edge list structure that uses a `list[tuple[Node, Node]]` format
-  
+
 You can use **holden** without any regard to what is going on inside the graph. The methods and properties are the same regardless of which internal format is used. But the different forms are provided in case you want to utilize the advantages or avoid certain drawbacks of a particular form. Unless you want to design a different graph form, you should design subclasses to inherit from one of the
 included forms and add mixins to expand functionality.
 
