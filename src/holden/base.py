@@ -9,6 +9,7 @@ Contents:
         instances, but the class is made available for more complex graphs and
         type checking.
     Node: wrapper for items that can be stored in a composite data structure.
+
     classify: returns name of the subtype a subtype of the passed item.
     transform: general subtype transformer that allows any base form of a
         Composite or Graph to be changed to any other recognized form.
@@ -22,12 +23,26 @@ import abc
 import contextlib
 import dataclasses
 import inspect
-from collections.abc import Collection, Hashable, MutableMapping, Sequence
-from typing import Any, ClassVar, Optional
+import sys
+from collections.abc import (
+    Collection,
+    Hashable,
+    MutableMapping,
+    MutableSequence,
+    Sequence,
+)
+from typing import Any, ClassVar, TypeAlias
 
 import wonka
 
 from . import check, utilities, workshop
+
+if sys.version_info < (3, 12):
+    GenericDict: TypeAlias = MutableMapping[Hashable, Any]
+    GenericList: TypeAlias = MutableSequence[Any]
+else:
+    type GenericDict = MutableMapping[Hashable, Any]
+    type GenericList = MutableSequence[Any]
 
 
 @dataclasses.dataclass
@@ -40,40 +55,36 @@ class Forms(wonka.Registrar):
 
     """
 
-    registry: ClassVar[MutableMapping[Hashable, Any]] = {}
+    registry: ClassVar[GenericDict] = {}
 
     """ Public Methods """
 
     @classmethod
     def classify(cls, item: object) -> str:
-        """Determines which form of composite that 'item' is.
+        """Determines which form of composite that `item` is.
 
-        There is no difference between this classmethod and the 'classify'
+        There is no difference between this classmethod and the `classify`
         function.
 
         Args:
-            item (object): object to classify.
+            item: object to classify.
 
         Returns:
-            str: name of form that 'item' is.
+            Name of form that `item` is.
 
         """
         return classify(item)
 
     @classmethod
-    def register(
-        cls,
-        item: type[Composite],
-        name: str | None = None) -> None:
-        """Adds 'item' to 'registry'.
+    def register(cls, item: type[Composite], name: str | None = None) -> None:
+        """Adds `item` to `registry`.
 
-        The key assigned for storing 'item' is determined using the _namify
-        function if 'name' is not passed.
+        The key assigned for storing `item` is determined using the _namify
+        function if `name` is not passed.
 
         Args:
             item: class to register.
-            name: key to use for storing 'item'. Defaults to
-                None.
+            name: key to use for storing `item`. Defaults to None.
 
         """
         name = name or utilities._namify(item)
@@ -88,27 +99,27 @@ class Forms(wonka.Registrar):
         raise_same_error: bool | None = True) -> Composite:
         """General transform method that will call appropriate transformer.
 
-        Unlike the 'transform' function, this method will return a Composite
+        Unlike the `transform` function, this method will return a Composite
         wrapped in the form type stored in the Forms registry (as opposed to the
-        raw type). So, if 'output' is 'edges', this method will return an edge
-        list in the Edges class. In contrast, the 'transform' method will return
+        raw type). So, if `output` is `edges`, this method will return an edge
+        list in the Edges class. In contrast, the `transform` method will return
         the structural type of an edge list without using the Edges class. The
         rest of the logic is identical between the function and method.
 
         Args:
-            item (Composite): Composite to transform.
-            output (str): name of form to transform 'item' to.
-            raise_same_error(Optional[bool]): whether to return an error if the
-                form of 'item' is the same as 'output'. If True, a ValueError
-                will be returned. If False, item will be return without any
-                change. Defaults to True.
+            item: Composite to transform.
+            output: name of form to transform `item` to.
+            raise_same_error: whether to return an error if the form of `item`
+                is the same as `output`. If True, a ValueError will be returned.
+                If False, item will be return without any change. Defaults to
+                True.
 
         Raises:
-            ValueError: if the form of 'item' is the same as 'output' and
-                'raise_same_error' is True.
+            ValueError: if the form of `item` is the same as `output` and
+                `raise_same_error` is True.
 
         Returns:
-            Composite: transformed composite data structure.
+            Transformed composite data structure.
 
         """
         form = cls.classify(item)
@@ -123,13 +134,12 @@ class Forms(wonka.Registrar):
 """ Base Classes for Composite Data Structures """
 
 @dataclasses.dataclass
-class Composite(abc.ABC):
+class Composite(abc.ABC):  # noqa: B024
     """Base class for composite data structures.
 
     Args:
-         contents (Optional[Collection[Any]]): stored nodes or node labels.
-            Subclasses should narrow the type for contents based on the internal
-            storage format used.
+         contents: stored nodes or node labels. Subclasses should narrow the
+            type for contents based on the internal storage format used.
 
     """
     contents: Collection[Any] | None = None
@@ -140,7 +150,7 @@ class Composite(abc.ABC):
     def __init_subclass__(cls, *args: Any, **kwargs: Any):
         """Automatically registers subclass.."""
         # Because Composite will be used with mixins, it is important to call
-        # other '__init_subclass__' methods, if they exist.
+        # other `__init_subclass__` methods, if they exist.
         with contextlib.suppress(AttributeError):
             super().__init_subclass__(*args, **kwargs)
         # Adds a subclass to the Forms registry only if it is a direct subclass
@@ -150,15 +160,16 @@ class Composite(abc.ABC):
 
     """ Public Methods """
 
-    def add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def add(self, item: Hashable, **kwargs: Any) -> None:
         """Adds node to the stored composite data structure.
 
         Args:
-            item (Hashable): node to add to the stored composite data structure.
+            item: node to add to the stored composite data structure.
+            kwargs: additional keyword arguments.
 
         Raises:
-            TypeError: if 'item' is not a node type.
-            ValueError: if 'item' is already in the stored composite data
+            TypeError: if `item` is not a node type.
+            ValueError: if `item` is already in the stored composite data
                 structure.
 
         """
@@ -167,61 +178,62 @@ class Composite(abc.ABC):
         if item in self.contents:
             raise ValueError(
                 f'{item} is already in the composite data structure')
-        self._add(item, *args, **kwargs)
+        self._add(item, **kwargs)
         return
 
-    def delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def delete(self, item: Hashable, **kwargs: Any) -> None:
         """Deletes node from the stored composite data structure.
 
         Subclasses must provide their own specific methods for deleting a single
-        node. The provided 'delete' method offers all of the error checking and
+        node. The provided `delete` method offers all of the error checking and
         the ability to delete multiple nodes at once. Subclasses just need to
         provide the mechanism for deleting a single node without worrying about
         validation or error-checking.
 
         Args:
-            item (Hashable): node to delete from 'contents'.
+            item: node to delete from `contents`.
+            kwargs: additional keyword arguments.
 
         Raises:
-            KeyError: if 'item' is not in 'contents'.
-            TypeError: if 'item' is not in 'contents'.
+            KeyError: if `item` is not in `contents`.
+            TypeError: if `item` is not in `contents`.
 
         """
         if not check.is_node(item = item):
             raise TypeError(f'{item} is not a node type')
         try:
-            self._delete(item, *args **kwargs)
+            self._delete(item, **kwargs)
         except KeyError as e:
             message = f'{item} does not exist in the composite data structure'
             raise KeyError(message) from e
         return
 
-    def merge(self, item: Composite, *args: Any, **kwargs: Any) -> None:
-        """Adds 'item' to this Composite.
+    def merge(self, item: Composite, **kwargs: Any) -> None:
+        """Adds `item` to this Composite.
 
-        This method is roughly equivalent to a dict.update, just adding 'item'
+        This method is roughly equivalent to a dict.update, just adding `item`
         to the existing stored composite data structure while maintaining its
         structure.
 
         Args:
-            item (base.Composite): another Composite to merge with
+            item: another Composite to merge with
+            kwargs: additional keyword arguments.
 
         Raises:
-            TypeError: if 'item' is not compatible composite data structure
+            TypeError: if `item` is not compatible composite data structure
                 type.
 
         """
         if not check.is_composite(item = item):
             raise TypeError(f'{item} is not a compatible type')
-        else:
-            self._merge(item, *args, **kwargs)
+        self._merge(item, **kwargs)
         return
 
     def subset(
         self,
         include: Hashable | Sequence[Hashable] = None,
         exclude: Hashable | Sequence[Hashable] = None) -> Composite:
-        """Returns a new Composite without a subset of 'contents'.
+        """Returns a new Composite without a subset of `contents`.
 
         All edges will be removed that include any nodes that are not part of
         the new composite data structure.
@@ -230,10 +242,10 @@ class Composite(abc.ABC):
         be maintained in the returned composite data structure.
 
         Args:
-            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which
-                should be included in the new composite data structure.
-            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which
-                should not be included in the new composite data structure.
+            include: nodes or edges which should be included in the new
+                composite data structure.
+            exclude: nodes or edges which should not be included in the new
+                composite data structure.
 
         Raises:
             ValueError: if include and exclude are none or if any item in
@@ -241,7 +253,7 @@ class Composite(abc.ABC):
                 structure.
 
         Returns:
-           Composite: with only selected nodes and edges.
+           Composite with only selected nodes and edges.
 
         """
         if include is None and exclude is None:
@@ -258,47 +270,50 @@ class Composite(abc.ABC):
 
     """ Private Methods """
 
-    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def _add(self, item: Hashable, **kwargs: Any) -> None:
         """Adds node to the stored composite data structure.
 
         Subclasses must provide their own specific methods for adding a single
-        node. The provided 'add' method offers all of the error checking and
+        node. The provided `add` method offers all of the error checking and
         the ability to add multiple nodes at once. Subclasses just need to
         provide the mechanism for adding a single node without worrying about
         validation or error-checking.
 
         Args:
-            item (Hashable): node to add to the stored composite data structure.
+            item: node to add to the stored composite data structure.
+            kwargs: additional keyword arguments.
 
         """
         raise NotImplementedError
 
-    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def _delete(self, item: Hashable, **kwargs: Any) -> None:
         """Deletes node from the stored composite data structure.
 
         Subclasses must provide their own specific methods for deleting a single
-        node. The provided 'delete' method offers all of the error checking and
+        node. The provided `delete` method offers all of the error checking and
         the ability to delete multiple nodes at once. Subclasses just need to
         provide the mechanism for deleting a single node without worrying about
         validation or error-checking.
 
         Args:
-            item (Hashable): node to delete from 'contents'.
+            item: node to delete from `contents`.
+            kwargs: additional keyword arguments.
 
         """
         raise NotImplementedError
 
-    def _merge(self, item: Composite, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored composite data structure.
+    def _merge(self, item: Composite, **kwargs: Any) -> None:
+        """Combines `item` with the stored composite data structure.
 
         Subclasses must provide their own specific methods for merging with
-        another composite data structure. The provided 'merge' method offers all
+        another composite data structure. The provided `merge` method offers all
         of the error checking. Subclasses just need to provide the mechanism for
-        merging ithout worrying about validation or error-checking.
+        merging without worrying about validation or error-checking.
 
         Args:
-            item (Composite): another Composite object to add to the stored
+            item: another Composite object to add to the stored
                 composite data structure.
+            kwargs: additional keyword arguments.
 
         """
         raise NotImplementedError
@@ -307,20 +322,20 @@ class Composite(abc.ABC):
         self,
         include: Hashable | Sequence[Hashable] = None,
         exclude: Hashable | Sequence[Hashable] = None) -> Composite:
-        """Returns a new Composite without a subset of 'contents'.
+        """Returns a new Composite without a subset of `contents`.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. Subclasses just need to provide the mechanism for returning a
         subset without worrying about validation or error-checking.
 
         Args:
-            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which
+            include: nodes or edges which
                 should be included in the new composite data structure.
-            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which
+            exclude: nodes or edges which
                 should not be included in the new composite data structure.
 
         Returns:
-           Graph: with only selected nodes and edges.
+           Graph with only selected nodes and edges.
 
         """
         raise NotImplementedError
@@ -329,13 +344,13 @@ class Composite(abc.ABC):
 
     @classmethod
     def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+        """Returns whether `instance` meets criteria to be a subclass.
 
         Args:
             instance (object): item to test as an instance.
 
         Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
+            bool: whether `instance` meets criteria to be a subclass.
 
         """
         return check.is_composite(item = instance)
@@ -345,13 +360,13 @@ class Composite(abc.ABC):
 class Graph(Composite, abc.ABC):
     """Base class for holden graphs.
 
-    Graph adds the requirements of '_connect' and '_disconnect' methods in
+    Graph adds the requirements of `_connect` and `_disconnect` methods in
     addition to the requirements of Composite.
 
     Args:
-         contents (Optional[Collection[Any]]): stored nodes, node labels, edges,
-            or edge labels. Subclasses should narrow the type for contents based
-            on the internal storage format used.
+         contents: stored nodes, node labels, edges, or edge labels. Subclasses
+            should narrow the type for contents based on the internal storage
+            format used.
 
     """
     contents: Collection[Any] | None = None
@@ -362,7 +377,7 @@ class Graph(Composite, abc.ABC):
     def __init_subclass__(cls, *args: Any, **kwargs: Any):
         """Automatically registers subclass.."""
         # Because Graph will be used with mixins, it is important to call other
-        # '__init_subclass__' methods, if they exist.
+        # `__init_subclass__` methods, if they exist.
         with contextlib.suppress(AttributeError):
             super().__init_subclass__(*args, **kwargs)
         # Adds a subclass to the Forms registry only if it is a direct subclass
@@ -372,11 +387,12 @@ class Graph(Composite, abc.ABC):
 
     """ Public Methods """
 
-    def connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+    def connect(self, item: Edge, **kwargs: Any) -> None:
         """Adds edge to the stored graph.
 
         Args:
-            item (Edge): edge to add to the stored graph.
+            item: edge to add to the stored graph.
+            kwargs: additional keyword arguments.
 
         Raises:
             ValueError: if the ends of the item are the same or if one of the
@@ -385,23 +401,23 @@ class Graph(Composite, abc.ABC):
         """
         if not check.is_edge(item = item):
             raise TypeError(f'{item} is not an edge type')
-        elif item[0] == item[1]:
+        if item[0] == item[1]:
             raise ValueError(
                 'The starting point of an edge cannot be the same as the '
                 'ending point')
-        elif item[0] not in self:
+        if item[0] not in self:
             raise ValueError(f'{item[0]} is not in the graph')
-        elif item[1] not in self:
+        if item[1] not in self:
             raise ValueError(f'{item[1]} is not in the graph')
-        else:
-            self._connect(item, *args, **kwargs)
+        self._connect(item, **kwargs)
         return
 
-    def disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+    def disconnect(self, item: Edge, *kwargs: Any) -> None:
         """Removes edge from the stored graph.
 
         Args:
-            item (Edge): edge to delete from the stored graph.
+            item: edge to delete from the stored graph.
+            kwargs: additional keyword arguments.
 
         Raises:
             ValueError: if the edge does not exist in the stored graph.
@@ -409,46 +425,47 @@ class Graph(Composite, abc.ABC):
         """
         if not check.is_edge(item = item):
             raise TypeError(f'{item} is not an edge type')
-        elif item[0] == item[1]:
+        if item[0] == item[1]:
             raise ValueError(
                 'The starting point of an edge cannot be the same as the '
                 'ending point')
-        else:
-            try:
-                self._disconnect(item, *args, **kwargs)
-            except (KeyError, ValueError) as e:
-                message = f'The edge ({item[0]}, {item[1]}) is not in the graph'
-                raise ValueError(message) from e
+        try:
+            self._disconnect(item, **kwargs)
+        except (KeyError, ValueError) as e:
+            message = f'The edge ({item[0]}, {item[1]}) is not in the graph'
+            raise ValueError(message) from e
         return
 
     """ Private Methods """
 
-    def _connect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+    def _connect(self, item: Edge, **kwargs: Any) -> None:
         """Adds edge to the stored graph.
 
         Subclasses must provide their own specific methods for adding a single
-        edge. The provided 'connect' method offers all of the error checking and
+        edge. The provided `connect` method offers all of the error checking and
         the ability to add multiple edges at once. Subclasses just need to
         provide the mechanism for adding a single edge without worrying about
         validation or error-checking.
 
         Args:
-            item (Edge): edge to add to the stored graph.
+            item: edge to add to the stored graph.
+            kwargs: additional keyword arguments.
 
         """
         raise NotImplementedError
 
-    def _disconnect(self, item: Edge, *args: Any, **kwargs: Any) -> None:
+    def _disconnect(self, item: Edge, **kwargs: Any) -> None:
         """Removes edge from the stored graph.
 
         Subclasses must provide their own specific methods for deleting a single
-        edge. The provided 'disconnect' method offers all of the error checking
+        edge. The provided `disconnect` method offers all of the error checking
         and the ability to delete multiple edges at once. Subclasses just need
         to provide the mechanism for deleting a single edge without worrying
         about validation or error-checking.
 
         Args:
-            item (Edge): edge to delete from the stored graph.
+            item: edge to delete from the stored graph.
+            kwargs: additional keyword arguments.
 
         """
         raise NotImplementedError
@@ -457,13 +474,13 @@ class Graph(Composite, abc.ABC):
 
     @classmethod
     def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+        """Returns whether `instance` meets criteria to be a subclass.
 
         Args:
-            instance (object): item to test as an instance.
+            instance: item to test as an instance.
 
         Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
+            Whether `instance` meets criteria to be a subclass.
 
         """
         return check.is_graph(item = instance)
@@ -478,8 +495,8 @@ class Edge(Sequence):
     structures.
 
     Args:
-        start (Hashable): starting point for the edge.
-        stop (Hashable): stopping point for the edge.
+        start: starting point for the edge.
+        stop: stopping point for the edge.
 
     """
     start: Hashable
@@ -491,30 +508,28 @@ class Edge(Sequence):
         """Allows Edge subclass to be accessed by index.
 
         Args:
-            index (int): the number of the field in the dataclass based on
-                order.
+            index: the number of the field in the dataclass based on order.
 
         Raises:
-            IndexError: if 'index' is greater than 1.
+            IndexError: if `index` is greater than 1.
 
         Returns:
-            Hashable: contents of field identified by 'index'.
+            Contents of field identified by `index`.
 
         """
         if index > 1:
             raise IndexError('Index out of bounds - edges are only two points')
-        else:
-            return getattr(self, dataclasses.fields(self)[index].name)
+        return getattr(self, dataclasses.fields(self)[index].name)
 
     @classmethod
     def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+        """Returns whether `instance` meets criteria to be a subclass.
 
         Args:
-            instance (object): item to test as an instance.
+            instance: item to test as an instance.
 
         Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
+            Whether `instance` meets criteria to be a subclass.
 
         """
         return check.is_edge(item = instance)
@@ -536,10 +551,10 @@ class Node(Hashable):
     Node acts a basic wrapper for any item stored in a graph structure.
 
     Args:
-        contents (Optional[Any]): any stored item(s). Defaults to None.
+        contents: any stored item(s). Defaults to None.
 
     """
-    contents: Optional[Any] = None
+    contents: Any | None = None
 
     """ Initialization Methods """
 
@@ -551,7 +566,7 @@ class Node(Hashable):
         classes.
 
         """
-        # Calls other '__init_subclass__' methods for parent and mixin classes.
+        # Calls other `__init_subclass__` methods for parent and mixin classes.
         with contextlib.suppress(AttributeError):
             super().__init_subclass__(*args, **kwargs)
         # Copies hashing related methods to a subclass.
@@ -563,26 +578,26 @@ class Node(Hashable):
 
     # @classmethod
     # def __subclasshook__(cls, subclass: Type[Any]) -> bool:
-    #     """Returns whether 'subclass' is a virtual or real subclass.
+    #     """Returns whether `subclass` is a virtual or real subclass.
 
     #     Args:
     #         subclass (Type[Any]): item to test as a subclass.
 
     #     Returns:
-    #         bool: whether 'subclass' is a real or virtual subclass.
+    #         bool: whether `subclass` is a real or virtual subclass.
 
     #     """
     #     return check.is_node(item = subclass)
 
     # @classmethod
     # def __instancecheck__(cls, instance: object) -> bool:
-    #     """Returns whether 'instance' meets criteria to be a subclass.
+    #     """Returns whether `instance` meets criteria to be a subclass.
 
     #     Args:
     #         instance (object): item to test as an instance.
 
     #     Returns:
-    #         bool: whether 'instance' meets criteria to be a subclass.
+    #         bool: whether `instance` meets criteria to be a subclass.
 
     #     """
     #     return check.is_node(item = instance)
@@ -595,7 +610,7 @@ class Node(Hashable):
         its base storage type.
 
         Returns:
-            int: hashable of 'name'.
+            int: hashable of `name`.
 
         """
         return hash(dataclasses.astuple(self))
@@ -604,21 +619,21 @@ class Node(Hashable):
 """ Subtype Checker """
 
 def classify(item: object) -> str:
-    """Determines which form of graph that 'item' is.
+    """Determines which form of graph that `item` is.
 
     Args:
-        item (object): object to classify.
+        item: object to classify.
 
     Returns:
-        str: name of form that 'item' is.
+        Name of form that `item` is.
 
     """
-    # Chcecks for a matching parent clas in 'registry'.
+    # Chcecks for a matching parent clas in `registry`.
     subtype = item if inspect.isclass(item) else item.__class__
     for name, form in Forms.registry.items():
         if issubclass(subtype, form):
             return name
-    # Chaecks for matching raw form using functions in the 'check' module.
+    # Chaecks for matching raw form using functions in the `check` module.
     for name in Forms.registry:
         with contextlib.suppress(AttributeError):
             checker = getattr(check, f'is_{name}')
@@ -630,31 +645,29 @@ def classify(item: object) -> str:
 
 def transform(
     item: Graph,
-    output: str,
+    output: str, *,
     raise_same_error: bool | None = True) -> Graph:
     """General transform function that will call appropriate transformer.
 
     Args:
-        item Graph): Graph to transform.
-        output (str): name of form to transform 'item' to.
-        raise_same_error(Optional[bool]): whether to return an error if the form
-            of 'item' is the same as 'output'. If True, a ValueError will be
-            returned. If False, item will be return without any change. Defaults
-            to True.
+        item: Graph to transform.
+        output: name of form to transform `item` to.
+        raise_same_error: whether to return an error if the form of `item` is
+            the same as `output`. If True, a ValueError will be returned. If
+            False, item will be return without any change. Defaults to True.
 
     Raises:
-        ValueError: if the form of 'item' is the same as 'output' and
-            'raise_same_error' is True.
+        ValueError: if the form of `item` is the same as `output` and
+            `raise_same_error` is True.
 
     Returns:
-        base.Graph: transformed graph.
+        Transformed graph.
 
     """
     form = classify(item)
     if form == output and raise_same_error:
         raise ValueError('The passed item and output are the same type')
-    elif form == output:
+    if form == output:
         return item
-    else:
-        transformer = getattr(workshop, f'{form}_to_{output}')
-        return transformer(item = item)
+    transformer = getattr(workshop, f'{form}_to_{output}')
+    return transformer(item = item)

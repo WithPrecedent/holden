@@ -1,7 +1,8 @@
 """Concrete lightweight graph data structures.
 
 Contents:
-     System
+     System: a directed graph with unweighted edges with an internal adjacency
+        list structure.
 
 To Do:
     Complete Network which will use an adjacency matrix for internal storage.
@@ -22,9 +23,9 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
     """Directed graph with unweighted edges stored as an adjacency list.
 
     Args:
-        contents (MutableMapping[Hashable, Set[Hashable]]): keys are nodes and
-            values are sets of nodes (or hashable representations of nodes).
-            Defaults to a defaultdict that has a set for its value format.
+        contents: keys are nodes and values are sets of nodes (or hashable
+            representations of nodes). Defaults to a defaultdict that has a set
+            for its value format.
 
     """
     contents: MutableMapping[Hashable, AbstractSet[Hashable]] = (
@@ -39,6 +40,11 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
         return report.get_endpoints_adjacency(item = self.contents)
 
     @property
+    def nodes(self) -> set[Hashable]:
+        """Returns a set of all nodes in the System."""
+        return set(self.contents.keys())
+
+    @property
     def root(self) -> MutableSequence[Hashable]:
         """Returns the roots of the stored composite."""
         return report.get_roots_adjacency(item = self.contents)
@@ -46,18 +52,17 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
     """ Public Methods """
 
     def append(self, item: base.Graph) -> None:
-        """Appends 'item' to the endpoints of the stored graph.
+        """Appends `item` to the endpoints of the stored graph.
 
         Appending creates an edge between every endpoint of this instance's
-        stored graph and the every root of 'item'.
+        stored graph and the every root of `item`.
 
         Args:
-            item (base.Graph): another Graph,
-                an adjacency list, an edge list, an adjacency matrix, or one or
-                more nodes.
+            item: another Graph, an adjacency list, an edge list, an adjacency
+                matrix, or one or more nodes.
 
         Raises:
-            TypeError: if 'item' is neither a Graph, Adjacency, Edges, Matrix,
+            TypeError: if `item` is neither a Graph, Adjacency, Edges, Matrix,
                 or Collection[Hashable] type.
 
         """
@@ -76,17 +81,17 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
         return
 
     def prepend(self, item: base.Graph) -> None:
-        """Prepends 'item' to the roots of the stored graph.
+        """Prepends `item` to the roots of the stored graph.
 
-        Prepending creates an edge between every endpoint of 'item' and every
+        Prepending creates an edge between every endpoint of `item` and every
         root of this instance;s stored graph.
 
         Args:
-            item (base.Graph): another Graph, an adjacency list, an
-                edge list, an adjacency matrix, or one or more nodes.
+            item: another Graph, an adjacency list, an edge list, an adjacency
+                matrix, or one or more nodes.
 
         Raises:
-            TypeError: if 'item' is neither a System, Adjacency, Edges, Matrix,
+            TypeError: if `item` is neither a System, Adjacency, Edges, Matrix,
                 or Collection[Hashable] type.
 
         """
@@ -111,12 +116,12 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
         """Returns all paths in graph from 'start' to 'stop'.
 
         Args:
-            start (Hashable): node to start paths from.
-            stop (Hashable): node to stop paths.
+            start: node to start paths from.
+            stop: node to stop paths.
 
         Returns:
-            Path: a list of possible paths (each path is a list nodes) from
-                'start' to 'stop'.
+            A list of possible paths (each path is a list nodes) from 'start' to
+                'stop'.
 
         """
         roots = self.root if start is None else utilities._listify(start)
@@ -240,7 +245,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 
 #     @classmethod
 #     def create(cls, item: Union[Adjacency, Edges, Matrix]) -> Graph:
-#         """Creates an instance of a Graph from 'item'.
+#         """Creates an instance of a Graph from `item`.
 
 #         Args:
 #             item (Union[Adjacency, Edges, Matrix]): an adjacency list,
@@ -248,7 +253,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #                 stored graph.
 
 #         Returns:
-#             Graph: a Graph instance created compositesd on 'item'.
+#             Graph: a Graph instance created compositesd on `item`.
 
 #         """
 #         if is_adjacency_list(item = item):
@@ -366,10 +371,10 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 
 #     def append(self,
 #                item: Union[Graph, Adjacency, Edges, Matrix, Collection[Hashable]]) -> None:
-#         """Adds 'item' to this Graph.
+#         """Adds `item` to this Graph.
 
 #         Combining creates an edge between every endpoint of this instance's
-#         Graph and the every root of 'item'.
+#         Graph and the every root of `item`.
 
 #         Args:
 #             item (Union[Graph, Adjacency, Edges, Matrix, Collection[Hashable]]): another
@@ -377,7 +382,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #                 adjacency matrix, or Collection[Hashable].
 
 #         Raises:
-#             TypeError: if 'item' is neither a Graph, Adjacency, Edges, Matrix,
+#             TypeError: if `item` is neither a Graph, Adjacency, Edges, Matrix,
 #                 or Collection[Hashable] type.
 
 #         """
@@ -473,7 +478,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #         return
 
 #     def merge(self, item: Union[Graph, Adjacency, Edges, Matrix]) -> None:
-#         """Adds 'item' to this Graph.
+#         """Adds `item` to this Graph.
 
 #         This method is roughly equivalent to a dict.update, just adding the
 #         new keys and values to the existing graph. It converts the supported
@@ -486,7 +491,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #                 adjacency matrix.
 
 #         Raises:
-#             TypeError: if 'item' is neither a Graph, Adjacency, Edges, or
+#             TypeError: if `item` is neither a Graph, Adjacency, Edges, or
 #                 Matrix type.
 
 #         """
@@ -878,7 +883,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #                 add to the 'contents' attribute.
 
 #         Raises:
-#             ValueError: if 'item' already is in the stored tree or if 'parent'
+#             ValueError: if `item` already is in the stored tree or if 'parent'
 #                 is not in the tree.
 
 #         """
@@ -1008,7 +1013,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #         return
 
 #     def get(self, item: str) -> Optional[Hashable]:
-#         """Finds first matching node in Tree match 'item'.
+#         """Finds first matching node in Tree match `item`.
 
 #         Args:
 #             item (str):
@@ -1177,7 +1182,7 @@ class System(graphs.Adjacency, traits.Directed, traits.Fungible):
 #     """ Public Methods """
 
 #     def merge(item: base.Graph, *args: Any, **kwargs: Any) -> None:
-#         """Combines 'item' with the stored composite object.
+#         """Combines `item` with the stored composite object.
 
 #         Args:
 #             item (Graph): another Graph object to add to the stored

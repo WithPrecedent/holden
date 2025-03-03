@@ -1,19 +1,18 @@
 """Base types of other composite data structures.
 
 Contents:
-    Parallel (bunches.Listing, traits.Directed, base.Composite):
-    Serial (bunches.DictList, traits.Directed, base.Composite):
+    Parallel: `list`-like class containing Serial instances.
+    Serial: `list`-like class containing nodes.
 
 To Do:
     Complete Tree class and related functions
-    Integrate Kinds system when it is finished
 
 """
 from __future__ import annotations
 
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import bunches
 
@@ -28,8 +27,7 @@ class Parallel(bunches.Listing, traits.Directed, base.Composite):
     """Base class for a list of serial composites.
 
     Args:
-        contents (MutableSequence[Serial]): Listing of Serial instances.
-            Defaults to an empty list.
+        contents: Listing of Serial instances. Defaults to an empty list.
 
     """
     contents: MutableSequence[Serial] = dataclasses.field(
@@ -53,15 +51,15 @@ class Parallel(bunches.Listing, traits.Directed, base.Composite):
         self,
         start: Hashable | None = None,
         stop: Hashable | None = None) -> Parallel:
-        """Returns all paths in graph from 'start' to 'stop'.
+        """Returns all paths in graph from `start` to `stop`.
 
         Args:
-            start (Hashable): node to start paths from.
-            stop (Hashable): node to stop paths.
+            start: node to start paths from.
+            stop: node to stop paths.
 
         Returns:
-            Paralle: a list of possible paths (each path is a list nodes) from
-                'start' to 'stop'.
+            A list of possible paths (each path is a list nodes) from `start` to
+                `stop`.
 
         """
         root = self.root if start is None else bunches.listify(start)
@@ -73,38 +71,39 @@ class Parallel(bunches.Listing, traits.Directed, base.Composite):
 
     """ Private Methods """
 
-    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def _add(self, item: Hashable, **kwargs: Any) -> None:
         """Adds node to the stored composite.
 
         Args:
-            item (Hashable): node to add to the stored composite.
+            item: node to add to the stored composite.
+            kwargs: additional keyword arguments.
 
         """
         self.contents.append(item)
         return
 
-    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def _delete(self, item: Hashable, **kwargs: Any) -> None:
         """Deletes node from the stored composite.
 
         Args:
-            item (Hashable): node to delete from 'contents'.
-
+            item: node to delete from `contents`.
+            kwargs: additional keyword arguments.
 
         """
         del self.contents[item]
         return
 
-    def _merge(self, item: base.Composite, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored composite.
+    def _merge(self, item: base.Composite, **kwargs: Any) -> None:
+        """Combines `item` with the stored composite.
 
         Subclasses must provide their own specific methods for merging with
-        another composite. The provided 'merge' method offers all of the error
+        another composite. The provided `merge` method offers all of the error
         checking. Subclasses just need to provide the mechanism for merging
         ithout worrying about validation or error-checking.
 
         Args:
-            item (base.Composite): another Composite object to add to the
-                stored composite.
+            item: another Composite object to add to the stored composite.
+            kwargs: additional keyword arguments.
 
         """
         other = base.transform(
@@ -119,20 +118,20 @@ class Parallel(bunches.Listing, traits.Directed, base.Composite):
         self,
         include: Hashable | Sequence[Hashable] = None,
         exclude: Hashable | Sequence[Hashable] = None) -> Parallel:
-        """Returns a new composite without a subset of 'contents'.
+        """Returns a new composite without a subset of `contents`.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. Subclasses just need to provide the mechanism for returning a
         subset without worrying about validation or error-checking.
 
         Args:
-            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which
-                should be included in the new composite.
-            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which
-                should not be included in the new composite.
+            include: nodes or edges which should be included in the new
+                composite.
+            exclude: nodes or edges which should not be included in the new
+                composite.
 
         Returns:
-           Parallel: with only selected nodes and edges.
+           Parallel with only selected nodes and edges.
 
         """
         raise NotImplementedError
@@ -141,13 +140,13 @@ class Parallel(bunches.Listing, traits.Directed, base.Composite):
 
     @classmethod
     def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+        """Returns whether `instance` meets criteria to be a subclass.
 
         Args:
-            instance (object): item to test as an instance.
+            instance: item to test as an instance.
 
         Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
+            Whether `instance` meets criteria to be a subclass.
 
         """
         return check.is_parallel(item = instance)
@@ -158,8 +157,7 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
     """Base class for serial composites.
 
     Args:
-        contents (MutableSequence[Hashable]): list of nodes. Defaults to
-            an empty list.
+        contents: list of nodes. Defaults to an empty list.
 
     """
     contents: MutableSequence[Hashable] = dataclasses.field(
@@ -183,15 +181,15 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
         self,
         start: Hashable | None = None,
         stop: Hashable | None = None) -> Parallel:
-        """Returns all paths in graph from 'start' to 'stop'.
+        """Returns all paths in graph from `start` to `stop`.
 
         Args:
-            start (Hashable): node to start paths from.
-            stop (Hashable): node to stop paths.
+            start: node to start paths from.
+            stop: node to stop paths.
 
         Returns:
-            Paralle: a list of possible paths (each path is a list nodes) from
-                'start' to 'stop'.
+            Parallel list of possible paths (each path is a list nodes) from
+                `start` to `stop`.
 
         """
         if start is None:
@@ -202,38 +200,39 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
 
     """ Private Methods """
 
-    def _add(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def _add(self, item: Hashable, **kwargs: Any) -> None:
         """Adds node to the stored composite.
 
         Args:
-            item (Hashable): node to add to the stored composite.
+            item: node to add to the stored composite.
+            kwargs: additional keyword arguments.
 
         """
         self.contents.append(item)
         return
 
-    def _delete(self, item: Hashable, *args: Any, **kwargs: Any) -> None:
+    def _delete(self, item: Hashable, **kwargs: Any) -> None:
         """Deletes node from the stored composite.
 
         Args:
-            item (Hashable): node to delete from 'contents'.
-
+            item: node to delete from `contents`.
+            kwargs: additional keyword arguments.
 
         """
         del self.contents[item]
         return
 
-    def _merge(self, item: base.Composite, *args: Any, **kwargs: Any) -> None:
-        """Combines 'item' with the stored composite.
+    def _merge(self, item: base.Composite, **kwargs: Any) -> None:
+        """Combines `item` with the stored composite.
 
         Subclasses must provide their own specific methods for merging with
-        another composite. The provided 'merge' method offers all of the error
+        another composite. The provided `merge` method offers all of the error
         checking. Subclasses just need to provide the mechanism for merging
         ithout worrying about validation or error-checking.
 
         Args:
-            item (base.Composite): another Composite object to add to the
-                stored composite.
+            item: another Composite object to add to the stored composite.
+            kwargs: additional keyword arguments.
 
         """
         other = base.transform(
@@ -247,20 +246,20 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
         self,
         include: Hashable | Sequence[Hashable] = None,
         exclude: Hashable | Sequence[Hashable] = None) -> Serial:
-        """Returns a new composite without a subset of 'contents'.
+        """Returns a new composite without a subset of `contents`.
 
         Subclasses must provide their own specific methods for deleting a single
         edge. Subclasses just need to provide the mechanism for returning a
         subset without worrying about validation or error-checking.
 
         Args:
-            include (Union[Hashable, Sequence[Hashable]]): nodes or edges which
-                should be included in the new composite.
-            exclude (Union[Hashable, Sequence[Hashable]]): nodes or edges which
-                should not be included in the new composite.
+            include: nodes or edges which should be included in the new
+                composite.
+            exclude: nodes or edges which should not be included in the new
+                composite.
 
         Returns:
-           Serial: with only selected nodes and edges.
+           Serial with only selected nodes and edges.
 
         """
         if include:
@@ -275,13 +274,13 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
 
     @classmethod
     def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether 'instance' meets criteria to be a subclass.
+        """Returns whether `instance` meets criteria to be a subclass.
 
         Args:
-            instance (object): item to test as an instance.
+            instance: item to test as an instance.
 
         Returns:
-            bool: whether 'instance' meets criteria to be a subclass.
+            Whether `instance` meets criteria to be a subclass.
 
         """
         return check.is_serial(item = instance)
@@ -348,13 +347,13 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
 
 #     @classmethod
 #     def __instancecheck__(cls, instance: object) -> bool:
-#         """Returns whether 'instance' meets criteria to be a subclass.
+#         """Returns whether `instance` meets criteria to be a subclass.
 
 #         Args:
 #             instance (object): item to test as an instance.
 
 #         Returns:
-#             bool: whether 'instance' meets criteria to be a subclass.
+#             bool: whether `instance` meets criteria to be a subclass.
 
 #         """
 #         return is_tree(item = instance)
@@ -370,13 +369,13 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
 
 
 # def is_tree(item: object) -> bool:
-#     """Returns whether 'item' is a tree.
+#     """Returns whether `item` is a tree.
 
 #     Args:
 #         item (object): instance to test.
 
 #     Returns:
-#         bool: whether 'item' is a tree.
+#         bool: whether `item` is a tree.
 
 #     """
 #     return (
@@ -384,13 +383,13 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
 #         and all(isinstance(i, (MutableSequence, Hashable)) for i in item))
 
 # def is_forest(item: object) -> bool:
-#     """Returns whether 'item' is a dict of tree.
+#     """Returns whether `item` is a dict of tree.
 
 #     Args:
 #         item (object): instance to test.
 
 #     Returns:
-#         bool: whether 'item' is a dict of tree.
+#         bool: whether `item` is a dict of tree.
 
 #     """
 #     return (
@@ -401,16 +400,16 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
 
 # # @functools.singledispatch
 # def to_tree(item: Any) -> graphs.Tree:
-#     """Converts 'item' to a Tree.
+#     """Converts `item` to a Tree.
 
 #     Args:
 #         item (Any): item to convert to a Tree.
 
 #     Raises:
-#         TypeError: if 'item' is a type that is not registered.
+#         TypeError: if `item` is a type that is not registered.
 
 #     Returns:
-#         form.Tree: derived from 'item'.
+#         form.Tree: derived from `item`.
 
 #     """
 #     if check.is_tree(item = item):
@@ -422,16 +421,16 @@ class Serial(bunches.DictList, traits.Directed, base.Composite):
 
 # # @to_tree.register
 # def matrix_to_tree(item: graphs.Matrix) -> graphs.Tree:
-#     """Converts 'item' to a Tree.
+#     """Converts `item` to a Tree.
 
 #     Args:
 #         item (form.Matrix): item to convert to a Tree.
 
 #     Raises:
-#         TypeError: if 'item' is a type that is not registered.
+#         TypeError: if `item` is a type that is not registered.
 
 #     Returns:
-#         form.Tree: derived from 'item'.
+#         form.Tree: derived from `item`.
 
 #     """
 #     tree = {}

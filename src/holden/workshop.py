@@ -30,8 +30,6 @@ To Do:
 from __future__ import annotations
 
 import collections
-
-# import functools
 import itertools
 from collections.abc import Callable, Collection, Hashable, MutableSequence
 from typing import TYPE_CHECKING
@@ -42,18 +40,20 @@ if TYPE_CHECKING:
     from . import base, composites, graphs
 
 
+_TRANSFORMER: Callable[[str, str], str] = lambda x, y: f'f{x}_to_{y}'
+
 """ Transformers """
 
-def add_transformer(name: str, item: Callable[[base.Graph]]) -> None:
-    """Adds a transformer to the local namespace.
+def add_transformer(name: str, item: Callable[[base.Composite]]) -> None:
+    """Adds a transformer to this module's namespace.
 
-    This allows the function to be found by the 'transform' function.
+    This allows the function to be found by the `transform` function.
 
     Args:
-        name (str): name of the transformer function. It needs to be in the
-            '{input form}_to_{output form}' format.
-        item (Callable[[base.Graph]]): callable transformer which should have a
-            single parameter, item which should be a base.Graph type.
+        name: name of the transformer function. It needs to be in the
+            `_TRANSFORMER` format.
+        item: callable transformer which should have a single parameter, item
+            which should be a Composite type.
 
     """
     globals()[name] = item
@@ -61,13 +61,13 @@ def add_transformer(name: str, item: Callable[[base.Graph]]) -> None:
 
 # @to_edges.register
 def adjacency_to_edges(item: graphs.Adjacency) -> graphs.Edges:
-    """Converts 'item' to an graphs.Edges.
+    """Converts `item` to an Edges.
 
     Args:
-        item (graphs.Adjacency): item to convert to an graphs.Edges.
+        item: item to convert to an Edges.
 
     Returns:
-        graphs.Edges: derived from 'item'.
+        Edges derived from `item`.
 
     """
     edges = []
@@ -77,13 +77,13 @@ def adjacency_to_edges(item: graphs.Adjacency) -> graphs.Edges:
 
 # @to_matrix.register
 def adjacency_to_matrix(item: graphs.Adjacency) -> graphs.Matrix:
-    """Converts 'item' to a graphs.Matrix.
+    """Converts `item` to a Matrix.
 
     Args:
-        item (graphs.Adjacency): item to convert to a graphs.Matrix.
+        item: item to convert to a Matrix.
 
     Returns:
-        graphs.Matrix: derived from 'item'.
+        Matrix derived from `item`.
 
     """
     names = list(item.keys())
@@ -96,13 +96,13 @@ def adjacency_to_matrix(item: graphs.Adjacency) -> graphs.Matrix:
 
 # @to_parallel.register
 def adjacency_to_parallel(item: graphs.Adjacency) -> composites.Parallel:
-    """Converts 'item' to a Serial.
+    """Converts `item` to a parallel structure.
 
     Args:
-        item (graphs.Adjacency): item to convert to a Serial.
+        item: item to convert to a parallel structure.
 
     Returns:
-        Serial: derived from 'item'.
+        Parallel structure derived from `item`.
 
     """
     roots = get_roots_adjacency(item = item)
@@ -120,13 +120,13 @@ def adjacency_to_parallel(item: graphs.Adjacency) -> composites.Parallel:
 
 # @to_serial.register
 def adjacency_to_serial(item: graphs.Adjacency) -> composites.Serial:
-    """Converts 'item' to a Serial.
+    """Converts `item` to a Serial.
 
     Args:
-        item (graphs.Adjacency): item to convert to a Serial.
+        item: item to convert to a Serial.
 
     Returns:
-        Serial: derived from 'item'.
+        Serial derived from `item`.
 
     """
     all_parallel = adjacency_to_parallel(item = item)
@@ -137,13 +137,13 @@ def adjacency_to_serial(item: graphs.Adjacency) -> composites.Serial:
 
 # @to_adjacency.register
 def edges_to_adjacency(item: graphs.Edges) -> graphs.Adjacency:
-    """Converts 'item' to an graphs.Adjacency.
+    """Converts `item` to an Adjacency.
 
     Args:
-        item (graphs.Edges): item to convert to an graphs.Adjacency.
+        item: item to convert to an Adjacency.
 
     Returns:
-        graphs.Adjacency: derived from 'item'.
+        Adjacency derived from `item`.
 
     """
     adjacency = collections.defaultdict(set)
@@ -158,52 +158,52 @@ def edges_to_adjacency(item: graphs.Edges) -> graphs.Adjacency:
 
 # @to_matrix.register
 def edges_to_matrix(item: graphs.Edges) -> graphs.Matrix:
-    """Converts 'item' to a graphs.Matrix.
+    """Converts `item` to a Matrix.
 
     Args:
-        item (graphs.Edges): item to convert to a graphs.Matrix.
+        item: item to convert to a Matrix.
 
     Returns:
-        graphs.Matrix: derived from 'item'.
+        Matrix derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_parallel.register
 def edges_to_parallel(item: graphs.Edges) -> composites.Parallel:
-    """Converts 'item' to a Parallel.
+    """Converts `item` to a Parallel.
 
     Args:
-        item (graphs.Edges): item to convert to a Parallel.
+        item: item to convert to a Parallel.
 
     Returns:
-        Parallel: derived from 'item'.
+        Parallel: derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_serial.register
 def edges_to_serial(item: graphs.Edges) -> composites.Serial:
-    """Converts 'item' to a Serial.
+    """Converts `item` to a Serial.
 
     Args:
-        item (graphs.Edges): item to convert to a Serial.
+        item: item to convert to a Serial.
 
     Returns:
-        Serial: derived from 'item'.
+        Serial derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_adjacency.register
 def matrix_to_adjacency(item: graphs.Matrix) -> graphs.Adjacency:
-    """Converts 'item' to an graphs.Adjacency.
+    """Converts `item` to an Adjacency.
 
     Args:
-        item (graphs.Matrix): item to convert to an graphs.Adjacency.
+        item: item to convert to an Adjacency.
 
     Returns:
-        graphs.Adjacency: derived from 'item'.
+        Adjacency derived from `item`.
 
     """
     matrix = item[0]
@@ -221,13 +221,14 @@ def matrix_to_adjacency(item: graphs.Matrix) -> graphs.Adjacency:
 
 # @to_edges.register
 def matrix_to_edges(item: graphs.Matrix) -> graphs.Edges:
-    """Converts 'item' to an graphs.Edges.
+    # sourcery skip: for-append-to-extend
+    """Converts `item` to an Edges.
 
     Args:
-        item (graphs.Matrix): item to convert to an graphs.Edges.
+        item: item to convert to an Edges.
 
     Returns:
-        graphs.Edges: derived from 'item'.
+        Edges: derived from `item`.
 
     """
     matrix = item[0]
@@ -241,39 +242,39 @@ def matrix_to_edges(item: graphs.Matrix) -> graphs.Edges:
 
 # @to_parallel.register
 def matrix_to_parallel(item: graphs.Matrix) -> composites.Parallel:
-    """Converts 'item' to a Parallel.
+    """Converts `item` to a Parallel.
 
     Args:
-        item (graphs.Matrix): item to convert to a Parallel.
+        item: item to convert to a Parallel.
 
     Returns:
-        Parallel: derived from 'item'.
+        Parallel derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_serial.register
 def matrix_to_serial(item: graphs.Matrix) -> composites.Serial:
-    """Converts 'item' to a Serial.
+    """Converts `item` to a Serial.
 
     Args:
-        item (graphs.Matrix): item to convert to a Serial.
+        item: item to convert to a Serial.
 
     Returns:
-        Serial: derived from 'item'.
+        Serial derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_adjacency.register
 def parallel_to_adjacency(item: composites.Parallel) -> graphs.Adjacency:
-    """Converts 'item' to an graphs.Adjacency.
+    """Converts `item` to an Adjacency.
 
     Args:
-        item (Parallel): item to convert to an graphs.Adjacency.
+        item: item to convert to an Adjacency.
 
     Returns:
-        graphs.Adjacency: derived from 'item'.
+        Adjacency derived from `item`.
 
     """
     adjacency = collections.defaultdict(set)
@@ -290,52 +291,52 @@ def parallel_to_adjacency(item: composites.Parallel) -> graphs.Adjacency:
 
 # @to_edges.register
 def parallel_to_edges(item: composites.Parallel) -> graphs.Edges:
-    """Converts 'item' to an graphs.Edges.
+    """Converts `item` to an Edges.
 
     Args:
-        item (Parallel): item to convert to an graphs.Edges.
+        item: item to convert to an Edges.
 
     Returns:
-        graphs.Edges: derived from 'item'.
+        Edges derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_matrix.register
 def parallel_to_matrix(item: composites.Parallel) -> graphs.Matrix:
-    """Converts 'item' to a graphs.Matrix.
+    """Converts `item` to a Matrix.
 
     Args:
-        item (Parallel): item to convert to a graphs.Matrix.
+        item: item to convert to a Matrix.
 
     Returns:
-        graphs.Matrix: derived from 'item'.
+        Matrix derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_serial.register
 def parallel_to_serial(item: composites.Parallel) -> composites.Serial:
-    """Converts 'item' to a Serial.
+    """Converts `item` to a Serial.
 
     Args:
-        item (Parallel): item to convert to a Serial.
+        item: item to convert to a Serial.
 
     Returns:
-        Serial: derived from 'item'.
+        Serial derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_adjacency.register
 def serial_to_adjacency(item: composites.Serial) -> graphs.Adjacency:
-    """Converts 'item' to an graphs.Adjacency.
+    """Converts `item` to an Adjacency.
 
     Args:
-        item (Serial): item to convert to an graphs.Adjacency.
+        item: item to convert to an Adjacency.
 
     Returns:
-        graphs.Adjacency: derived from 'item'.
+        Adjacency derived from `item`.
 
     """
     if check.is_parallel(item = item):
@@ -356,39 +357,39 @@ def serial_to_adjacency(item: composites.Serial) -> graphs.Adjacency:
 
 # @to_edges.register
 def serial_to_edges(item: composites.Serial) -> graphs.Edges:
-    """Converts 'item' to an graphs.Edges.
+    """Converts `item` to an Edges.
 
     Args:
-        item (Serial): item to convert to an graphs.Edges.
+        item: item to convert to an Edges.
 
     Returns:
-        graphs.Edges: derived from 'item'.
+        Edges derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_matrix.register
 def serial_to_matrix(item: composites.Serial) -> graphs.Matrix:
-    """Converts 'item' to a graphs.Matrix.
+    """Converts `item` to a Matrix.
 
     Args:
-        item (Serial): item to convert to a graphs.Matrix.
+        item: item to convert to a Matrix.
 
     Returns:
-        graphs.Matrix: derived from 'item'.
+        Matrix derived from `item`.
 
     """
     raise NotImplementedError
 
 # @to_parallel.register
 def serial_to_parallel(item: composites.Serial) -> composites.Parallel:
-    """Converts 'item' to a Parallel.
+    """Converts `item` to a Parallel.
 
     Args:
-        item (Serial): item to convert to a Parallel.
+        item: item to convert to a Parallel.
 
     Returns:
-        Parallel: derived from 'item'.
+        Parallel derived from `item`.
 
     """
     raise NotImplementedError
@@ -397,34 +398,34 @@ def serial_to_parallel(item: composites.Serial) -> composites.Parallel:
 """ Introspection Tools """
 
 def get_endpoints_adjacency(item: graphs.Adjacency) -> MutableSequence[Hashable]:
-    """Returns the endpoints in 'item'."""
+    """Returns the endpoints in `item`."""
     return [k for k in item if not item[k]]
 
 def get_roots_adjacency(item: graphs.Adjacency) -> MutableSequence[Hashable]:
-    """Returns the roots in 'item'."""
+    """Returns the roots in `item`."""
     stops = list(itertools.chain.from_iterable(item.values()))
     return [k for k in item if k not in stops]
 
-"""
-These are functions design to implement a dispatch system for the form
-tranformers. However, functools.singledispatch has some shortcomings. If a new
-dispatch system is developed in camina or the functools decorator is improved,
-these functions may be restored to allow more flexible function calls.
+# """
+# These are functions design to implement a dispatch system for the form
+# tranformers. However, functools.singledispatch has some shortcomings. If a new
+# dispatch system is developed in camina or the functools decorator is improved,
+# these functions may be restored to allow more flexible function calls.
 
-"""
+# """
 # @functools.singledispatch
 # def to_adjacency(item: object) -> graphs.Adjacency:
-#     """Converts 'item' to an graphs.Adjacency.
+#     """Converts `item` to an graphs.Adjacency.
 
 #     Args:
 #         item (object): item to convert to an graphs.Adjacency.
 
 #     Raises:
-#         TypeError: if 'item' is a type that is not registered with the
+#         TypeError: if `item` is a type that is not registered with the
 #         dispatcher.
 
 #     Returns:
-#         graphs.Adjacency: derived from 'item'.
+#         graphs.Adjacency: derived from `item`.
 
 #     """
 #     if is_adjacency(item = item):
@@ -436,16 +437,16 @@ these functions may be restored to allow more flexible function calls.
 
 # @functools.singledispatch
 # def to_edges(item: object) -> graphs.Edges:
-#     """Converts 'item' to an graphs.Edges.
+#     """Converts `item` to an graphs.Edges.
 
 #     Args:
 #         item (object): item to convert to an graphs.Edges.
 
 #     Raises:
-#         TypeError: if 'item' is a type that is not registered.
+#         TypeError: if `item` is a type that is not registered.
 
 #     Returns:
-#         graphs.Edges: derived from 'item'.
+#         graphs.Edges: derived from `item`.
 
 #     """
 #     if is_edges(item = item):
@@ -457,16 +458,16 @@ these functions may be restored to allow more flexible function calls.
 
 # @functools.singledispatch
 # def to_matrix(item: object) -> graphs.Matrix:
-#     """Converts 'item' to a graphs.Matrix.
+#     """Converts `item` to a graphs.Matrix.
 
 #     Args:
 #         item (object): item to convert to a graphs.Matrix.
 
 #     Raises:
-#         TypeError: if 'item' is a type that is not registered.
+#         TypeError: if `item` is a type that is not registered.
 
 #     Returns:
-#         graphs.Matrix: derived from 'item'.
+#         graphs.Matrix: derived from `item`.
 
 #     """
 #     if is_matrix(item = item):

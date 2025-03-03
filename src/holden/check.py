@@ -1,16 +1,16 @@
 """Functions that type check composite forms using structural subtyping.
 
 Contents:
-    add_checker
-    is_adjacency
+    add_checker: adds another checker to the module namespace.
+    is_adjacency: returns whether the passed item is an adjacency list.
     is_edge: returns whether the passed item is an edge.
-    is_edges
+    is_edges: returns whether the passed item is an edge list.
     is_graph: returns whether the passed item is a graph.
-    is_matrix
+    is_matrix: returns whether the passed item is an adjacency matrix.
     is_node: returns whether the passed item is a node.
     is_nodes: returns whether the passed item is a collection of nodes.
-    is_parallel:
-    is_serial:
+    is_parallel: returns whether the passed item is a list of serials.
+    is_serial: returns whether the passed item is a serial list.
 
 To Do:
 
@@ -41,23 +41,23 @@ def add_checker(name: str, item: Callable[[base.Graph]]) -> None:
     the 'holden.Forms.classify' class method.
 
     Args:
-        name (str): name of the checker function. It needs to be in the
-            'is_{form}' format.
-        item (Callable[[base.Graph]]): callable checker which should have a
-            single parameter, item which should be a base.Graph type.
+        name: name of the checker function. It needs to be in the 'is_{form}'
+            format.
+        item: callable checker which should have a single parameter, item which
+            should be a base.Graph type.
 
     """
     globals()[name] = item
     return
 
 def is_adjacency(item: object) -> bool:
-    """Returns whether 'item' is an adjacency list.
+    """Returns whether `item` is an adjacency list.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is an adjacency list.
+        Whether `item` is an adjacency list.
 
     """
     if isinstance(item, MutableMapping):
@@ -70,43 +70,43 @@ def is_adjacency(item: object) -> bool:
         return False
 
 def is_composite(item: type[Any] | object) -> bool:
-    """Returns whether 'item' is a composite data structure.
+    """Returns whether `item` is a composite data structure.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is a composite data structure.
+        Whether `item` is a composite data structure.
 
     """
     methods = ['add', 'delete', 'merge', 'subset']
     return all(inspect.ismethod(getattr(item, method)) for method in methods)
 
 def is_edge(item: object) -> bool:
-    """Returns whether 'item' is an edge.
+    """Returns whether `item` is an edge.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is an edge.
+        Whether `item` is an edge.
 
     """
     return (
         isinstance(item, Sequence)
         and not isinstance(item, str)
-        and len(item) == 2
+        and len(item) == 2  # noqa: PLR2004
         and is_node(item = item[0])
         and is_node(item = item[1]))
 
 def is_edges(item: object) -> bool:
-    """Returns whether 'item' is an edge list.
+    """Returns whether `item` is an edge list.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is an edge list.
+        Whether `item` is an edge list.
 
     """
     return (
@@ -114,13 +114,13 @@ def is_edges(item: object) -> bool:
         and all(is_edge(item = i) for i in item))
 
 def is_graph(item: type[Any] | object) -> bool:
-    """Returns whether 'item' is a graph.
+    """Returns whether `item` is a graph.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is a graph.
+        Whether `item` is a graph.
 
     """
     return (
@@ -129,16 +129,16 @@ def is_graph(item: type[Any] | object) -> bool:
         and inspect.ismethod(item.disconnect))
 
 def is_matrix(item: object) -> bool:
-    """Returns whether 'item' is an adjacency matrix.
+    """Returns whether `item` is an adjacency matrix.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is an adjacency matrix.
+        Whether `item` is an adjacency matrix.
 
     """
-    if isinstance(item, Sequence) and len(item) == 2:
+    if isinstance(item, Sequence) and len(item) == 2:  # noqa: PLR2004
         matrix = item[0]
         labels = item[1]
         connections = list(itertools.chain.from_iterable(matrix))
@@ -152,13 +152,13 @@ def is_matrix(item: object) -> bool:
         return False
 
 def is_node(item: object | type[Any]) -> bool:
-    """Returns whether 'item' is a node.
+    """Returns whether `item` is a node.
 
     Args:
-        item (Union[object, Type[Any]]): instance or class to test.
+        item: instance or class to test.
 
     Returns:
-        bool: whether 'item' is a node.
+        Whether `item` is a node.
 
     """
     if inspect.isclass(item):
@@ -167,26 +167,26 @@ def is_node(item: object | type[Any]) -> bool:
         return isinstance(item, Hashable)
 
 def is_nodes(item: object) -> bool:
-    """Returns whether 'item' is a collection of nodes.
+    """Returns whether `item` is a collection of nodes.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is a collection of nodes.
+        Whether `item` is a collection of nodes.
 
     """
     return (
         isinstance(item, Collection) and all(is_node(item = i) for i in item))
 
 def is_parallel(item: object) -> bool:
-    """Returns whether 'item' is sequence of parallel.
+    """Returns whether `item` is sequence of parallel.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is a sequence of parallel.
+        Whether `item` is a sequence of parallel.
 
     """
     return (
@@ -194,13 +194,13 @@ def is_parallel(item: object) -> bool:
         and all(is_serial(item = i) for i in item))
 
 def is_serial(item: object) -> bool:
-    """Returns whether 'item' is a serial.
+    """Returns whether `item` is a serial.
 
     Args:
-        item (object): instance to test.
+        item: instance to test.
 
     Returns:
-        bool: whether 'item' is a serial.
+        Whether `item` is a serial.
 
     """
     return (

@@ -95,9 +95,6 @@ def test_graph_again() -> None:
     assert dag.walk() == [['a', 'b'], ['a', 'd', 'e'], ['c', 'd', 'e']]
     dag.add(item = 'cat')
     dag.connect(('e', 'cat'))
-    # dag.add(item = 'dog', ancestors = 'e', descendants = ['cat'])
-    # assert dag['dog'] == {'cat'}
-    # assert dag['e'] == {'dog'}
     adjacency = {
         'tree': {'house', 'yard'},
         'house': set(),
@@ -110,8 +107,11 @@ def test_graph_again() -> None:
     assert len(paths) == 6
     assert dag.endpoint == ['house', 'yard']
     assert dag.root == ['a', 'c']
-    export = pathlib.Path('tests').joinpath('dag.dot')
-    holden.to_dot(item = dag, path = export, name = 'dag')
+    export_dot = pathlib.Path('tests').joinpath('dag.dot')
+    holden.to_dot(item = dag, path = export_dot, name = 'dag')
+    export_mermaid = pathlib.Path('tests').joinpath('dag.mermaid')
+    holden.to_mermaid(item = dag, path = export_mermaid, name = 'dag')
+    # print('test walk ', dag.walk())
     # assert dag.walk() == [
     #     ['a', 'd', 'e', 'cat', 'tree', 'house'],
     #     ['a', 'b', 'tree', 'house'],
@@ -119,14 +119,13 @@ def test_graph_again() -> None:
     #     ['a', 'b', 'tree', 'yard'],
     #     ['c', 'd', 'e', 'cat', 'tree', 'house'],
     #     ['c', 'd', 'e', 'cat', 'tree', 'yard']]
-
-    # assert dag.nodes == {
-    #     'tree', 'b', 'c', 'a', 'yard', 'cat', 'd', 'house', 'dog', 'e'}
-    # path = dag.serial
-    # new_dag = holden.System.from_serial(item = path)
-    # assert new_dag['tree'] == dag['tree']
-    # another_dag = holden.System.from_parallel(item = paths)
-    # assert another_dag['tree'] == dag['tree']
+    assert dag.nodes == {
+        'tree', 'b', 'c', 'a', 'yard', 'cat', 'd', 'house', 'e'}
+    path = dag.serial
+    new_dag = holden.System.from_serial(item = path)
+    assert new_dag['tree'] == dag['tree']
+    another_dag = holden.System.from_parallel(item = paths)
+    assert another_dag['tree'] == dag['tree']
     return
 
 def test_path() -> None:

@@ -9,13 +9,15 @@ To Do:
 """
 from __future__ import annotations
 
+import collections
 import inspect
+import itertools
 import pathlib
 import re
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
 
 def _iterify(item: Any) -> Iterable:
@@ -40,15 +42,14 @@ def _iterify(item: Any) -> Iterable:
             return iter((item,))
 
 def _namify(item: Any, /, default: str | None = None) -> str | None:
-    """Returns str name representation of 'item'.
+    """Returns str name representation of `item`.
 
     Args:
-        item (Any): item to determine a str name.
-        default(Optional[str]): default name to return if other methods at name
-            creation fail.
+        item: item to determine a str name.
+        default: default name to return if other methods at name creation fail.
 
     Returns:
-        str: a name representation of 'item.'
+        A name representation of `item`.
 
     """
     if isinstance(item, str):
@@ -91,10 +92,10 @@ def _snakify(item: str) -> str:
     """Converts a capitalized str to snake case.
 
     Args:
-        item (str): str to convert.
+        item: str to convert.
 
     Returns:
-        str: 'item' converted to snake case.
+        'item' converted to snake case.
 
     """
     item = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', item)
@@ -115,7 +116,6 @@ def _typify(item: str) -> list[Any] | int | float | bool | str:
         Converted item.
 
     """
-    print('test type item', item)
     if not isinstance(item, str):
         return item
     try:
@@ -133,3 +133,49 @@ def _typify(item: str) -> list[Any] | int | float | bool | str:
                 return [_typify(i) for i in item]
             else:
                 return item
+
+def _windowify(
+    item: Sequence[Any],
+    length: int,
+    fill_value: Any | None = None,
+    step: int | None = 1) -> Sequence[Any]: # type: ignore  # noqa: PGH003
+    """Returns a sliding window of `length` over `item`.
+
+    This code is adapted from more_itertools.windowed to remove a dependency.
+
+    Args:
+        item (Sequence[Any]): sequence from which to return windows.
+        length (int): length of window.
+        fill_value (Optional[Any]): value to use for items in a window that do
+            not exist when length > len(item). Defaults to None.
+        step (Optional[Any]): number of items to advance between each window.
+            Defaults to 1.
+
+    Raises:
+        ValueError: if `length` is less than 0 or step is less than 1.
+
+    Returns:
+        Sequence[Any]: windowed sequence derived from arguments.
+
+    """
+    if length < 0:
+        raise ValueError('length must be >= 0')
+    if length == 0:
+        yield ()
+        return
+    if step < 1:
+        raise ValueError('step must be >= 1')
+    window = collections.deque(maxlen = length)
+    i = length
+    for _ in map(window.append, item):
+        i -= 1
+        if not i:
+            i = step
+            yield tuple(window)
+    size = len(window)
+    if size < length:
+        yield tuple(itertools.chain(
+            window, itertools.repeat(fill_value, length - size)))
+    elif 0 < i < min(step, length):
+        window += (fill_value,) * i
+        yield tuple(window)

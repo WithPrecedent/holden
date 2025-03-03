@@ -1,11 +1,11 @@
 """Internal storage formats for graphs.
 
 Contents:
-    walk_adjacency
-    walk_edges
-    walk_matrix
-    walk_parallel
-    walk_serial
+    walk_adjacency: returns path(s) through an adjacency list.
+    walk_edges: returns path(s) through an edge list.
+    walk_matrix: returns path(s) through an adjacency matrix.
+    walk_parallel: returns path(s) through a parallel structure.
+    walk_serial: returns path(s) through a serial structure.
 
 To Do:
     Complete not implemented functions
@@ -28,21 +28,20 @@ def walk_adjacency(
     start: Hashable,
     stop: Hashable,
     path: Sequence[Hashable] | None = None) -> Sequence[Hashable]:
-    """Returns all paths in 'item' from 'start' to 'stop'.
+    """Returns all paths in `item` from `start` to `stop`.
 
     The code here is adapted from: https://www.python.org/doc/essays/graphs/
 
     Args:
-        item (graphs.Adjacency): item in which to find paths.
-        start (Hashable): node to start paths from.
-        stop (Hashable): node to stop paths.
-        path (Optional[Sequence[Hashable]]): a path from 'start' to 'stop'. This
-            is used for recursion within the function to accumulate all possible
-            paths. Defaults to None.
+        item: item in which to find paths.
+        start: node to start paths from.
+        stop: node to stop paths.
+        path: a path from `start` to `stop`. This is used for recursion within
+            the function to accumulate all possible paths. Defaults to None.
 
     Returns:
-        Sequence[Hashable]: a list of possible paths (each path is a list nodes)
-            from 'start' to 'stop'.
+        A list of possible paths (each path is a list nodes) from `start` to
+            `stop`.
 
     """
     if path is None:
@@ -68,18 +67,17 @@ def walk_edges(
     start: Hashable,
     stop: Hashable,
     path: Sequence[Hashable] | None = None) -> Sequence[Hashable]:
-    """Returns all paths in 'item' from 'start' to 'stop'.
+    """Returns all paths in `item` from `start` to `stop`.
 
     Args:
-        item (graphs.Edges): item in which to find paths.
-        start (Hashable): node to start paths from.
-        stop (Hashable): node to stop paths.
-        path (Optional[Sequence[Hashable]]): a path from 'start' to 'stop'.
-            Defaults to None.
+        item: item in which to find paths.
+        start: node to start paths from.
+        stop: node to stop paths.
+        path: a path from `start` to `stop`. Defaults to None.
 
     Returns:
-        Sequence[Hashable]: a list of possible paths (each path is a list nodes)
-            from 'start' to 'stop'.
+        A list of possible paths (each path is a list nodes) from `start` to
+            `stop`.
 
     """
     raise NotImplementedError
@@ -89,18 +87,17 @@ def walk_matrix(
     start: Hashable,
     stop: Hashable,
     path: Sequence[Hashable] | None = None) -> Sequence[Hashable]:
-    """Returns all paths in 'item' from 'start' to 'stop'.
+    """Returns all paths in `item` from `start` to `stop`.
 
     Args:
-        item (graphs.Matrix): item in which to find paths.
-        start (Hashable): node to start paths from.
-        stop (Hashable): node to stop paths.
-        path (Optional[Sequence[Hashable]]): a path from 'start' to 'stop'.
-            Defaults to None.
+        item: item in which to find paths.
+        start: node to start paths from.
+        stop: node to stop paths.
+        path: a path from `start` to `stop`. Defaults to None.
 
     Returns:
-        Sequence[Hashable]: a list of possible paths (each path is a list nodes)
-            from 'start' to 'stop'.
+        A list of possible paths (each path is a list nodes)
+            from `start` to `stop`.
 
     """
     raise NotImplementedError
@@ -109,16 +106,16 @@ def walk_parallel(
     item: composites.Parallel,
     start: Hashable,
     stop: Hashable) -> Sequence[Hashable]:
-    """Returns all paths in 'item' from 'start' to 'stop'.
+    """Returns all paths in `item` from `start` to `stop`.
 
     Args:
-        item (composites.Parallel): item in which to find paths.
-        start (Hashable): node to start paths from.
-        stop (Hashable): node to stop paths.
+        item: item in which to find paths.
+        start: node to start paths from.
+        stop: node to stop paths.
 
     Returns:
-        Sequence[Hashable]: a list of possible paths (each path is a list nodes)
-            from 'start' to 'stop'.
+        A list of possible paths (each path is a list nodes) from `start` to
+            `stop`.
 
     """
     return [walk_serial(item = p, start = start, stop = stop) for p in item]
@@ -127,16 +124,16 @@ def walk_serial(
     item: composites.Serial,
     start: Hashable,
     stop: Hashable) -> Sequence[Hashable]:
-    """Returns all paths in 'item' from 'start' to 'stop'.
+    """Returns all paths in `item` from `start` to `stop`.
 
     Args:
-        item (composites.Serial): item in which to find paths.
-        start (Hashable): node to start paths from.
-        stop (Hashable): node to stop paths.
+        item: item in which to find paths.
+        start: node to start paths from.
+        stop: node to stop paths.
 
     Returns:
-        Sequence[Hashable]: a list of possible paths (each path is a list nodes)
-            from 'start' to 'stop'.
+        Sequence: a list of possible paths (each path is a list nodes) from
+            `start` to `stop`.
 
     """
     index_start = item.index(start)

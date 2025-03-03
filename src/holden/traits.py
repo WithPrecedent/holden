@@ -1,12 +1,12 @@
 """Characteristics of graphs, edges, and nodes.
 
 Contents:
-    Directed (abc.ABC): a directed graph with unweighted edges.
-    Exportable (abc.ABC):
-    Fungible (abc.ABC):
-    Labeled (abc.ABC):
-    Storage (abc.ABC):
-    Weighted (abc.ABC):
+    Directed: a directed graph with unweighted edges.
+    Exportable: mixin to allow exporting a graph to file.
+    Fungible: mixin supporting conversion to other composite objects.
+    Labeled: mixin to add a name attribute.
+    # Storage:
+    Weighted: mixin to add a weight attribute to an edge.
 
 To Do:
 
@@ -23,7 +23,7 @@ from . import base, export, utilities
 
 if TYPE_CHECKING:
     import pathlib
-    from collections.abc import Collection, Hashable, MutableMapping
+    from collections.abc import Collection, Hashable
 
     from . import composites, graphs
 
@@ -33,7 +33,7 @@ class Directed(abc.ABC):
     """Base class for directed graph data structures.
 
     Args:
-        contents (Collection[Any]): stored collection of nodes and/or edges.
+        contents: stored collection of nodes and/or edges.
 
     """
     contents: Collection[Any]
@@ -54,7 +54,7 @@ class Directed(abc.ABC):
 
     @abc.abstractmethod
     def append(self, item: Hashable | base.Graph, **kwargs: Any) -> None:
-        """Appends 'item' to the endpoint(s) of the stored composite.
+        """Appends `item` to the endpoint(s) of the stored composite.
 
         Args:
             item: a Node or Graph to add to the stored composite.
@@ -64,7 +64,7 @@ class Directed(abc.ABC):
 
     @abc.abstractmethod
     def prepend(self, item: Hashable | base.Graph, **kwargs: Any) -> None:
-        """Prepends 'item' to the root(s) of the stored composite.
+        """Prepends `item` to the root(s) of the stored composite.
 
         Args:
             item: a Node or Graph to add to the stored composite.
@@ -79,18 +79,15 @@ class Directed(abc.ABC):
         stop: Hashable | None = None,
         path: base.Path | None = None,
         **kwargs: Any) -> base.Path:
-        """Returns path in the stored composite from 'start' to 'stop'.
+        """Returns path in the stored composite from `start` to `stop`.
 
         Args:
-            start (Optional[Hashable]): Node to start paths from.
-                Defaults to None. If it is None, 'start' should be assigned to
-                'root'.
-            stop (Optional[Hashable]): Node to stop paths at.
-                Defaults to None. If it is None, 'start' should be assigned to
-                'endpoint'.
-            path (Optional[base.Path]): a path from 'start' to 'stop'.
-                Defaults to None. This parameter is used for recursively
-                determining a path.
+            start: Node to start paths from. Defaults to None. If it is None,
+                `start` will be assigned to `stop`.
+            stop: Node to stop paths at. Defaults to None. If it is None,
+                `stop` will be assigned to `endpoint`.
+            path: a path from `start` to `stop`. Defaults to None. This
+                parameter is used for recursively determining a path.
             kwargs: additional keyword arguments.
 
         Returns:
@@ -101,22 +98,20 @@ class Directed(abc.ABC):
     """ Dunder Methods """
 
     def __add__(self, other: base.Graph) -> None:
-        """Adds 'other' to the stored composite using 'append'.
+        """Adds `other` to the stored composite using `append`.
 
         Args:
-            other (Union[base.Graph]): another graph to add to the current
-                one.
+            other: another graph to add to the current one.
 
         """
         self.append(item = other)
         return
 
     def __radd__(self, other: base.Graph) -> None:
-        """Adds 'other' to the stored composite using 'prepend'.
+        """Adds `other` to the stored composite using `prepend`.
 
         Args:
-            other (Union[base.Graph]): another graph to add to the current
-                one.
+            other: another graph to add to the current one.
 
         """
         self.prepend(item = other)
@@ -143,7 +138,7 @@ class Exportable(abc.ABC):  # noqa: B024
                 None.
 
         Returns:
-            str: composite object in graphviz dot format.
+            Composite object in graphviz dot format.
 
         """
         name = name or utilities._namify(self)
@@ -167,7 +162,7 @@ class Exportable(abc.ABC):  # noqa: B024
                 to None.
 
         Returns:
-            str: composite object in mermaid format.
+            Composite object in mermaid format.
 
         """
         name = name or utilities._namify(self)
@@ -272,10 +267,9 @@ class Labeled(abc.ABC):  # noqa: B024
     """Mixin for labeling a composite object.
 
     Args:
-        name (Optional[str]): designates the name of a class instance that is
-            used for internal and external referencing in a composite object.
-            Defaults to None.
-        contents (Optional[Any]): any stored item(s). Defaults to None.
+        name: designates the name of a class instance that is used for internal
+            and external referencing in a composite object. Defaults to None.
+        contents: any stored item(s). Defaults to None.
 
     """
     name: str | None = None
@@ -296,15 +290,15 @@ class Labeled(abc.ABC):  # noqa: B024
     def _namify(self) -> str:
         """Returns str name of an instance.
 
-        By default, if 'contents' is None, 'none' will be returned. Otherwise,
-        utilities._namify will be called based on the value of the 'contents'
+        By default, if `contents` is None, 'none' will be returned. Otherwise,
+        `utilities._namify` will be called based on the value of the `contents`
         attribute and its return value will be returned.
 
         For different naming rules, subclasses should override this method,
         which is automatically called when an instance is initialized.
 
         Returns:
-            str: str label for part of a composite data structute.
+            str label for part of a composite data structute.
 
         """
         return 'none' if self.contents is None else utilities._namify(self.contents)
@@ -312,22 +306,22 @@ class Labeled(abc.ABC):  # noqa: B024
     """ Dunder Methods """
 
     def __hash__(self) -> int:
-        """Makes Node hashable based on 'name.'
+        """Makes Node hashable based on `name`.
 
         Returns:
-            int: hashable of 'name'.
+            int: hashable of `name`.
 
         """
         return hash(self.name)
 
     def __eq__(self, other: object) -> bool:
-        """Determines equality based on 'name' attribute.
+        """Determines equality based on `name` attribute.
 
         Args:
-            other (object): other object to test for equivalance.
+            other: other object to test for equivalance.
 
         Returns:
-            bool: whether 'name' is the same as 'other.name'.
+            bool: whether `name` is the same as `other.name`.
 
         """
         try:
@@ -348,17 +342,17 @@ class Labeled(abc.ABC):  # noqa: B024
     #     return not(self == other)
 
 
-@dataclasses.dataclass
-class Storage(abc.ABC):
-    """Mixin for storage of nodes in a Library with the composite object.
+# @dataclasses.dataclass
+# class Storage(abc.ABC):
+#     """Mixin for storage of nodes in a Library with the composite object.
 
-    Args:
-        contents (Collection[Any]): stored collection of nodes and/or edges.
+#     Args:
+#         contents: stored collection of nodes and/or edges.
 
-    """
-    contents: Collection[Any]
-    nodes: MutableMapping[Hashable, Any] = dataclasses.field(
-        default_factory = dict)
+#     """
+#     contents: Collection[Any]
+#     nodes: MutableMapping[Hashable, Any] = dataclasses.field(
+#         default_factory = dict)
 
 
 @dataclasses.dataclass
@@ -366,7 +360,7 @@ class Weighted(abc.ABC):  # noqa: B024
     """Mixin for weighted nodes.
 
     Args:
-        weight (Optional[float]): the weight of the object. Defaults to 1.0.
+        weight: the weight of the object. Defaults to 1.0.
 
     """
     weight: float | None = 1.0
@@ -374,7 +368,7 @@ class Weighted(abc.ABC):  # noqa: B024
     """ Dunder Methods """
 
     def __len__(self) -> float:
-        """Returns 'weight'.
+        """Returns `weight`.
 
         Returns:
             float: weight of the edge.
