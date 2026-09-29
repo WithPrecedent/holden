@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
-__version__ = '0.1.9'
+__version__ = "0.2.0"
 
-__author__: str = 'Corey Rayburn Yung'
+__author__: str = "Corey Rayburn Yung"
 
-__all__: list[str] = []
-
+from . import (
+    applications,
+    base,
+    check,
+    composites,
+    export,
+    graphs,
+    options,
+    report,
+    traits,
+    traverse,
+    workshop,
+)
 from .applications import *  # noqa: F403
 from .base import *  # noqa: F403
 from .check import *  # noqa: F403
@@ -19,3 +30,17 @@ from .report import *  # noqa: F403
 from .traits import *  # noqa: F403
 from .traverse import *  # noqa: F403
 from .workshop import *  # noqa: F403
+
+__all__: list[str] = [  # noqa: PLE0604
+    *applications.__all__,
+    *base.__all__,
+    *check.__all__,
+    *composites.__all__,
+    *export.__all__,
+    *graphs.__all__,
+    *options.__all__,
+    *report.__all__,
+    *traits.__all__,
+    *traverse.__all__,
+    *workshop.__all__,
+]

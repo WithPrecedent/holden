@@ -1,4 +1,4 @@
-"""Base types of other composite data structures.
+"""Composite data structures that store paths.
 
 Contents:
     Parallel: `list`-like class containing Serial instances.
@@ -8,434 +8,371 @@ To Do:
     Complete Tree class and related functions
 
 """
+
 from __future__ import annotations
 
 import copy
 import dataclasses
+from collections.abc import MutableSequence
 from typing import TYPE_CHECKING, Any
 
 import bunches
 
-from . import base, check, report, traits, traverse
+from . import base, check, traits, utilities
 
 if TYPE_CHECKING:
-    from collections.abc import Hashable, MutableSequence, Sequence
+    from collections.abc import Hashable
+
+__all__: list[str] = ["Parallel", "Serial"]
 
 
 @dataclasses.dataclass
-class Parallel(bunches.Listing, traits.Directed, base.Composite):
+class Parallel(
+    base.Composite,
+    traits.Directed,
+    traits.Fungible,
+    traits.Exportable,
+    bunches.Listing,
+):
     """Base class for a list of serial composites.
 
+    Each path in a Parallel is a `list` of nodes (or a `Serial`) that goes from
+    one of its roots to one of its endpoints. A Parallel is `Directed`,
+    `Fungible`, and `Exportable`.
+
     Args:
-        contents: Listing of Serial instances. Defaults to an empty list.
+        contents: Listing of Serial instances (or lists of nodes). Defaults to
+            an empty list.
 
     """
-    contents: MutableSequence[Serial] = dataclasses.field(
-        default_factory = list)
+
+    contents: MutableSequence[Serial | MutableSequence[Hashable]] = (
+        dataclasses.field(default_factory=list)
+    )
 
     """ Properties """
 
     @property
-    def endpoint(self) -> MutableSequence[Hashable]:
-        """Returns the endpoints of the stored composite."""
-        return report.get_endpoints_parallel(item = self)
-
-    @property
-    def root(self) -> MutableSequence[Hashable]:
-        """Returns the roots of the stored composite."""
-        return report.get_roots_parallel(item = self)
+    def nodes(self) -> set[Hashable]:
+        """Returns a set of all nodes in the stored composite."""
+        return {
+            node for path in self.contents for node in utilities._rawify(path)
+        }
 
     """ Public Methods """
 
-    def walk(
-        self,
-        start: Hashable | None = None,
-        stop: Hashable | None = None) -> Parallel:
-        """Returns all paths in graph from `start` to `stop`.
+    def add(self, item: Any, **kwargs: Any) -> None:
+        """Adds a path or a node to the stored composite.
 
         Args:
-            start: node to start paths from.
-            stop: node to stop paths.
+            item: a non-empty list of nodes (or a `Serial`) to add as a new
+                path or a single node to add as a new path of one node.
+            **kwargs: additional keyword arguments.
 
-        Returns:
-            A list of possible paths (each path is a list nodes) from `start` to
-                `stop`.
+        Raises:
+            ValueError: if `item` is an empty or otherwise invalid path or a
+                node that is already in the stored composite.
+            TypeError: if `item` is not a node.
 
         """
-        root = self.root if start is None else bunches.listify(start)
-        endpoint = self.endpoint if stop is None else self.bunches.listify(stop)
-        return traverse.walk_parallel(
-            item = self,
-            start = root,
-            stop = endpoint)
+        if isinstance(item, MutableSequence):
+            if not item or not check.is_serial(item):
+                raise ValueError("A path must be a non-empty list of nodes")
+            self.contents.append(item)
+            return
+        super().add(item, **kwargs)
+
+    def append(self, item: Any, **kwargs: Any) -> None:
+        """Appends `item` to the end of every path.
+
+        If `item` has more than one path, every existing path is followed by
+        every path of `item`.
+
+        Args:
+            item: node, path, or other composite data structure (or raw form).
+            **kwargs: additional keyword arguments.
+
+        """
+        other = _to_paths(item)
+        if not other:
+            return
+        if not self.contents:
+            self.contents.extend(other)
+            return
+        self.contents[:] = [
+            [*utilities._rawify(path), *new_path]
+            for path in self.contents
+            for new_path in other
+        ]
+
+    def prepend(self, item: Any, **kwargs: Any) -> None:
+        """Prepends `item` to the start of every path.
+
+        If `item` has more than one path, every path of `item` precedes every
+        existing path.
+
+        Args:
+            item: node, path, or other composite data structure (or raw form).
+            **kwargs: additional keyword arguments.
+
+        """
+        other = _to_paths(item)
+        if not other:
+            return
+        if not self.contents:
+            self.contents.extend(other)
+            return
+        self.contents[:] = [
+            [*new_path, *utilities._rawify(path)]
+            for new_path in other
+            for path in self.contents
+        ]
 
     """ Private Methods """
 
     def _add(self, item: Hashable, **kwargs: Any) -> None:
-        """Adds node to the stored composite.
+        """Adds node to the stored composite as a path with a single node.
 
         Args:
             item: node to add to the stored composite.
-            kwargs: additional keyword arguments.
+            **kwargs: additional keyword arguments.
 
         """
-        self.contents.append(item)
-        return
+        self.contents.append([item])
 
     def _delete(self, item: Hashable, **kwargs: Any) -> None:
-        """Deletes node from the stored composite.
+        """Deletes node from every path in the stored composite.
+
+        Paths that no longer have any nodes are removed.
 
         Args:
-            item: node to delete from `contents`.
-            kwargs: additional keyword arguments.
+            item: node to delete from the stored composite.
+            **kwargs: additional keyword arguments.
 
         """
-        del self.contents[item]
-        return
+        for path in self.contents:
+            nodes = utilities._rawify(path)
+            nodes[:] = [node for node in nodes if node != item]
+        self.contents[:] = [
+            path for path in self.contents if utilities._rawify(path)
+        ]
 
-    def _merge(self, item: base.Composite, **kwargs: Any) -> None:
+    def _merge(self, item: Any, **kwargs: Any) -> None:
         """Combines `item` with the stored composite.
 
-        Subclasses must provide their own specific methods for merging with
-        another composite. The provided `merge` method offers all of the error
-        checking. Subclasses just need to provide the mechanism for merging
-        ithout worrying about validation or error-checking.
-
         Args:
-            item: another Composite object to add to the stored composite.
-            kwargs: additional keyword arguments.
+            item: another Composite object or raw form to add to the stored
+                composite. Its paths are added as new paths.
+            **kwargs: additional keyword arguments.
 
         """
-        other = base.transform(
-            item = item,
-            output = 'parallel',
-            raise_same_error = False)
-        for serial in other:
-            self.contents.append(serial)
-        return
+        self.contents.extend(_to_paths(item))
 
     def _subset(
         self,
-        include: Hashable | Sequence[Hashable] = None,
-        exclude: Hashable | Sequence[Hashable] = None) -> Parallel:
-        """Returns a new composite without a subset of `contents`.
-
-        Subclasses must provide their own specific methods for deleting a single
-        edge. Subclasses just need to provide the mechanism for returning a
-        subset without worrying about validation or error-checking.
+        include: list[Hashable] | None = None,
+        exclude: list[Hashable] | None = None,
+    ) -> Parallel:
+        """Returns a new composite with a subset of the stored nodes.
 
         Args:
-            include: nodes or edges which should be included in the new
-                composite.
-            exclude: nodes or edges which should not be included in the new
-                composite.
+            include: nodes which should be included in the new composite. If
+                `None`, all nodes are included.
+            exclude: nodes which should not be included in the new composite.
 
         Returns:
-           Parallel with only selected nodes and edges.
+            Parallel with only selected nodes. Paths that have no selected nodes
+                are not included.
 
         """
-        raise NotImplementedError
-
-    """ Dunder Methods """
-
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether `instance` meets criteria to be a subclass.
-
-        Args:
-            instance: item to test as an instance.
-
-        Returns:
-            Whether `instance` meets criteria to be a subclass.
-
-        """
-        return check.is_parallel(item = instance)
+        paths = [
+            self._selected(utilities._rawify(path), include, exclude)
+            for path in self.contents
+        ]
+        new_composite = copy.copy(self)
+        new_composite.contents = [path for path in paths if path]
+        return new_composite
 
 
 @dataclasses.dataclass
-class Serial(bunches.DictList, traits.Directed, base.Composite):
+class Serial(
+    base.Composite,
+    traits.Directed,
+    traits.Fungible,
+    traits.Exportable,
+    bunches.DictList,
+):
     """Base class for serial composites.
+
+    A Serial is a single path of nodes. It is `Directed`, `Fungible`, and
+    `Exportable`.
 
     Args:
         contents: list of nodes. Defaults to an empty list.
 
     """
+
     contents: MutableSequence[Hashable] = dataclasses.field(
-        default_factory = list)
+        default_factory=list
+    )
 
     """ Properties """
 
     @property
-    def endpoint(self) -> MutableSequence[Hashable]:
-        """Returns the endpoints of the stored composite."""
-        return report.get_endpoints_serial(item = self)
-
-    @property
-    def root(self) -> MutableSequence[Hashable]:
-        """Returns the roots of the stored composite."""
-        return report.get_roots_serial(item = self)
+    def nodes(self) -> set[Hashable]:
+        """Returns a set of all nodes in the stored composite."""
+        return set(self.contents)
 
     """ Public Methods """
 
-    def walk(
-        self,
-        start: Hashable | None = None,
-        stop: Hashable | None = None) -> Parallel:
-        """Returns all paths in graph from `start` to `stop`.
+    def append(self, item: Any, **kwargs: Any) -> None:
+        """Appends `item` to the end of the stored composite.
 
         Args:
-            start: node to start paths from.
-            stop: node to stop paths.
+            item: a node, another composite data structure (or raw form) whose
+                nodes are added in order.
+            **kwargs: additional keyword arguments.
 
-        Returns:
-            Parallel list of possible paths (each path is a list nodes) from
-                `start` to `stop`.
+        Raises:
+            TypeError: if `item` is neither a recognized composite form nor a
+                node.
 
         """
-        if start is None:
-            start = self.root[0]
-        if stop is None:
-            stop = self.endpoint[0]
-        return traverse.walk_serial(item = self, start = start, stop = stop)
+        self.contents.extend(_to_nodes(item))
+
+    def prepend(self, item: Any, **kwargs: Any) -> None:
+        """Prepends `item` to the start of the stored composite.
+
+        Args:
+            item: a node, another composite data structure (or raw form) whose
+                nodes are added in order.
+            **kwargs: additional keyword arguments.
+
+        Raises:
+            TypeError: if `item` is neither a recognized composite form nor a
+                node.
+
+        """
+        self.contents[:0] = _to_nodes(item)
 
     """ Private Methods """
 
     def _add(self, item: Hashable, **kwargs: Any) -> None:
-        """Adds node to the stored composite.
+        """Adds node to the end of the stored composite.
 
         Args:
             item: node to add to the stored composite.
-            kwargs: additional keyword arguments.
+            **kwargs: additional keyword arguments.
 
         """
         self.contents.append(item)
-        return
 
     def _delete(self, item: Hashable, **kwargs: Any) -> None:
-        """Deletes node from the stored composite.
+        """Deletes every instance of a node from the stored composite.
 
         Args:
-            item: node to delete from `contents`.
-            kwargs: additional keyword arguments.
+            item: node to delete from the stored composite.
+            **kwargs: additional keyword arguments.
 
         """
-        del self.contents[item]
-        return
+        self.contents[:] = [node for node in self.contents if node != item]
 
-    def _merge(self, item: base.Composite, **kwargs: Any) -> None:
+    def _merge(self, item: Any, **kwargs: Any) -> None:
         """Combines `item` with the stored composite.
 
-        Subclasses must provide their own specific methods for merging with
-        another composite. The provided `merge` method offers all of the error
-        checking. Subclasses just need to provide the mechanism for merging
-        ithout worrying about validation or error-checking.
-
         Args:
-            item: another Composite object to add to the stored composite.
-            kwargs: additional keyword arguments.
+            item: another Composite object or raw form to add to the stored
+                composite. Its nodes are added to the end.
+            **kwargs: additional keyword arguments.
 
         """
-        other = base.transform(
-            item = item,
-            output = 'serial',
-            raise_same_error = False)
-        self.contents.extend(other)
-        return
+        self.contents.extend(base._to_raw(item, "serial"))
 
     def _subset(
         self,
-        include: Hashable | Sequence[Hashable] = None,
-        exclude: Hashable | Sequence[Hashable] = None) -> Serial:
-        """Returns a new composite without a subset of `contents`.
-
-        Subclasses must provide their own specific methods for deleting a single
-        edge. Subclasses just need to provide the mechanism for returning a
-        subset without worrying about validation or error-checking.
+        include: list[Hashable] | None = None,
+        exclude: list[Hashable] | None = None,
+    ) -> Serial:
+        """Returns a new composite with a subset of the stored nodes.
 
         Args:
-            include: nodes or edges which should be included in the new
-                composite.
-            exclude: nodes or edges which should not be included in the new
-                composite.
+            include: nodes which should be included in the new composite. If
+                `None`, all nodes are included.
+            exclude: nodes which should not be included in the new composite.
 
         Returns:
-           Serial with only selected nodes and edges.
+            Serial with only selected nodes.
 
         """
-        if include:
-            new_serial = [i for i in self.contents if i in include]
-        else:
-            new_serial = copy.deepcopy(self.contents)
-        if exclude:
-            new_serial = [i for i in self.contents if i not in exclude]
-        return self.__class__(contents = new_serial)
+        new_composite = copy.copy(self)
+        new_composite.contents = self._selected(self.contents, include, exclude)
+        return new_composite
 
     """ Dunder Methods """
 
-    @classmethod
-    def __instancecheck__(cls, instance: object) -> bool:
-        """Returns whether `instance` meets criteria to be a subclass.
+    def __getitem__(self, key: Any) -> Any:
+        """Returns value(s) for `key` in `contents`.
 
         Args:
-            instance: item to test as an instance.
+            key: index, slice, or name of a node to search for in `contents`.
 
         Returns:
-            Whether `instance` meets criteria to be a subclass.
+            Node(s) stored in `contents` that correspond to `key`.
 
         """
-        return check.is_serial(item = instance)
+        if isinstance(key, slice):
+            return self.contents[key]
+        return super().__getitem__(key)
 
 
-# @dataclasses.dataclass
-# class Tree(bunches.DictList, traits.Directed, base.Composite):
-#     """Base class for an tree data structures.
+def _to_nodes(item: Any) -> list[Hashable]:
+    """Returns the nodes of `item` for use in a serial path.
 
-#     The Tree class uses a DictList instead of a linked list for storing children
-#     nodes to allow easier access of nodes further away from the root. For
-#     example, a user might use 'a_tree["big_branch"]["small_branch"]["a_leaf"]'
-#     to access a desired node instead of 'a_tree[2][0][3]' (although the latter
-#     access technique is also supported).
+    Args:
+        item: a node, another composite data structure, or a raw form.
 
-#     Args:
-#         contents (MutableSequence[Node]): list of stored Tree or other
-#             Node instances. Defaults to an empty list.
-#         name (Optional[str]): name of Tree node. Defaults to None.
-#         parent (Optional[Tree]): parent Tree, if any. Defaults to None.
-#         default_factory (Optional[Any]): default value to return or default
-#             function to call when the 'get' method is used. Defaults to None.
+    Raises:
+        TypeError: if `item` is neither a recognized composite form nor a node.
 
-#     """
-#     contents: MutableSequence[Hashable] = dataclasses.field(
-#         default_factory = list)
-#     name: Optional[str] = None
-#     parent: Optional[Tree] = None
-#     default_factory: Optional[Any] = None
+    Returns:
+        List of nodes. A node is returned in a list of one.
 
-#     """ Properties """
-
-#     @property
-#     def children(self) -> MutableSequence[Hashable]:
-#         """Returns child nodes of this Node."""
-#         return self.contents
-
-#     @children.setter
-#     def children(self, value: MutableSequence[Hashable]) -> None:
-#         """Sets child nodes of this Node."""
-#         if bunches.is_sequence(value):
-#             self.contents = value
-#         else:
-#             self.contents = [value]
-#         return
-
-#     @property
-#     def endpoint(self) -> Union[Hashable, Collection[Hashable]]:
-#         """Returns the endpoint(s) of the stored composite."""
-#         if not self.contents:
-#             return self
-#         else:
-#             return self.contents[0].endpoint
-
-#     @property
-#     def root(self) -> Union[Hashable, Collection[Hashable]]:
-#         """Returns the root(s) of the stored composite."""
-#         if self.parent is None:
-#             return self
-#         else:
-#             return self.parent.root
-
-#     """ Dunder Methods """
-
-#     @classmethod
-#     def __instancecheck__(cls, instance: object) -> bool:
-#         """Returns whether `instance` meets criteria to be a subclass.
-
-#         Args:
-#             instance (object): item to test as an instance.
-
-#         Returns:
-#             bool: whether `instance` meets criteria to be a subclass.
-
-#         """
-#         return is_tree(item = instance)
-
-#     def __missing__(self) -> Tree:
-#         """Returns an empty tree if one does not exist.
-
-#         Returns:
-#             Tree: an empty instance of Tree.
-
-#         """
-#         return self.__class__()
+    """
+    try:
+        return list(
+            utilities._rawify(
+                base.transform(item, "serial", raise_same_error=False)
+            )
+        )
+    except TypeError:
+        if check.is_node(item):
+            return [item]
+        raise TypeError(
+            "item is not a recognized composite or node type"
+        ) from None
 
 
-# def is_tree(item: object) -> bool:
-#     """Returns whether `item` is a tree.
+def _to_paths(item: Any) -> list[list[Hashable]]:
+    """Returns the paths of `item` for use in a parallel structure.
 
-#     Args:
-#         item (object): instance to test.
+    Args:
+        item: a node, another composite data structure, or a raw form.
 
-#     Returns:
-#         bool: whether `item` is a tree.
+    Raises:
+        TypeError: if `item` is neither a recognized composite form nor a node.
 
-#     """
-#     return (
-#         isinstance(item, MutableSequence)
-#         and all(isinstance(i, (MutableSequence, Hashable)) for i in item))
+    Returns:
+        List of paths. A node is returned as a single path of one node.
 
-# def is_forest(item: object) -> bool:
-#     """Returns whether `item` is a dict of tree.
-
-#     Args:
-#         item (object): instance to test.
-
-#     Returns:
-#         bool: whether `item` is a dict of tree.
-
-#     """
-#     return (
-#         isinstance(item, MutableMapping)
-#         and all(base.is_node(item = i) for i in item.keys())
-#         and all(is_tree(item = i) for i in item.values()))
-
-
-# # @functools.singledispatch
-# def to_tree(item: Any) -> graphs.Tree:
-#     """Converts `item` to a Tree.
-
-#     Args:
-#         item (Any): item to convert to a Tree.
-
-#     Raises:
-#         TypeError: if `item` is a type that is not registered.
-
-#     Returns:
-#         form.Tree: derived from `item`.
-
-#     """
-#     if check.is_tree(item = item):
-#         return item
-#     else:
-#         raise TypeError(
-#             f'item cannot be converted because it is an unsupported type: '
-#             f'{type(item).__name__}')
-
-# # @to_tree.register
-# def matrix_to_tree(item: graphs.Matrix) -> graphs.Tree:
-#     """Converts `item` to a Tree.
-
-#     Args:
-#         item (form.Matrix): item to convert to a Tree.
-
-#     Raises:
-#         TypeError: if `item` is a type that is not registered.
-
-#     Returns:
-#         form.Tree: derived from `item`.
-
-#     """
-#     tree = {}
-#     for node in item:
-#         children = item[:]
-#         children.remove(node)
-#         tree[node] = matrix_to_tree(children)
-#     return tree
+    """
+    try:
+        paths = utilities._rawify(
+            base.transform(item, "parallel", raise_same_error=False)
+        )
+    except TypeError:
+        if check.is_node(item):
+            return [[item]]
+        raise TypeError(
+            "item is not a recognized composite or node type"
+        ) from None
+    return [list(utilities._rawify(path)) for path in paths]

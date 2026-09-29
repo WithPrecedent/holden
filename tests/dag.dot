@@ -6,6 +6,6 @@ c -> d
 d -> e
 e -> cat
 cat -> tree
-tree -> yard
 tree -> house
+tree -> yard
 }
