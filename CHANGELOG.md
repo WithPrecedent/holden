@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
+## 0.2.1
+    * Replaced star imports in `__init__` with explicit imports and an explicit `__all__`
+    * Fixed the `pre-commit` check in CI (trailing blank lines in `LICENSE`)
+    * Fixed the `mkdocs` configuration for the current `mkdocstrings`
+
 ## 0.2.0
     * Updated to the latest `snickerdoodle` `cookiecutter` template: `uv` and `hatchling` replace `pdm`, and the GitHub Actions, `pre-commit`, `ruff`, `mypy`, `codecov`, `dependabot`, and `mkdocs` settings were updated
     * Only Python 3.11 and later are supported
