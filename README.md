@@ -85,6 +85,7 @@ A `System` can be created from any raw form of a graph: an edge list, an adjacen
 
 ```python
 import holden
+
 edges = [("a", "b"), ("c", "d"), ("a", "d"), ("d", "e")]
 dag = holden.System.from_edges(edges)
 dag["a"] == {"b", "d"}  # True
@@ -232,9 +233,11 @@ The `Labeled` trait gives nodes a `name`. Labeled nodes are hashed and compared 
 ```python
 import dataclasses
 
+
 @dataclasses.dataclass
 class Step(holden.Labeled, holden.Node):
     pass
+
 
 flow = holden.System()
 flow.add(Step(name="load"))
@@ -251,6 +254,7 @@ The `Storage` trait stores data for nodes in a `library`, so the graph itself ca
 class Workflow(holden.Storage, holden.System):
     pass
 
+
 workflow = Workflow.from_edges([("load", "clean")])
 workflow.store("load", "load_data.py")
 workflow.retrieve("load")  # 'load_data.py'
@@ -264,6 +268,7 @@ Any direct subclass of `Composite` is added to `Forms`. Any subclass of a form (
 @dataclasses.dataclass
 class Pipeline(holden.Directed, holden.Edges, holden.Fungible):
     pass
+
 
 pipeline = Pipeline.from_adjacency({"load": {"clean"}, "clean": set()})
 pipeline.contents  # [('load', 'clean')]
