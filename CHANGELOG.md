@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
+## 0.2.2
+    * Simplified the README code examples (no doctest prompts, results shown as comments)
+    * Added rendered Graphviz and mermaid images of the export example to the README
+    * The README test now checks the results given in the code block comments
+
 ## 0.2.1
     * Replaced star imports in `__init__` with explicit imports and an explicit `__all__`
     * Fixed the `pre-commit` check in CI (trailing blank lines in `LICENSE`)
