@@ -84,49 +84,39 @@ pip install holden
 A `System` can be created from any raw form of a graph: an edge list, an adjacency list, an adjacency matrix, a list of paths, or a single path. Nodes can be any hashable object, but the examples here use strings.
 
 ```python
->>> import holden
->>> edges = [("a", "b"), ("c", "d"), ("a", "d"), ("d", "e")]
->>> dag = holden.System.from_edges(edges)
->>> dag["a"] == {"b", "d"}
-True
->>> dag.nodes == {"a", "b", "c", "d", "e"}
-True
->>> "c" in dag
-True
->>> "z" in dag
-False
+import holden
+edges = [("a", "b"), ("c", "d"), ("a", "d"), ("d", "e")]
+dag = holden.System.from_edges(edges)
+dag["a"] == {"b", "d"}  # True
+dag.nodes == {"a", "b", "c", "d", "e"}  # True
+"c" in dag  # True
+"z" in dag  # False
 ```
 
 A graph can also be built by hand. Nodes must be added before they are connected and an edge cannot connect a node to itself.
 
 ```python
->>> workflow = holden.System()
->>> for step in ("load", "clean", "model", "report"):
-...     workflow.add(step)
->>> workflow.connect(("load", "clean"))
->>> workflow.connect(("clean", "model"))
->>> workflow.connect(("model", "report"))
->>> workflow.walk()
-[['load', 'clean', 'model', 'report']]
->>> workflow.disconnect(("model", "report"))
->>> workflow.delete("report")
->>> workflow.endpoint
-['model']
+workflow = holden.System()
+for step in ("load", "clean", "model", "report"):
+    workflow.add(step)
+workflow.connect(("load", "clean"))
+workflow.connect(("clean", "model"))
+workflow.connect(("model", "report"))
+workflow.walk()  # [['load', 'clean', 'model', 'report']]
+workflow.disconnect(("model", "report"))
+workflow.delete("report")
+workflow.endpoint  # ['model']
 ```
 
 `add`, `delete`, `connect`, `disconnect`, `merge`, and `subset` work the same way for every form of graph. Each one raises an informative error (`TypeError`, `ValueError`, or `KeyError`) if it is passed something that does not make sense.
 
 ```python
->>> dag.merge({"e": {"f"}, "f": set()})
->>> dag["e"] == {"f"}
-True
->>> smaller = dag.subset(exclude=["f", "e"])
->>> smaller.nodes == {"a", "b", "c", "d"}
-True
->>> dag.connect(("a", "a"))
-Traceback (most recent call last):
-    ...
-ValueError: The starting point of an edge cannot be the same as the ending point
+dag.merge({"e": {"f"}, "f": set()})
+dag["e"] == {"f"}  # True
+smaller = dag.subset(exclude=["f", "e"])
+smaller.nodes == {"a", "b", "c", "d"}  # True
+# Raises ValueError: The starting point of an edge cannot be the same as the ending point
+dag.connect(("a", "a"))
 ```
 
 #### Find roots, endpoints, and paths
@@ -134,27 +124,21 @@ ValueError: The starting point of an edge cannot be the same as the ending point
 A directed graph has roots (nodes with nothing pointing at them), endpoints (nodes that point at nothing), and paths from roots to endpoints. `walk` returns every path. A start and/or a stop can be passed to limit the paths.
 
 ```python
->>> dag.root
-['a', 'c']
->>> dag.endpoint
-['b', 'f']
->>> dag.walk("c")
-[['c', 'd', 'e', 'f']]
->>> dag.walk("a", "f")
-[['a', 'd', 'e', 'f']]
+dag.root  # ['a', 'c']
+dag.endpoint  # ['b', 'f']
+dag.walk("c")  # [['c', 'd', 'e', 'f']]
+dag.walk("a", "f")  # [['a', 'd', 'e', 'f']]
 ```
 
 Graphs can be joined with `append` and `prepend` (or `+` and `+=`). Appending connects every endpoint of the graph to every root of the joined graph. A single node can also be appended or prepended.
 
 ```python
->>> pipeline = holden.System.from_edges([("load", "clean")])
->>> pipeline.append("model")
->>> pipeline.prepend("download")
->>> pipeline.walk()
-[['download', 'load', 'clean', 'model']]
->>> pipeline += holden.System.from_edges([("report", "email")])
->>> pipeline.endpoint
-['email']
+pipeline = holden.System.from_edges([("load", "clean")])
+pipeline.append("model")
+pipeline.prepend("download")
+pipeline.walk()  # [['download', 'load', 'clean', 'model']]
+pipeline += holden.System.from_edges([("report", "email")])
+pipeline.endpoint  # ['email']
 ```
 
 #### Change the form
@@ -162,20 +146,14 @@ Graphs can be joined with `append` and `prepend` (or `+` and `+=`). Appending co
 Every graph can be viewed in every other form using the properties of the `Fungible` trait. Each property returns an instance of the class for that form. The `from_{form}` class methods create a new graph from any raw form or instance.
 
 ```python
->>> dag = holden.System.from_edges(edges)
->>> dag.edges.contents
-[('a', 'b'), ('a', 'd'), ('c', 'd'), ('d', 'e')]
->>> dag.matrix.labels
-['a', 'b', 'c', 'd', 'e']
->>> dag.matrix.contents[0]
-[0, 1, 0, 1, 0]
->>> dag.parallel.contents
-[['a', 'b'], ['a', 'd', 'e'], ['c', 'd', 'e']]
->>> dag.serial.contents
-['a', 'b', 'a', 'd', 'e', 'c', 'd', 'e']
->>> same_dag = holden.System.from_matrix(dag.matrix)
->>> same_dag == dag
-True
+dag = holden.System.from_edges(edges)
+dag.edges.contents  # [('a', 'b'), ('a', 'd'), ('c', 'd'), ('d', 'e')]
+dag.matrix.labels  # ['a', 'b', 'c', 'd', 'e']
+dag.matrix.contents[0]  # [0, 1, 0, 1, 0]
+dag.parallel.contents  # [['a', 'b'], ['a', 'd', 'e'], ['c', 'd', 'e']]
+dag.serial.contents  # ['a', 'b', 'a', 'd', 'e', 'c', 'd', 'e']
+same_dag = holden.System.from_matrix(dag.matrix)
+same_dag == dag  # True
 ```
 
 A `Serial` is a single path. When a graph has one path, the `Serial` is that path. When a graph has more than one path, its paths are joined end to end (as shown above). A `Parallel` keeps the paths separate.
@@ -183,14 +161,10 @@ A `Serial` is a single path. When a graph has one path, the `Serial` is that pat
 If you prefer functions, every conversion is also available as a function that takes and returns raw structures. The names are `{form}_to_{form}`.
 
 ```python
->>> holden.adjacency_to_edges({"a": {"b"}, "b": set()})
-[('a', 'b')]
->>> holden.edges_to_matrix([("a", "b")])
-([[0, 1], [0, 0]], ['a', 'b'])
->>> holden.matrix_to_parallel(([[0, 1], [0, 0]], ["a", "b"]))
-[['a', 'b']]
->>> holden.transform([("a", "b"), ("b", "c")], "serial")
-['a', 'b', 'c']
+holden.adjacency_to_edges({"a": {"b"}, "b": set()})  # [('a', 'b')]
+holden.edges_to_matrix([("a", "b")])  # ([[0, 1], [0, 0]], ['a', 'b'])
+holden.matrix_to_parallel(([[0, 1], [0, 0]], ["a", "b"]))  # [['a', 'b']]
+holden.transform([("a", "b"), ("b", "c")], "serial")  # ['a', 'b', 'c']
 ```
 
 #### Use raw structures
@@ -198,30 +172,21 @@ If you prefer functions, every conversion is also available as a function that t
 Because **holden** uses structural subtyping, you can ask about the form of any object. The `is_{form}` functions check the structure and `classify` returns the name of the form.
 
 ```python
->>> raw = {"a": {"b"}, "b": set()}
->>> holden.is_adjacency(raw)
-True
->>> holden.is_edges(raw)
-False
->>> holden.classify(raw)
-'adjacency'
->>> isinstance(raw, holden.Adjacency)
-True
->>> isinstance([("a", "b")], holden.Edges)
-True
->>> isinstance(raw, holden.Edges)
-False
+raw = {"a": {"b"}, "b": set()}
+holden.is_adjacency(raw)  # True
+holden.is_edges(raw)  # False
+holden.classify(raw)  # 'adjacency'
+isinstance(raw, holden.Adjacency)  # True
+isinstance([("a", "b")], holden.Edges)  # True
+isinstance(raw, holden.Edges)  # False
 ```
 
 An edge is a `tuple` of two nodes (or an `Edge`). Lists are used for paths.
 
 ```python
->>> holden.is_edge(("a", "b"))
-True
->>> holden.is_edge(["a", "b"])
-False
->>> holden.Edge("a", "b") == ("a", "b")
-True
+holden.is_edge(("a", "b"))  # True
+holden.is_edge(["a", "b"])  # False
+holden.Edge("a", "b") == ("a", "b")  # True
 ```
 
 #### Export a graph
@@ -229,23 +194,34 @@ True
 The `Exportable` trait (part of `System`) exports to [Graphviz](https://graphviz.org/) `dot` and [mermaid](https://mermaid.js.org/) formats. Both return a `str` and, if a `path` is passed, save a file.
 
 ```python
->>> print(dag.to_dot(name="dag"), end="")
-digraph dag {
-a -> b
-a -> d
-c -> d
-d -> e
-}
->>> print(dag.to_mermaid(name="dag"), end="")
----
-title: dag
----
-flowchart LR
-    a(a) --> b(b)
-    a(a) --> d(d)
-    c(c) --> d(d)
-    d(d) --> e(e)
+print(dag.to_dot(name="dag"), end="")
+# Output:
+# digraph dag {
+# a -> b
+# a -> d
+# c -> d
+# d -> e
+# }
+
+print(dag.to_mermaid(name="dag"), end="")
+# Output:
+# ---
+# title: dag
+# ---
+# flowchart LR
+#     a(a) --> b(b)
+#     a(a) --> d(d)
+#     c(c) --> d(d)
+#     d(d) --> e(e)
 ```
+
+Rendered, the two exports look like this:
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/WithPrecedent/holden/main/docs/img/export_graphviz.png" alt="Graphviz rendering of the dag" height="260" />
+&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://raw.githubusercontent.com/WithPrecedent/holden/main/docs/img/export_mermaid.png" alt="Mermaid rendering of the dag" height="260" />
+</p>
 
 The functions `holden.to_dot` and `holden.to_mermaid` do the same for any form of graph, including raw structures.
 
@@ -254,30 +230,30 @@ The functions `holden.to_dot` and `holden.to_mermaid` do the same for any form o
 The `Labeled` trait gives nodes a `name`. Labeled nodes are hashed and compared by name, so the name can be used anywhere the node could be.
 
 ```python
->>> import dataclasses
->>> @dataclasses.dataclass
-... class Step(holden.Labeled, holden.Node):
-...     pass
->>> flow = holden.System()
->>> flow.add(Step(name="load"))
->>> flow.add(Step(name="clean"))
->>> flow.connect(("load", "clean"))
->>> "clean" in flow["load"]
-True
->>> flow.root[0].name
-'load'
+import dataclasses
+
+@dataclasses.dataclass
+class Step(holden.Labeled, holden.Node):
+    pass
+
+flow = holden.System()
+flow.add(Step(name="load"))
+flow.add(Step(name="clean"))
+flow.connect(("load", "clean"))
+"clean" in flow["load"]  # True
+flow.root[0].name  # 'load'
 ```
 
 The `Storage` trait stores data for nodes in a `library`, so the graph itself can be made of lightweight labels.
 
 ```python
->>> @dataclasses.dataclass
-... class Workflow(holden.Storage, holden.System):
-...     pass
->>> workflow = Workflow.from_edges([("load", "clean")])
->>> workflow.store("load", "load_data.py")
->>> workflow.retrieve("load")
-'load_data.py'
+@dataclasses.dataclass
+class Workflow(holden.Storage, holden.System):
+    pass
+
+workflow = Workflow.from_edges([("load", "clean")])
+workflow.store("load", "load_data.py")
+workflow.retrieve("load")  # 'load_data.py'
 ```
 
 #### Build your own
@@ -285,14 +261,13 @@ The `Storage` trait stores data for nodes in a `library`, so the graph itself ca
 Any direct subclass of `Composite` is added to `Forms`. Any subclass of a form (such as `Adjacency`) inherits the behavior of that form and can add traits as mixins. See the [advanced user guide](https://WithPrecedent.github.io/holden/advanced) for details.
 
 ```python
->>> @dataclasses.dataclass
-... class Pipeline(holden.Directed, holden.Edges, holden.Fungible):
-...     pass
->>> pipeline = Pipeline.from_adjacency({"load": {"clean"}, "clean": set()})
->>> pipeline.contents
-[('load', 'clean')]
->>> pipeline.walk()
-[['load', 'clean']]
+@dataclasses.dataclass
+class Pipeline(holden.Directed, holden.Edges, holden.Fungible):
+    pass
+
+pipeline = Pipeline.from_adjacency({"load": {"clean"}, "clean": set()})
+pipeline.contents  # [('load', 'clean')]
+pipeline.walk()  # [['load', 'clean']]
 ```
 
 An `Edges` graph only stores nodes that are part of an edge, so `connect` (rather than `add`) is used to build one up. All of the other forms store nodes on their own.
