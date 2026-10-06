@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
-## Unreleased
+## 0.2.3
     * Restyled the code to single quotes, spaces around keyword `=` signs, and closing brackets on the last line of an argument list; `ruff-format` is no longer run in `pre-commit` because it undoes this style
     * Added `holden.kinds` with type aliases for the raw forms (`RawAdjacency`, `RawEdges`, `RawMatrix`, `RawParallel`, and `RawSerial`)
     * `Serial.append` and `Parallel.append` now accept (and ignore) `attachment` so that they match `Directed.append`, which fixes the `mypy` errors
