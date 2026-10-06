@@ -94,11 +94,11 @@ wheels = [
 
 [[package]]
 name = "bunches"
-version = "0.1.3"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b7/af/2374ce005ce6e3409105fd20926ed8978e990e838a19121697e997765844/bunches-0.1.3.tar.gz", hash = "sha256:7cae4404fead2cd103000c416409110628ce0f433abe6d9dffee8a5b7a9df582", size = 18292, upload-time = "2024-04-29T08:11:32.335Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/30/07/a8941929af1422e793b40638174945c9f287a29d007b7865130bc4601029/bunches-0.2.1.tar.gz", hash = "sha256:8eace5ec0c76e417a9e183db7787d5878826ad1b94647181e99b2b7bbce46784", size = 125804, upload-time = "2026-09-29T16:51:37.074Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3f/75/f21506e0d4016ba5043f0ef3821033749f2cd1040477263d4002c712269c/bunches-0.1.3-py3-none-any.whl", hash = "sha256:a72382dd7119c4c947bb5ef6d11acce128c7aaa9dfa4a6cedf6b32450d15cd3f", size = 18258, upload-time = "2024-04-29T08:11:30.672Z" },
+    { url = "https://files.pythonhosted.org/packages/16/c7/4d6396d90c5d5e4e97bda37f86972d2131ee5b84391fb65c1f06d3d01087/bunches-0.2.1-py3-none-any.whl", hash = "sha256:7d0d4aac80ebe8d838345887ffcfcfc5e9e5fa86308a4c3af2c78aecfe9cd06b", size = 22414, upload-time = "2026-09-29T16:51:35.655Z" },
 ]
 
 [[package]]
