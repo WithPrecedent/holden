@@ -16,7 +16,6 @@ from typing import cast
 
 from . import base, composites, graphs
 
-__all__: list[str] = ["get_base", "set_base"]
 
 _BASE_ADJACENCY: type[base.Composite] = graphs.Adjacency
 _BASE_EDGES: type[base.Composite] = graphs.Edges
@@ -39,9 +38,9 @@ def get_base(name: str) -> type[base.Composite]:
 
     """
     try:
-        return cast("type[base.Composite]", base.Forms.registry[name.lower()])
+        return cast('type[base.Composite]', base.Forms.registry[name.lower()])
     except KeyError as error:
-        raise KeyError(f"{name} is not a registered form") from error
+        raise KeyError(f'{name} is not a registered form') from error
 
 
 def set_base(name: str, value: type[base.Composite]) -> None:
@@ -58,8 +57,8 @@ def set_base(name: str, value: type[base.Composite]) -> None:
     """
     name = name.lower()
     if name not in base.Forms.registry:
-        raise KeyError(f"{name} is not a registered form")
+        raise KeyError(f'{name} is not a registered form')
     if not (isinstance(value, type) and issubclass(value, base.Composite)):
-        raise TypeError("value must be a Composite subclass")
+        raise TypeError('value must be a Composite subclass')
     base.Forms.registry[name] = value
-    globals()[f"_BASE_{name.upper()}"] = value
+    globals()[f'_BASE_{name.upper()}'] = value

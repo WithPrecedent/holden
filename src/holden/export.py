@@ -21,27 +21,27 @@ if TYPE_CHECKING:
     import pathlib
     from collections.abc import Hashable
 
-__all__: list[str] = ["to_dot", "to_mermaid"]
+    from . import kinds
 
-_LINE_BREAK = "\n"
-_DOT_ARROW = "->"
-_MERMAID_ARROW = "-->"
-_CONNECTOR = "--"
-_INDENT = "    "
-_YAML_INDENT = "  "
-_MERMAID_FRONTMATTER = "---"
-_DOT_ID = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|-?(\.[0-9]+|[0-9]+(\.[0-9]*)?)")
-_NOT_WORD = re.compile(r"\W")
+
+_LINE_BREAK = '\n'
+_DOT_ARROW = '->'
+_MERMAID_ARROW = '-->'
+_CONNECTOR = '--'
+_INDENT = '    '
+_YAML_INDENT = '  '
+_MERMAID_FRONTMATTER = '---'
+_DOT_ID = re.compile(r'[A-Za-z_][A-Za-z0-9_]*|-?(\.[0-9]+|[0-9]+(\.[0-9]*)?)')
+_NOT_WORD = re.compile(r'\W')
 # Words that cannot be used as the identifier of a mermaid node.
-_MERMAID_RESERVED = frozenset({"end"})
+_MERMAID_RESERVED = frozenset({'end'})
 
 
 def to_dot(
     item: Any,
     path: str | pathlib.Path | None = None,
-    name: str = "holden",
-    settings: dict[str, Any] | None = None,
-) -> str:
+    name: str = 'holden',
+    settings: dict[str, Any] | None = None) -> str:
     """Converts `item` to a dot format.
 
     Args:
@@ -57,22 +57,21 @@ def to_dot(
         Composite object in graphviz dot format.
 
     """
-    adjacency = base._to_raw(item, "adjacency")
+    adjacency = base._to_raw(item, 'adjacency')
     if isinstance(item, traits.Directed):
-        dot = "digraph "
+        dot = 'digraph '
         link = _DOT_ARROW
     else:
-        dot = "graph "
+        dot = 'graph '
         link = _CONNECTOR
-    lines = [f"{dot}{_dot_id(name)} {{"]
+    lines = [f'{dot}{_dot_id(name)} {{']
     if settings is not None:
-        lines.extend(f"{key}={value};" for key, value in settings.items())
+        lines.extend(f'{key}={value};' for key, value in settings.items())
     lines.extend(
-        f"{_dot_id(start)} {link} {_dot_id(stop)}"
-        for start, stop in _edges(adjacency)
-    )
+        f'{_dot_id(start)} {link} {_dot_id(stop)}'
+        for start, stop in _edges(adjacency))
     lines.extend(_dot_id(node) for node in _isolated(adjacency))
-    code = _LINE_BREAK.join(lines) + _LINE_BREAK + "}" + _LINE_BREAK
+    code = _LINE_BREAK.join(lines) + _LINE_BREAK + '}' + _LINE_BREAK
     if path is not None:
         _save_file(code, path)
     return code
@@ -81,9 +80,8 @@ def to_dot(
 def to_mermaid(
     item: Any,
     path: str | pathlib.Path | None = None,
-    name: str = "holden",
-    settings: dict[str, Any] | None = None,
-) -> str:
+    name: str = 'holden',
+    settings: dict[str, Any] | None = None) -> str:
     """Converts `item` to a mermaid format.
 
     Args:
@@ -99,19 +97,18 @@ def to_mermaid(
         Composite object in mermaid format.
 
     """
-    adjacency = base._to_raw(item, "adjacency")
+    adjacency = base._to_raw(item, 'adjacency')
     link = _MERMAID_ARROW if isinstance(item, traits.Directed) else _CONNECTOR
     ids: dict[Hashable, str] = {}
     lines = [
-        f"{_INDENT}{_mermaid_node(start, ids)} {link} {_mermaid_node(stop, ids)}"
-        for start, stop in _edges(adjacency)
-    ]
+        f'{_INDENT}{_mermaid_node(start, ids)} {link} '
+        f'{_mermaid_node(stop, ids)}'
+        for start, stop in _edges(adjacency)]
     lines.extend(
-        f"{_INDENT}{_mermaid_node(node, ids)}" for node in _isolated(adjacency)
-    )
+        f'{_INDENT}{_mermaid_node(node, ids)}' for node in _isolated(adjacency))
     code = _add_mermaid_settings(name, settings)
-    code = f"{code}flowchart LR{_LINE_BREAK}"
-    code += "".join(f"{line}{_LINE_BREAK}" for line in lines)
+    code = f'{code}flowchart LR{_LINE_BREAK}'
+    code += ''.join(f'{line}{_LINE_BREAK}' for line in lines)
     if path is not None:
         _save_file(code, path)
     return code
@@ -128,9 +125,9 @@ def _add_mermaid_settings(name: str, settings: dict[str, Any] | None) -> str:
         The front matter of a mermaid file as a `str`.
 
     """
-    lines = [_MERMAID_FRONTMATTER, f"title: {name}"]
+    lines = [_MERMAID_FRONTMATTER, f'title: {name}']
     if settings is not None:
-        lines.append("config:")
+        lines.append('config:')
         lines.extend(_yaml_lines(settings, _YAML_INDENT))
     lines.append(_MERMAID_FRONTMATTER)
     return _LINE_BREAK.join(lines) + _LINE_BREAK
@@ -149,13 +146,12 @@ def _dot_id(node: Hashable) -> str:
     text = _label(node)
     if _DOT_ID.fullmatch(text):
         return text
-    escaped = text.replace("\\", "\\\\").replace('"', '\\"')
+    escaped = text.replace('\\', '\\\\').replace('"', '\\"')
     return f'"{escaped}"'
 
 
 def _edges(
-    adjacency: dict[Hashable, set[Hashable]],
-) -> list[tuple[Hashable, Hashable]]:
+    adjacency: kinds.RawAdjacency) -> kinds.RawEdges:
     """Returns the edges of an adjacency list in a deterministic order.
 
     Args:
@@ -168,11 +164,10 @@ def _edges(
     return [
         (start, stop)
         for start, stops in adjacency.items()
-        for stop in utilities._stabilize(stops)
-    ]
+        for stop in utilities._stabilize(stops)]
 
 
-def _isolated(adjacency: dict[Hashable, set[Hashable]]) -> list[Hashable]:
+def _isolated(adjacency: kinds.RawAdjacency) -> list[Hashable]:
     """Returns the nodes of an adjacency list that have no edges.
 
     Args:
@@ -189,8 +184,7 @@ def _isolated(adjacency: dict[Hashable, set[Hashable]]) -> list[Hashable]:
     return [
         node
         for node in report._nodes_adjacency(adjacency)
-        if not adjacency.get(node) and node not in stops
-    ]
+        if not adjacency.get(node) and node not in stops]
 
 
 def _label(node: Hashable) -> str:
@@ -204,7 +198,7 @@ def _label(node: Hashable) -> str:
             `node`.
 
     """
-    name = getattr(node, "name", None)
+    name = getattr(node, 'name', None)
     return name if isinstance(name, str) else str(node)
 
 
@@ -222,20 +216,20 @@ def _mermaid_node(node: Hashable, ids: dict[Hashable, str]) -> str:
     """
     text = _label(node)
     if node not in ids:
-        identifier = _NOT_WORD.sub("_", text) or "_"
+        identifier = _NOT_WORD.sub('_', text) or '_'
         if identifier.lower() in _MERMAID_RESERVED:
-            identifier = f"{identifier}_"
+            identifier = f'{identifier}_'
         used = set(ids.values())
         candidate, count = identifier, 1
         while candidate in used:
-            candidate = f"{identifier}_{count}"
+            candidate = f'{identifier}_{count}'
             count += 1
         ids[node] = candidate
     if _NOT_WORD.search(text) is None:
         label = text
     else:
-        label = '"' + text.replace('"', "#quot;") + '"'
-    return f"{ids[node]}({label})"
+        label = '"' + text.replace('"', '#quot;') + '"'
+    return f'{ids[node]}({label})'
 
 
 def _save_file(item: str, path: pathlib.Path | str) -> None:
@@ -247,7 +241,7 @@ def _save_file(item: str, path: pathlib.Path | str) -> None:
 
     """
     path = utilities._pathlibify(path)
-    with path.open("w", encoding="utf-8", newline="\n") as a_file:
+    with path.open('w', encoding = 'utf-8', newline = '\n') as a_file:
         a_file.write(item)
 
 
@@ -265,8 +259,8 @@ def _yaml_lines(settings: dict[str, Any], indent: str) -> list[str]:
     lines = []
     for key, value in settings.items():
         if isinstance(value, dict):
-            lines.append(f"{indent}{key}:")
+            lines.append(f'{indent}{key}:')
             lines.extend(_yaml_lines(value, indent + _YAML_INDENT))
         else:
-            lines.append(f"{indent}{key}: {value}")
+            lines.append(f'{indent}{key}: {value}')
     return lines

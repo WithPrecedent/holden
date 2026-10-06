@@ -18,8 +18,8 @@ repos:
     # Run the linter.
     - id: ruff
       args: [ --fix ]
-    # Run the formatter.
-    - id: ruff-format
+    # The ruff formatter is not used because it removes the spaces around
+    # keyword `=` signs and moves closing brackets onto their own lines.
 
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.

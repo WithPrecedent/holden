@@ -12,16 +12,20 @@ To Do:
 from __future__ import annotations
 
 import dataclasses
+from typing import TYPE_CHECKING
 
 from . import graphs, traits
 
-__all__: list[str] = ["System"]
+if TYPE_CHECKING:
+    from collections.abc import Hashable, MutableMapping
 
 
 @dataclasses.dataclass
 class System(
-    traits.Directed, graphs.Adjacency, traits.Fungible, traits.Exportable
-):
+    traits.Directed,
+    graphs.Adjacency,
+    traits.Fungible,
+    traits.Exportable):
     """Directed graph with unweighted edges stored as an adjacency list.
 
     A System combines the `Adjacency` form with the `Directed`, `Fungible`, and
@@ -34,3 +38,6 @@ class System(
             representations of nodes). Defaults to an empty `dict`.
 
     """
+
+    contents: MutableMapping[Hashable, set[Hashable]] = dataclasses.field(
+        default_factory = dict)

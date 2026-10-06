@@ -30,24 +30,13 @@ from collections.abc import (
     Iterable,
     MutableMapping,
     MutableSequence,
-    Sequence,
-)
+    Sequence)
 from typing import Any, ClassVar, TypeAlias
 
 import wonka
 
 from . import check, utilities, workshop
 
-__all__: list[str] = [
-    "Composite",
-    "Edge",
-    "Forms",
-    "Graph",
-    "Node",
-    "Structural",
-    "classify",
-    "transform",
-]
 
 GenericDict: TypeAlias = MutableMapping[Hashable, Any]
 GenericList: TypeAlias = MutableSequence[Any]
@@ -55,12 +44,11 @@ GenericList: TypeAlias = MutableSequence[Any]
 # The order in which the built-in forms are checked by `classify`. This matters
 # when a raw structure (such as an empty `list`) matches more than one form.
 _PRIORITY: tuple[str, ...] = (
-    "adjacency",
-    "edges",
-    "matrix",
-    "parallel",
-    "serial",
-)
+    'adjacency',
+    'edges',
+    'matrix',
+    'parallel',
+    'serial')
 
 
 class Structural(abc.ABCMeta):
@@ -141,8 +129,7 @@ class Forms(wonka.Registrar):
         item: Any,
         output: str,
         *,
-        raise_same_error: bool | None = True,
-    ) -> Any:
+        raise_same_error: bool | None = True) -> Any:
         """General transform method that will call appropriate transformer.
 
         Unlike the `transform` function, this method will return a Composite
@@ -173,7 +160,7 @@ class Forms(wonka.Registrar):
         form = cls.classify(item)
         if form == output:
             if raise_same_error:
-                raise ValueError("The passed item and output are the same type")
+                raise ValueError('The passed item and output are the same type')
             return item
         raw = _to_raw(item, output)
         return _wrap(cls.registry[output], output, raw)
@@ -183,7 +170,7 @@ class Forms(wonka.Registrar):
 
 
 @dataclasses.dataclass
-class Composite(abc.ABC, metaclass=Structural):
+class Composite(abc.ABC, metaclass = Structural):
     """Base class for composite data structures.
 
     A subclass must provide the `nodes` property and the `_add`, `_delete`,
@@ -220,7 +207,7 @@ class Composite(abc.ABC, metaclass=Structural):
         # Adds a subclass to the Forms registry only if it is a direct subclass
         # of Composite.
         if Composite in cls.__bases__ and abc.ABC not in cls.__bases__:
-            Forms.register(item=cls)
+            Forms.register(item = cls)
 
     """ Properties """
 
@@ -250,11 +237,10 @@ class Composite(abc.ABC, metaclass=Structural):
 
         """
         if not check.is_node(item):
-            raise TypeError(f"{item} is not a node type")
+            raise TypeError(f'{item} is not a node type')
         if item in self:
             raise ValueError(
-                f"{item} is already in the composite data structure"
-            )
+                f'{item} is already in the composite data structure')
         self._add(item, **kwargs)
 
     def delete(self, item: Hashable, **kwargs: Any) -> None:
@@ -270,15 +256,14 @@ class Composite(abc.ABC, metaclass=Structural):
 
         """
         if not check.is_node(item):
-            raise TypeError(f"{item} is not a node type")
+            raise TypeError(f'{item} is not a node type')
         if item not in self:
             raise KeyError(
-                f"{item} does not exist in the composite data structure"
-            )
+                f'{item} does not exist in the composite data structure')
         try:
             self._delete(item, **kwargs)
         except KeyError as error:
-            message = f"{item} does not exist in the composite data structure"
+            message = f'{item} does not exist in the composite data structure'
             raise KeyError(message) from error
 
     def merge(self, item: Any, **kwargs: Any) -> None:
@@ -301,14 +286,13 @@ class Composite(abc.ABC, metaclass=Structural):
         try:
             classify(item)
         except TypeError as error:
-            raise TypeError(f"{item} is not a compatible type") from error
+            raise TypeError(f'{item} is not a compatible type') from error
         self._merge(item, **kwargs)
 
     def subset(
         self,
         include: Hashable | Sequence[Hashable] | None = None,
-        exclude: Hashable | Sequence[Hashable] | None = None,
-    ) -> Composite:
+        exclude: Hashable | Sequence[Hashable] | None = None) -> Composite:
         """Returns a new Composite with a subset of the stored nodes.
 
         All edges will be removed that include any nodes that are not part of
@@ -334,16 +318,15 @@ class Composite(abc.ABC, metaclass=Structural):
 
         """
         if include is None and exclude is None:
-            raise ValueError("Either include or exclude must not be None")
+            raise ValueError('Either include or exclude must not be None')
         included = None if include is None else utilities._listify(include)
         excluded = utilities._listify(exclude)
-        for label, values in (("include", included), ("exclude", excluded)):
+        for label, values in (('include', included), ('exclude', excluded)):
             missing = [i for i in values or [] if i not in self]
             if missing:
                 raise ValueError(
-                    f"Some values in {label} are not in the composite data "
-                    f"structure: {missing}"
-                )
+                    f'Some values in {label} are not in the composite data '
+                    f'structure: {missing}')
         return self._subset(included, excluded)
 
     """ Private Methods """
@@ -397,8 +380,7 @@ class Composite(abc.ABC, metaclass=Structural):
     def _subset(
         self,
         include: list[Hashable] | None = None,
-        exclude: list[Hashable] | None = None,
-    ) -> Composite:
+        exclude: list[Hashable] | None = None) -> Composite:
         """Returns a new Composite with a subset of the stored nodes.
 
         Subclasses must provide their own specific methods for returning a
@@ -421,8 +403,7 @@ class Composite(abc.ABC, metaclass=Structural):
     def _selected(
         nodes: Iterable[Hashable],
         include: list[Hashable] | None,
-        exclude: list[Hashable] | None,
-    ) -> list[Hashable]:
+        exclude: list[Hashable] | None) -> list[Hashable]:
         """Returns the nodes that should be kept in a subset.
 
         Args:
@@ -439,8 +420,7 @@ class Composite(abc.ABC, metaclass=Structural):
             node
             for node in nodes
             if (include is None or node in include)
-            and node not in (exclude or [])
-        ]
+            and node not in (exclude or [])]
 
     """ Dunder Methods """
 
@@ -499,13 +479,12 @@ class Graph(Composite, abc.ABC):
         # Adds a subclass to the Forms registry only if it is a direct subclass
         # of Graph.
         if Graph in cls.__bases__:
-            Forms.register(item=cls)
+            Forms.register(item = cls)
 
     """ Public Methods """
 
     def connect(
-        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any) -> None:
         """Adds edge to the stored graph.
 
         Args:
@@ -519,22 +498,20 @@ class Graph(Composite, abc.ABC):
 
         """
         if not check.is_edge(item):
-            raise TypeError(f"{item} is not an edge type")
+            raise TypeError(f'{item} is not an edge type')
         if item[0] == item[1]:
             raise ValueError(
-                "The starting point of an edge cannot be the same as the "
-                "ending point"
-            )
+                'The starting point of an edge cannot be the same as the '
+                'ending point')
         if not self._implicit_nodes:
             if item[0] not in self:
-                raise ValueError(f"{item[0]} is not in the graph")
+                raise ValueError(f'{item[0]} is not in the graph')
             if item[1] not in self:
-                raise ValueError(f"{item[1]} is not in the graph")
+                raise ValueError(f'{item[1]} is not in the graph')
         self._connect(item, **kwargs)
 
     def disconnect(
-        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any) -> None:
         """Removes edge from the stored graph.
 
         Args:
@@ -547,18 +524,17 @@ class Graph(Composite, abc.ABC):
 
         """
         if not check.is_edge(item):
-            raise TypeError(f"{item} is not an edge type")
+            raise TypeError(f'{item} is not an edge type')
         try:
             self._disconnect(item, **kwargs)
         except (KeyError, ValueError) as error:
-            message = f"The edge ({item[0]}, {item[1]}) is not in the graph"
+            message = f'The edge ({item[0]}, {item[1]}) is not in the graph'
             raise ValueError(message) from error
 
     """ Private Methods """
 
     def _connect(
-        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any) -> None:
         """Adds edge to the stored graph.
 
         Subclasses must provide their own specific methods for adding a single
@@ -574,8 +550,7 @@ class Graph(Composite, abc.ABC):
         raise NotImplementedError
 
     def _disconnect(
-        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: Edge | tuple[Hashable, Hashable], **kwargs: Any) -> None:
         """Removes edge from the stored graph.
 
         Subclasses must provide their own specific methods for deleting a single
@@ -591,7 +566,7 @@ class Graph(Composite, abc.ABC):
         raise NotImplementedError
 
 
-@dataclasses.dataclass(frozen=True, order=True)
+@dataclasses.dataclass(frozen = True, order = True)
 class Edge(Sequence):  # noqa: PLW1641
     """Base class for an edge in a graph structure.
 
@@ -690,12 +665,11 @@ class Node(Hashable):
         super().__init_subclass__(*args, **kwargs)
         # Explicitly stores inherited methods so that `dataclasses.dataclass`
         # does not overwrite them.
-        if "__hash__" not in cls.__dict__:
+        if '__hash__' not in cls.__dict__:
             cls.__hash__ = cls.__hash__  # type: ignore[method-assign]
-        if "__eq__" not in cls.__dict__ and cls.__eq__ not in {
+        if '__eq__' not in cls.__dict__ and cls.__eq__ not in {
             Node.__eq__,
-            object.__eq__,
-        }:
+            object.__eq__}:
             cls.__eq__ = cls.__eq__  # type: ignore[method-assign]
 
     """ Dunder Methods """
@@ -744,10 +718,10 @@ def classify(item: object) -> str:
         if issubclass(subtype, Forms.registry[name]):
             return name
     for name in names:
-        checker = getattr(check, f"is_{name}", None)
+        checker = getattr(check, f'is_{name}', None)
         if checker is not None and checker(item):
             return name
-    raise TypeError("The passed item is not a recognized composite form")
+    raise TypeError('The passed item is not a recognized composite form')
 
 
 """ Form Transformer """
@@ -757,8 +731,7 @@ def transform(
     item: Any,
     output: str,
     *,
-    raise_same_error: bool | None = True,
-) -> Any:
+    raise_same_error: bool | None = True) -> Any:
     """General transform function that will call appropriate transformer.
 
     Args:
@@ -782,7 +755,7 @@ def transform(
     form = classify(item)
     if form == output:
         if raise_same_error:
-            raise ValueError("The passed item and output are the same type")
+            raise ValueError('The passed item and output are the same type')
         return item
     return _to_raw(item, output)
 
@@ -807,7 +780,7 @@ def _get_checker(cls: type) -> Any:
         return check.is_graph
     for name, form in Forms.registry.items():
         if form is cls:
-            return getattr(check, f"is_{name}", None)
+            return getattr(check, f'is_{name}', None)
     return None
 
 
@@ -841,19 +814,17 @@ def _to_raw(item: Any, output: str) -> Any:
 
     """
     if output not in Forms.registry:
-        raise ValueError(f"{output} is not a registered form")
+        raise ValueError(f'{output} is not a registered form')
     form = classify(item)
     raw = utilities._rawify(item)
     if form == output:
         return raw
     transformer = getattr(
-        workshop, workshop._transformer_name(form, output), None
-    )
+        workshop, workshop._transformer_name(form, output), None)
     if transformer is None:
         raise NotImplementedError(
-            f"There is no transformer from {form} to {output}"
-        )
-    return transformer(item=raw)
+            f'There is no transformer from {form} to {output}')
+    return transformer(item = raw)
 
 
 def _wrap(form: type[Composite], name: str, raw: Any) -> Composite:
@@ -868,9 +839,10 @@ def _wrap(form: type[Composite], name: str, raw: Any) -> Composite:
         Instance of `form` that stores `raw`.
 
     """
-    if name == "matrix":
-        return form(contents=raw[0], labels=raw[1])  # type: ignore[call-arg]
-    return form(contents=raw)
+    if name == 'matrix':
+        return form(contents = raw[0],  # type: ignore[call-arg]
+            labels = raw[1])
+    return form(contents = raw)
 
 
 def _copy_raw(item: Any) -> Any:
@@ -888,8 +860,7 @@ def _copy_raw(item: Any) -> Any:
     if isinstance(item, MutableMapping):
         return {
             key: set(value) if isinstance(value, set) else value
-            for key, value in item.items()
-        }
+            for key, value in item.items()}
     if isinstance(item, tuple):
         return tuple(_copy_raw(i) for i in item)
     if isinstance(item, list):

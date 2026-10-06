@@ -27,26 +27,12 @@ from collections.abc import (
     Hashable,
     MutableMapping,
     MutableSequence,
-    Sequence,
-)
+    Sequence)
 from typing import Any
 
-__all__: list[str] = [
-    "add_checker",
-    "is_adjacency",
-    "is_composite",
-    "is_edge",
-    "is_edges",
-    "is_graph",
-    "is_matrix",
-    "is_node",
-    "is_nodes",
-    "is_parallel",
-    "is_serial",
-]
 
-_COMPOSITE_METHODS: tuple[str, ...] = ("add", "delete", "merge", "subset")
-_GRAPH_METHODS: tuple[str, ...] = ("connect", "disconnect")
+_COMPOSITE_METHODS: tuple[str, ...] = ('add', 'delete', 'merge', 'subset')
+_GRAPH_METHODS: tuple[str, ...] = ('connect', 'disconnect')
 
 
 def add_checker(name: str, item: Callable[[Any], bool]) -> None:
@@ -66,7 +52,7 @@ def add_checker(name: str, item: Callable[[Any], bool]) -> None:
         ValueError: if `name` does not start with "is_".
 
     """
-    if not name.startswith("is_"):
+    if not name.startswith('is_'):
         raise ValueError("name must be in the 'is_{form}' format")
     globals()[name] = item
 
@@ -84,8 +70,7 @@ def is_adjacency(item: object) -> bool:
 
     """
     return isinstance(item, MutableMapping) and all(
-        isinstance(connections, set) for connections in item.values()
-    )
+        isinstance(connections, set) for connections in item.values())
 
 
 def is_composite(item: object) -> bool:
@@ -102,8 +87,7 @@ def is_composite(item: object) -> bool:
 
     """
     return all(
-        callable(getattr(item, method, None)) for method in _COMPOSITE_METHODS
-    )
+        callable(getattr(item, method, None)) for method in _COMPOSITE_METHODS)
 
 
 def is_edge(item: object) -> bool:
@@ -125,8 +109,7 @@ def is_edge(item: object) -> bool:
         and not isinstance(item, str | bytes | MutableSequence)
         and len(item) == 2  # noqa: PLR2004
         and is_node(item[0])
-        and is_node(item[1])
-    )
+        and is_node(item[1]))
 
 
 def is_edges(item: object) -> bool:
@@ -156,8 +139,7 @@ def is_graph(item: object) -> bool:
 
     """
     return is_composite(item) and all(
-        callable(getattr(item, method, None)) for method in _GRAPH_METHODS
-    )
+        callable(getattr(item, method, None)) for method in _GRAPH_METHODS)
 
 
 def is_matrix(item: object) -> bool:
@@ -181,21 +163,17 @@ def is_matrix(item: object) -> bool:
     if not (
         isinstance(matrix, MutableSequence)
         and isinstance(labels, MutableSequence)
-        and len(matrix) == len(labels)
-    ):
+        and len(matrix) == len(labels)):
         return False
     return (
         all(isinstance(label, Hashable) for label in labels)
         and all(
             isinstance(row, MutableSequence) and len(row) == len(labels)
-            for row in matrix
-        )
+            for row in matrix)
         and all(
             isinstance(connection, int | float)
             for row in matrix
-            for connection in row
-        )
-    )
+            for connection in row))
 
 
 def is_node(item: object) -> bool:
@@ -228,8 +206,7 @@ def is_nodes(item: object) -> bool:
 
     """
     return isinstance(item, list | tuple | set | frozenset) and all(
-        is_node(i) for i in item
-    )
+        is_node(i) for i in item)
 
 
 def is_parallel(item: object) -> bool:
@@ -259,5 +236,4 @@ def is_serial(item: object) -> bool:
 
     """
     return isinstance(item, MutableSequence) and all(
-        is_node(i) and not isinstance(i, tuple) for i in item
-    )
+        is_node(i) and not isinstance(i, tuple) for i in item)

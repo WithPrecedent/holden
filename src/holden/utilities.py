@@ -23,8 +23,8 @@ import re
 from collections.abc import Hashable, Iterable, Iterator, Sequence
 from typing import Any
 
-_SNAKE_FIRST = re.compile("(.)([A-Z][a-z]+)")
-_SNAKE_SECOND = re.compile("([a-z0-9])([A-Z])")
+_SNAKE_FIRST = re.compile('(.)([A-Z][a-z]+)')
+_SNAKE_SECOND = re.compile('([a-z0-9])([A-Z])')
 _MISSING: Any = object()
 
 
@@ -91,15 +91,14 @@ def _namify(item: Any, /, default: str | None = None) -> str | None:
     if isinstance(item, str):
         return item
     if (
-        hasattr(item, "name")
+        hasattr(item, 'name')
         and not inspect.isclass(item)
-        and isinstance(item.name, str)
-    ):
+        and isinstance(item.name, str)):
         return item.name
     try:
         return _snakify(item.__name__)
     except AttributeError:
-        name = getattr(item.__class__, "__name__", None)
+        name = getattr(item.__class__, '__name__', None)
         return default if name is None else _snakify(name)
 
 
@@ -120,7 +119,7 @@ def _pathlibify(item: str | pathlib.Path) -> pathlib.Path:
         return pathlib.Path(item)
     if isinstance(item, pathlib.Path):
         return item
-    raise TypeError("item must be str or pathlib.Path type")
+    raise TypeError('item must be str or pathlib.Path type')
 
 
 def _rawify(item: Any) -> Any:
@@ -140,10 +139,10 @@ def _rawify(item: Any) -> Any:
     """
     if isinstance(item, str | bytes | list | tuple | dict | set | frozenset):
         return item
-    contents = getattr(item, "contents", _MISSING)
+    contents = getattr(item, 'contents', _MISSING)
     if contents is _MISSING:
         return item
-    labels = getattr(item, "labels", _MISSING)
+    labels = getattr(item, 'labels', _MISSING)
     if labels is _MISSING:
         return contents
     return contents, labels
@@ -159,8 +158,8 @@ def _snakify(item: str) -> str:
         `item` converted to snake case.
 
     """
-    item = _SNAKE_FIRST.sub(r"\1_\2", item)
-    return _SNAKE_SECOND.sub(r"\1_\2", item).lower()
+    item = _SNAKE_FIRST.sub(r'\1_\2', item)
+    return _SNAKE_SECOND.sub(r'\1_\2', item).lower()
 
 
 def _stabilize(items: Iterable[Any]) -> list[Any]:
@@ -178,7 +177,7 @@ def _stabilize(items: Iterable[Any]) -> list[Any]:
         `items` as a `list` sorted by their `str` representations.
 
     """
-    return sorted(items, key=str)
+    return sorted(items, key = str)
 
 
 def _typify(item: Any) -> Any:
@@ -204,12 +203,12 @@ def _typify(item: Any) -> Any:
         try:
             return float(item)
         except ValueError:
-            if item.lower() in {"true", "yes"}:
+            if item.lower() in {'true', 'yes'}:
                 return True
-            if item.lower() in {"false", "no"}:
+            if item.lower() in {'false', 'no'}:
                 return False
-            if ", " in item:
-                return [_typify(i) for i in item.split(", ")]
+            if ', ' in item:
+                return [_typify(i) for i in item.split(', ')]
             return item
 
 
@@ -217,8 +216,7 @@ def _windowify(
     item: Sequence[Hashable],
     length: int,
     fill_value: Any | None = None,
-    step: int = 1,
-) -> Iterator[tuple[Any, ...]]:
+    step: int = 1) -> Iterator[tuple[Any, ...]]:
     """Returns a sliding window of `length` over `item`.
 
     This code is adapted from `more_itertools.windowed` to remove a dependency.
@@ -238,13 +236,13 @@ def _windowify(
 
     """
     if length < 0:
-        raise ValueError("length must be >= 0")
+        raise ValueError('length must be >= 0')
     if length == 0:
         yield ()
         return
     if step < 1:
-        raise ValueError("step must be >= 1")
-    window: collections.deque[Any] = collections.deque(maxlen=length)
+        raise ValueError('step must be >= 1')
+    window: collections.deque[Any] = collections.deque(maxlen = length)
     remaining = length
     for _ in map(window.append, item):
         remaining -= 1
@@ -256,8 +254,8 @@ def _windowify(
         return
     if size < length:
         yield tuple(
-            itertools.chain(window, itertools.repeat(fill_value, length - size))
-        )
+            itertools.chain(window,
+                itertools.repeat(fill_value, length - size)))
     elif 0 < remaining < min(step, length):
         window += (fill_value,) * remaining
         yield tuple(window)

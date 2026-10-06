@@ -48,33 +48,9 @@ from typing import TYPE_CHECKING, Any
 from . import check, report, traverse, utilities
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Hashable
+    from collections.abc import Callable
 
-    from . import composites, graphs
-
-__all__: list[str] = [
-    "add_transformer",
-    "adjacency_to_edges",
-    "adjacency_to_matrix",
-    "adjacency_to_parallel",
-    "adjacency_to_serial",
-    "edges_to_adjacency",
-    "edges_to_matrix",
-    "edges_to_parallel",
-    "edges_to_serial",
-    "matrix_to_adjacency",
-    "matrix_to_edges",
-    "matrix_to_parallel",
-    "matrix_to_serial",
-    "parallel_to_adjacency",
-    "parallel_to_edges",
-    "parallel_to_matrix",
-    "parallel_to_serial",
-    "serial_to_adjacency",
-    "serial_to_edges",
-    "serial_to_matrix",
-    "serial_to_parallel",
-]
+    from . import composites, graphs, kinds
 
 
 def _transformer_name(source: str, output: str) -> str:
@@ -88,7 +64,7 @@ def _transformer_name(source: str, output: str) -> str:
         Name of the transformer function in the `{source}_to_{output}` format.
 
     """
-    return f"{source}_to_{output}"
+    return f'{source}_to_{output}'
 
 
 def add_transformer(name: str, item: Callable[[Any], Any]) -> None:
@@ -107,15 +83,14 @@ def add_transformer(name: str, item: Callable[[Any], Any]) -> None:
         ValueError: if `name` is not in the `{source}_to_{output}` format.
 
     """
-    source, separator, output = name.partition("_to_")
+    source, separator, output = name.partition('_to_')
     if not (source and separator and output):
         raise ValueError("name must be in the '{source}_to_{output}' format")
     globals()[name] = item
 
 
 def adjacency_to_edges(
-    item: graphs.Adjacency | dict[Hashable, set[Hashable]],
-) -> list[tuple[Hashable, Hashable]]:
+    item: graphs.Adjacency | kinds.RawAdjacency) -> kinds.RawEdges:
     """Converts `item` to an edge list.
 
     Nodes without any edges cannot be represented in an edge list and are not
@@ -132,13 +107,11 @@ def adjacency_to_edges(
     return [
         (node, connection)
         for node, connections in adjacency.items()
-        for connection in utilities._stabilize(connections)
-    ]
+        for connection in utilities._stabilize(connections)]
 
 
 def adjacency_to_matrix(
-    item: graphs.Adjacency | dict[Hashable, set[Hashable]],
-) -> tuple[list[list[int]], list[Hashable]]:
+    item: graphs.Adjacency | kinds.RawAdjacency) -> kinds.RawMatrix:
     """Converts `item` to an adjacency matrix.
 
     Args:
@@ -153,7 +126,7 @@ def adjacency_to_matrix(
     adjacency = utilities._rawify(item)
     names = report._nodes_adjacency(adjacency)
     index = {name: i for i, name in enumerate(names)}
-    matrix = [[0] * len(names) for _ in names]
+    matrix: list[list[float]] = [[0] * len(names) for _ in names]
     for node, connections in adjacency.items():
         for connection in connections:
             matrix[index[node]][index[connection]] = 1
@@ -161,8 +134,7 @@ def adjacency_to_matrix(
 
 
 def adjacency_to_parallel(
-    item: graphs.Adjacency | dict[Hashable, set[Hashable]],
-) -> list[list[Hashable]]:
+    item: graphs.Adjacency | kinds.RawAdjacency) -> kinds.RawParallel:
     """Converts `item` to a parallel structure.
 
     Args:
@@ -174,18 +146,17 @@ def adjacency_to_parallel(
 
     """
     adjacency = utilities._rawify(item)
-    paths: list[list[Hashable]] = []
+    paths: kinds.RawParallel = []
     for start in report.get_roots_adjacency(adjacency):
         for stop in report.get_endpoints_adjacency(adjacency):
             paths.extend(
-                traverse.walk_adjacency(item=adjacency, start=start, stop=stop)
-            )
+                traverse.walk_adjacency(item = adjacency, start = start,
+                    stop = stop))
     return paths
 
 
 def adjacency_to_serial(
-    item: graphs.Adjacency | dict[Hashable, set[Hashable]],
-) -> list[Hashable]:
+    item: graphs.Adjacency | kinds.RawAdjacency) -> kinds.RawSerial:
     """Converts `item` to a serial structure.
 
     Args:
@@ -196,12 +167,11 @@ def adjacency_to_serial(
             returned. Otherwise, all of the paths are concatenated in order.
 
     """
-    return parallel_to_serial(item=adjacency_to_parallel(item=item))
+    return parallel_to_serial(item = adjacency_to_parallel(item = item))
 
 
 def edges_to_adjacency(
-    item: graphs.Edges | list[tuple[Hashable, Hashable]],
-) -> dict[Hashable, set[Hashable]]:
+    item: graphs.Edges | kinds.RawEdges) -> kinds.RawAdjacency:
     """Converts `item` to an adjacency list.
 
     Args:
@@ -211,7 +181,7 @@ def edges_to_adjacency(
         Adjacency list derived from `item`.
 
     """
-    adjacency: dict[Hashable, set[Hashable]] = {}
+    adjacency: kinds.RawAdjacency = {}
     for start, stop in utilities._rawify(item):
         adjacency.setdefault(start, set()).add(stop)
         adjacency.setdefault(stop, set())
@@ -219,8 +189,7 @@ def edges_to_adjacency(
 
 
 def edges_to_matrix(
-    item: graphs.Edges | list[tuple[Hashable, Hashable]],
-) -> tuple[list[list[int]], list[Hashable]]:
+    item: graphs.Edges | kinds.RawEdges) -> kinds.RawMatrix:
     """Converts `item` to an adjacency matrix.
 
     Args:
@@ -230,12 +199,11 @@ def edges_to_matrix(
         Adjacency matrix derived from `item`.
 
     """
-    return adjacency_to_matrix(item=edges_to_adjacency(item=item))
+    return adjacency_to_matrix(item = edges_to_adjacency(item = item))
 
 
 def edges_to_parallel(
-    item: graphs.Edges | list[tuple[Hashable, Hashable]],
-) -> list[list[Hashable]]:
+    item: graphs.Edges | kinds.RawEdges) -> kinds.RawParallel:
     """Converts `item` to a parallel structure.
 
     Args:
@@ -245,12 +213,11 @@ def edges_to_parallel(
         Parallel structure derived from `item`.
 
     """
-    return adjacency_to_parallel(item=edges_to_adjacency(item=item))
+    return adjacency_to_parallel(item = edges_to_adjacency(item = item))
 
 
 def edges_to_serial(
-    item: graphs.Edges | list[tuple[Hashable, Hashable]],
-) -> list[Hashable]:
+    item: graphs.Edges | kinds.RawEdges) -> kinds.RawSerial:
     """Converts `item` to a serial structure.
 
     Args:
@@ -260,12 +227,11 @@ def edges_to_serial(
         Serial structure derived from `item`.
 
     """
-    return adjacency_to_serial(item=edges_to_adjacency(item=item))
+    return adjacency_to_serial(item = edges_to_adjacency(item = item))
 
 
 def matrix_to_adjacency(
-    item: graphs.Matrix | tuple[list[list[float]], list[Hashable]],
-) -> dict[Hashable, set[Hashable]]:
+    item: graphs.Matrix | kinds.RawMatrix) -> kinds.RawAdjacency:
     """Converts `item` to an adjacency list.
 
     Any non-zero value in the matrix is treated as an edge.
@@ -283,22 +249,18 @@ def matrix_to_adjacency(
     """
     matrix, names = utilities._rawify(item)
     if len(matrix) != len(names) or any(
-        len(row) != len(names) for row in matrix
-    ):
+        len(row) != len(names) for row in matrix):
         raise ValueError(
-            "The matrix must be square with one label for each row and column"
-        )
-    adjacency: dict[Hashable, set[Hashable]] = {name: set() for name in names}
-    for name, row in zip(names, matrix, strict=True):
+            'The matrix must be square with one label for each row and column')
+    adjacency: kinds.RawAdjacency = {name: set() for name in names}
+    for name, row in zip(names, matrix, strict = True):
         adjacency[name].update(
-            names[j] for j, connection in enumerate(row) if connection
-        )
+            names[j] for j, connection in enumerate(row) if connection)
     return adjacency
 
 
 def matrix_to_edges(
-    item: graphs.Matrix | tuple[list[list[float]], list[Hashable]],
-) -> list[tuple[Hashable, Hashable]]:
+    item: graphs.Matrix | kinds.RawMatrix) -> kinds.RawEdges:
     """Converts `item` to an edge list.
 
     Args:
@@ -310,19 +272,17 @@ def matrix_to_edges(
 
     """
     matrix, names = utilities._rawify(item)
-    edges: list[tuple[Hashable, Hashable]] = []
+    edges: kinds.RawEdges = []
     for i, row in enumerate(matrix):
         edges.extend(
             (names[i], names[j])
             for j, connection in enumerate(row)
-            if connection
-        )
+            if connection)
     return edges
 
 
 def matrix_to_parallel(
-    item: graphs.Matrix | tuple[list[list[float]], list[Hashable]],
-) -> list[list[Hashable]]:
+    item: graphs.Matrix | kinds.RawMatrix) -> kinds.RawParallel:
     """Converts `item` to a parallel structure.
 
     Args:
@@ -332,12 +292,11 @@ def matrix_to_parallel(
         Parallel structure derived from `item`.
 
     """
-    return adjacency_to_parallel(item=matrix_to_adjacency(item=item))
+    return adjacency_to_parallel(item = matrix_to_adjacency(item = item))
 
 
 def matrix_to_serial(
-    item: graphs.Matrix | tuple[list[list[float]], list[Hashable]],
-) -> list[Hashable]:
+    item: graphs.Matrix | kinds.RawMatrix) -> kinds.RawSerial:
     """Converts `item` to a serial structure.
 
     Args:
@@ -347,12 +306,11 @@ def matrix_to_serial(
         Serial structure derived from `item`.
 
     """
-    return adjacency_to_serial(item=matrix_to_adjacency(item=item))
+    return adjacency_to_serial(item = matrix_to_adjacency(item = item))
 
 
 def parallel_to_adjacency(
-    item: composites.Parallel | list[list[Hashable]],
-) -> dict[Hashable, set[Hashable]]:
+    item: composites.Parallel | kinds.RawParallel) -> kinds.RawAdjacency:
     """Converts `item` to an adjacency list.
 
     Args:
@@ -363,16 +321,15 @@ def parallel_to_adjacency(
             lists of each path in `item`.
 
     """
-    adjacency: dict[Hashable, set[Hashable]] = {}
+    adjacency: kinds.RawAdjacency = {}
     for serial in utilities._rawify(item):
-        for key, value in serial_to_adjacency(item=serial).items():
+        for key, value in serial_to_adjacency(item = serial).items():
             adjacency.setdefault(key, set()).update(value)
     return adjacency
 
 
 def parallel_to_edges(
-    item: composites.Parallel | list[list[Hashable]],
-) -> list[tuple[Hashable, Hashable]]:
+    item: composites.Parallel | kinds.RawParallel) -> kinds.RawEdges:
     """Converts `item` to an edge list.
 
     Args:
@@ -382,12 +339,11 @@ def parallel_to_edges(
         Edge list derived from `item`.
 
     """
-    return adjacency_to_edges(item=parallel_to_adjacency(item=item))
+    return adjacency_to_edges(item = parallel_to_adjacency(item = item))
 
 
 def parallel_to_matrix(
-    item: composites.Parallel | list[list[Hashable]],
-) -> tuple[list[list[int]], list[Hashable]]:
+    item: composites.Parallel | kinds.RawParallel) -> kinds.RawMatrix:
     """Converts `item` to an adjacency matrix.
 
     Args:
@@ -397,12 +353,11 @@ def parallel_to_matrix(
         Adjacency matrix derived from `item`.
 
     """
-    return adjacency_to_matrix(item=parallel_to_adjacency(item=item))
+    return adjacency_to_matrix(item = parallel_to_adjacency(item = item))
 
 
 def parallel_to_serial(
-    item: composites.Parallel | list[list[Hashable]],
-) -> list[Hashable]:
+    item: composites.Parallel | kinds.RawParallel) -> kinds.RawSerial:
     """Converts `item` to a serial structure.
 
     Args:
@@ -414,14 +369,12 @@ def parallel_to_serial(
 
     """
     paths = [
-        list(utilities._rawify(serial)) for serial in utilities._rawify(item)
-    ]
+        list(utilities._rawify(serial)) for serial in utilities._rawify(item)]
     return list(itertools.chain.from_iterable(paths))
 
 
 def serial_to_adjacency(
-    item: composites.Serial | list[Hashable],
-) -> dict[Hashable, set[Hashable]]:
+    item: composites.Serial | kinds.RawSerial) -> kinds.RawAdjacency:
     """Converts `item` to an adjacency list.
 
     Args:
@@ -435,10 +388,10 @@ def serial_to_adjacency(
     """
     raw = utilities._rawify(item)
     if raw and check.is_parallel(raw):
-        return parallel_to_adjacency(item=raw)
+        return parallel_to_adjacency(item = raw)
     if not isinstance(raw, Collection) or isinstance(raw, str | bytes):
         raw = [raw]
-    adjacency: dict[Hashable, set[Hashable]] = {}
+    adjacency: kinds.RawAdjacency = {}
     for node in raw:
         adjacency.setdefault(node, set())
     for start, stop in itertools.pairwise(raw):
@@ -447,8 +400,7 @@ def serial_to_adjacency(
 
 
 def serial_to_edges(
-    item: composites.Serial | list[Hashable],
-) -> list[tuple[Hashable, Hashable]]:
+    item: composites.Serial | kinds.RawSerial) -> kinds.RawEdges:
     """Converts `item` to an edge list.
 
     Args:
@@ -458,12 +410,11 @@ def serial_to_edges(
         Edge list derived from `item`.
 
     """
-    return adjacency_to_edges(item=serial_to_adjacency(item=item))
+    return adjacency_to_edges(item = serial_to_adjacency(item = item))
 
 
 def serial_to_matrix(
-    item: composites.Serial | list[Hashable],
-) -> tuple[list[list[int]], list[Hashable]]:
+    item: composites.Serial | kinds.RawSerial) -> kinds.RawMatrix:
     """Converts `item` to an adjacency matrix.
 
     Args:
@@ -473,12 +424,11 @@ def serial_to_matrix(
         Adjacency matrix derived from `item`.
 
     """
-    return adjacency_to_matrix(item=serial_to_adjacency(item=item))
+    return adjacency_to_matrix(item = serial_to_adjacency(item = item))
 
 
 def serial_to_parallel(
-    item: composites.Serial | list[Hashable],
-) -> list[list[Hashable]]:
+    item: composites.Serial | kinds.RawSerial) -> kinds.RawParallel:
     """Converts `item` to a parallel structure.
 
     Args:

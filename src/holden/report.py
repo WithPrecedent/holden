@@ -29,22 +29,7 @@ from . import base, utilities, workshop
 if TYPE_CHECKING:
     from collections.abc import Hashable, Mapping, MutableSequence
 
-    from . import composites, graphs
-
-__all__: list[str] = [
-    "get_endpoints",
-    "get_endpoints_adjacency",
-    "get_endpoints_edges",
-    "get_endpoints_matrix",
-    "get_endpoints_parallel",
-    "get_endpoints_serial",
-    "get_roots",
-    "get_roots_adjacency",
-    "get_roots_edges",
-    "get_roots_matrix",
-    "get_roots_parallel",
-    "get_roots_serial",
-]
+    from . import composites, graphs, kinds
 
 
 def get_endpoints(item: Any) -> MutableSequence[Hashable]:
@@ -61,7 +46,7 @@ def get_endpoints(item: Any) -> MutableSequence[Hashable]:
         List of endpoints.
 
     """
-    return _dispatch("endpoints", item)
+    return _dispatch('endpoints', item)
 
 
 def get_roots(item: Any) -> MutableSequence[Hashable]:
@@ -78,12 +63,11 @@ def get_roots(item: Any) -> MutableSequence[Hashable]:
         List of roots.
 
     """
-    return _dispatch("roots", item)
+    return _dispatch('roots', item)
 
 
 def get_endpoints_adjacency(
-    item: graphs.Adjacency | dict[Hashable, set[Hashable]],
-) -> MutableSequence[Hashable]:
+    item: graphs.Adjacency | kinds.RawAdjacency) -> MutableSequence[Hashable]:
     """Returns the endpoints in `item`.
 
     Args:
@@ -98,8 +82,7 @@ def get_endpoints_adjacency(
 
 
 def get_roots_adjacency(
-    item: graphs.Adjacency | dict[Hashable, set[Hashable]],
-) -> MutableSequence[Hashable]:
+    item: graphs.Adjacency | kinds.RawAdjacency) -> MutableSequence[Hashable]:
     """Returns the roots in `item`.
 
     Args:
@@ -117,8 +100,7 @@ def get_roots_adjacency(
 
 
 def get_endpoints_edges(
-    item: graphs.Edges | list[tuple[Hashable, Hashable]],
-) -> MutableSequence[Hashable]:
+    item: graphs.Edges | kinds.RawEdges) -> MutableSequence[Hashable]:
     """Returns the endpoints in `item`.
 
     Args:
@@ -128,12 +110,12 @@ def get_endpoints_edges(
         List of endpoints.
 
     """
-    return get_endpoints_adjacency(item=workshop.edges_to_adjacency(item=item))
+    return get_endpoints_adjacency(
+        item = workshop.edges_to_adjacency(item = item))
 
 
 def get_roots_edges(
-    item: graphs.Edges | list[tuple[Hashable, Hashable]],
-) -> MutableSequence[Hashable]:
+    item: graphs.Edges | kinds.RawEdges) -> MutableSequence[Hashable]:
     """Returns the roots in `item`.
 
     Args:
@@ -143,12 +125,11 @@ def get_roots_edges(
         List of roots.
 
     """
-    return get_roots_adjacency(item=workshop.edges_to_adjacency(item=item))
+    return get_roots_adjacency(item = workshop.edges_to_adjacency(item = item))
 
 
 def get_endpoints_matrix(
-    item: graphs.Matrix | tuple[list[list[float]], list[Hashable]],
-) -> MutableSequence[Hashable]:
+    item: graphs.Matrix | kinds.RawMatrix) -> MutableSequence[Hashable]:
     """Returns the endpoints in `item`.
 
     Args:
@@ -158,12 +139,12 @@ def get_endpoints_matrix(
         List of endpoints.
 
     """
-    return get_endpoints_adjacency(item=workshop.matrix_to_adjacency(item=item))
+    return get_endpoints_adjacency(
+        item = workshop.matrix_to_adjacency(item = item))
 
 
 def get_roots_matrix(
-    item: graphs.Matrix | tuple[list[list[float]], list[Hashable]],
-) -> MutableSequence[Hashable]:
+    item: graphs.Matrix | kinds.RawMatrix) -> MutableSequence[Hashable]:
     """Returns the roots in `item`.
 
     Args:
@@ -173,12 +154,11 @@ def get_roots_matrix(
         List of roots.
 
     """
-    return get_roots_adjacency(item=workshop.matrix_to_adjacency(item=item))
+    return get_roots_adjacency(item = workshop.matrix_to_adjacency(item = item))
 
 
 def get_endpoints_parallel(
-    item: composites.Parallel | list[list[Hashable]],
-) -> MutableSequence[Hashable]:
+    item: composites.Parallel | kinds.RawParallel) -> MutableSequence[Hashable]:
     """Returns the endpoints in `item`.
 
     Args:
@@ -193,8 +173,7 @@ def get_endpoints_parallel(
 
 
 def get_roots_parallel(
-    item: composites.Parallel | list[list[Hashable]],
-) -> MutableSequence[Hashable]:
+    item: composites.Parallel | kinds.RawParallel) -> MutableSequence[Hashable]:
     """Returns the roots in `item`.
 
     Args:
@@ -209,8 +188,7 @@ def get_roots_parallel(
 
 
 def get_endpoints_serial(
-    item: composites.Serial | list[Hashable],
-) -> MutableSequence[Hashable]:
+    item: composites.Serial | kinds.RawSerial) -> MutableSequence[Hashable]:
     """Returns the endpoints in `item`.
 
     Args:
@@ -225,8 +203,7 @@ def get_endpoints_serial(
 
 
 def get_roots_serial(
-    item: composites.Serial | list[Hashable],
-) -> MutableSequence[Hashable]:
+    item: composites.Serial | kinds.RawSerial) -> MutableSequence[Hashable]:
     """Returns the roots in `item`.
 
     Args:
@@ -255,16 +232,15 @@ def _dispatch(kind: str, item: Any) -> MutableSequence[Hashable]:
 
     """
     form = base.classify(item)
-    function = globals().get(f"get_{kind}_{form}")
+    function = globals().get(f'get_{kind}_{form}')
     if function is None:
-        raise NotImplementedError(f"get_{kind} does not support {form} forms")
+        raise NotImplementedError(f'get_{kind} does not support {form} forms')
     result: MutableSequence[Hashable] = function(item)
     return result
 
 
 def _nodes_adjacency(
-    item: Mapping[Hashable, set[Hashable]],
-) -> list[Hashable]:
+    item: Mapping[Hashable, set[Hashable]]) -> list[Hashable]:
     """Returns every node in an adjacency list, including dangling nodes.
 
     Args:

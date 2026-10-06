@@ -81,7 +81,6 @@ branch = true
 source = ["holden", "tests"]
 
 
-
 [tool.mypy]
 files = ['src']
 disallow_untyped_defs = true
@@ -133,13 +132,13 @@ lint.ignore = [
     "EXE002",  # No shebang is present in an executable file
     "FBT001",  # Boolean positional arg in function definition
     "G004",  # Logging statement uses f-string
+    "I001",  # Import block is un-sorted or un-formatted - wraps with dangling parentheses
     "PTH123",  # `open()` should be replaced by `Path.open()`
     "PLR0911",  # Too many return statements
     "PLR0912",  # Too many branches
     "PLR0913",  # Too many arguments to function call
     "PLR0915",  # Too many statements
     "PLR1711", # Useless 'return' at the end of function
-    "Q000",  # Single quotes found but double quotes preferred
     "RET505",  # Unnecessary `else` after `return` statement
     # "S0001",  # Use of assert detected
     "SLF001", # Private member accessed
@@ -201,7 +200,7 @@ suppress-none-returning = true
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
-inline-quotes = "double"
+inline-quotes = "single"
 multiline-quotes = "double"
 
 [tool.ruff.lint.flake8-type-checking]

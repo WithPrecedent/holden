@@ -23,7 +23,9 @@ from . import base, check, traits, utilities
 if TYPE_CHECKING:
     from collections.abc import Hashable
 
-__all__: list[str] = ["Parallel", "Serial"]
+    from . import kinds
+
+__all__: list[str] = ['Parallel', 'Serial']
 
 
 @dataclasses.dataclass
@@ -32,8 +34,7 @@ class Parallel(
     traits.Directed,
     traits.Fungible,
     traits.Exportable,
-    bunches.Listing,
-):
+    bunches.Listing):
     """Base class for a list of serial composites.
 
     Each path in a Parallel is a `list` of nodes (or a `Serial`) that goes from
@@ -47,8 +48,7 @@ class Parallel(
     """
 
     contents: MutableSequence[Serial | MutableSequence[Hashable]] = (
-        dataclasses.field(default_factory=list)
-    )
+        dataclasses.field(default_factory = list))
 
     """ Properties """
 
@@ -56,8 +56,7 @@ class Parallel(
     def nodes(self) -> set[Hashable]:
         """Returns a set of all nodes in the stored composite."""
         return {
-            node for path in self.contents for node in utilities._rawify(path)
-        }
+            node for path in self.contents for node in utilities._rawify(path)}
 
     """ Public Methods """
 
@@ -77,12 +76,16 @@ class Parallel(
         """
         if isinstance(item, MutableSequence):
             if not item or not check.is_serial(item):
-                raise ValueError("A path must be a non-empty list of nodes")
+                raise ValueError('A path must be a non-empty list of nodes')
             self.contents.append(item)
             return
         super().add(item, **kwargs)
 
-    def append(self, item: Any, **kwargs: Any) -> None:
+    def append(
+        self,
+        item: Any,
+        attachment: Hashable | MutableSequence[Hashable] | None = None,  # noqa: ARG002
+        **kwargs: Any) -> None:
         """Appends `item` to the end of every path.
 
         If `item` has more than one path, every existing path is followed by
@@ -90,6 +93,8 @@ class Parallel(
 
         Args:
             item: node, path, or other composite data structure (or raw form).
+            attachment: unused. It is accepted so that the method matches
+                `Directed.append`, because paths always attach at their ends.
             **kwargs: additional keyword arguments.
 
         """
@@ -102,8 +107,7 @@ class Parallel(
         self.contents[:] = [
             [*utilities._rawify(path), *new_path]
             for path in self.contents
-            for new_path in other
-        ]
+            for new_path in other]
 
     def prepend(self, item: Any, **kwargs: Any) -> None:
         """Prepends `item` to the start of every path.
@@ -125,8 +129,7 @@ class Parallel(
         self.contents[:] = [
             [*new_path, *utilities._rawify(path)]
             for new_path in other
-            for path in self.contents
-        ]
+            for path in self.contents]
 
     """ Private Methods """
 
@@ -154,8 +157,7 @@ class Parallel(
             nodes = utilities._rawify(path)
             nodes[:] = [node for node in nodes if node != item]
         self.contents[:] = [
-            path for path in self.contents if utilities._rawify(path)
-        ]
+            path for path in self.contents if utilities._rawify(path)]
 
     def _merge(self, item: Any, **kwargs: Any) -> None:
         """Combines `item` with the stored composite.
@@ -171,8 +173,7 @@ class Parallel(
     def _subset(
         self,
         include: list[Hashable] | None = None,
-        exclude: list[Hashable] | None = None,
-    ) -> Parallel:
+        exclude: list[Hashable] | None = None) -> Parallel:
         """Returns a new composite with a subset of the stored nodes.
 
         Args:
@@ -187,8 +188,7 @@ class Parallel(
         """
         paths = [
             self._selected(utilities._rawify(path), include, exclude)
-            for path in self.contents
-        ]
+            for path in self.contents]
         new_composite = copy.copy(self)
         new_composite.contents = [path for path in paths if path]
         return new_composite
@@ -200,8 +200,7 @@ class Serial(
     traits.Directed,
     traits.Fungible,
     traits.Exportable,
-    bunches.DictList,
-):
+    bunches.DictList):
     """Base class for serial composites.
 
     A Serial is a single path of nodes. It is `Directed`, `Fungible`, and
@@ -213,8 +212,7 @@ class Serial(
     """
 
     contents: MutableSequence[Hashable] = dataclasses.field(
-        default_factory=list
-    )
+        default_factory = list)
 
     """ Properties """
 
@@ -225,12 +223,18 @@ class Serial(
 
     """ Public Methods """
 
-    def append(self, item: Any, **kwargs: Any) -> None:
+    def append(
+        self,
+        item: Any,
+        attachment: Hashable | MutableSequence[Hashable] | None = None,  # noqa: ARG002
+        **kwargs: Any) -> None:
         """Appends `item` to the end of the stored composite.
 
         Args:
             item: a node, another composite data structure (or raw form) whose
                 nodes are added in order.
+            attachment: unused. It is accepted so that the method matches
+                `Directed.append`, because nodes are always added at the end.
             **kwargs: additional keyword arguments.
 
         Raises:
@@ -286,13 +290,12 @@ class Serial(
             **kwargs: additional keyword arguments.
 
         """
-        self.contents.extend(base._to_raw(item, "serial"))
+        self.contents.extend(base._to_raw(item, 'serial'))
 
     def _subset(
         self,
         include: list[Hashable] | None = None,
-        exclude: list[Hashable] | None = None,
-    ) -> Serial:
+        exclude: list[Hashable] | None = None) -> Serial:
         """Returns a new composite with a subset of the stored nodes.
 
         Args:
@@ -341,18 +344,15 @@ def _to_nodes(item: Any) -> list[Hashable]:
     try:
         return list(
             utilities._rawify(
-                base.transform(item, "serial", raise_same_error=False)
-            )
-        )
+                base.transform(item, 'serial', raise_same_error = False)))
     except TypeError:
         if check.is_node(item):
             return [item]
         raise TypeError(
-            "item is not a recognized composite or node type"
-        ) from None
+            'item is not a recognized composite or node type') from None
 
 
-def _to_paths(item: Any) -> list[list[Hashable]]:
+def _to_paths(item: Any) -> kinds.RawParallel:
     """Returns the paths of `item` for use in a parallel structure.
 
     Args:
@@ -367,12 +367,10 @@ def _to_paths(item: Any) -> list[list[Hashable]]:
     """
     try:
         paths = utilities._rawify(
-            base.transform(item, "parallel", raise_same_error=False)
-        )
+            base.transform(item, 'parallel', raise_same_error = False))
     except TypeError:
         if check.is_node(item):
             return [[item]]
         raise TypeError(
-            "item is not a recognized composite or node type"
-        ) from None
+            'item is not a recognized composite or node type') from None
     return [list(utilities._rawify(path)) for path in paths]

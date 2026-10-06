@@ -18,23 +18,13 @@ from __future__ import annotations
 import abc
 import dataclasses
 from typing import TYPE_CHECKING, Any, Self, cast
+from collections.abc import Hashable, MutableMapping, MutableSequence
 
 from . import base, check, export, report, traverse, utilities
 
 if TYPE_CHECKING:
     import pathlib
-    from collections.abc import Hashable, MutableMapping
-
-    from . import composites, graphs
-
-__all__: list[str] = [
-    "Directed",
-    "Exportable",
-    "Fungible",
-    "Labeled",
-    "Storage",
-    "Weighted",
-]
+    from . import composites, graphs, kinds
 
 
 @dataclasses.dataclass
@@ -62,7 +52,11 @@ class Directed(abc.ABC):  # noqa: B024
 
     """ Public Methods """
 
-    def append(self, item: Any, **kwargs: Any) -> None:
+    def append(
+        self,
+        item: Any,
+        attachment: Hashable | MutableSequence[Hashable] | None = None,
+        **kwargs: Any) -> None:
         """Appends `item` to the endpoint(s) of the stored composite.
 
         Appending merges `item` into the stored composite and creates an edge
@@ -71,6 +65,9 @@ class Directed(abc.ABC):  # noqa: B024
         Args:
             item: a node, another composite data structure, or a raw form of a
                 composite data structure to add to the stored composite.
+            attachment: the endpoint or endpoints to attach `item` to.
+                If `None`, all existing endpoints of the stored composite are
+                used.
             **kwargs: additional keyword arguments passed to `add`.
 
         Raises:
@@ -79,10 +76,13 @@ class Directed(abc.ABC):  # noqa: B024
 
         """
         graph: Any = self
-        endpoints = self.endpoint
+        if attachment is None:
+            endpoints = self.endpoint
+        else:
+            endpoints = utilities._listify(attachment)
         other = _to_adjacency(item)
         if other is not None:
-            graph.merge(item=item)
+            graph.merge(item = item)
             for endpoint in endpoints:
                 for root in report.get_roots_adjacency(other):
                     if endpoint != root:
@@ -93,7 +93,7 @@ class Directed(abc.ABC):  # noqa: B024
                 if endpoint != item:
                     graph.connect((endpoint, item))
         else:
-            raise TypeError("item is not a recognized graph or node type")
+            raise TypeError('item is not a recognized graph or node type')
 
     def prepend(self, item: Any, **kwargs: Any) -> None:
         """Prepends `item` to the root(s) of the stored composite.
@@ -115,7 +115,7 @@ class Directed(abc.ABC):  # noqa: B024
         roots = self.root
         other = _to_adjacency(item)
         if other is not None:
-            graph.merge(item=item)
+            graph.merge(item = item)
             for root in roots:
                 for endpoint in report.get_endpoints_adjacency(other):
                     if endpoint != root:
@@ -126,13 +126,12 @@ class Directed(abc.ABC):  # noqa: B024
                 if root != item:
                     graph.connect((item, root))
         else:
-            raise TypeError("item is not a recognized graph or node type")
+            raise TypeError('item is not a recognized graph or node type')
 
     def walk(
         self,
         start: Hashable | list[Hashable] | None = None,
-        stop: Hashable | list[Hashable] | None = None,
-    ) -> list[list[Hashable]]:
+        stop: Hashable | list[Hashable] | None = None) -> kinds.RawParallel:
         """Returns all paths in the stored composite from `start` to `stop`.
 
         Args:
@@ -146,13 +145,12 @@ class Directed(abc.ABC):  # noqa: B024
                 to `stop`.
 
         """
-        return traverse.walk(self, start=start, stop=stop)
+        return traverse.walk(self, start = start, stop = stop)
 
     """ Private Methods """
 
     def _include(
-        self, item: Hashable, others: list[Hashable], **kwargs: Any
-    ) -> None:
+        self, item: Hashable, others: list[Hashable], **kwargs: Any) -> None:
         """Adds a node to the stored composite if it is not already stored.
 
         Args:
@@ -166,12 +164,11 @@ class Directed(abc.ABC):  # noqa: B024
 
         """
         graph: Any = self
-        if getattr(self, "_implicit_nodes", False):
+        if getattr(self, '_implicit_nodes', False):
             if not others:
                 raise ValueError(
-                    "A node cannot be stored by itself in this composite "
-                    "data structure"
-                )
+                    'A node cannot be stored by itself in this composite '
+                    'data structure')
         elif item not in graph:
             graph.add(item, **kwargs)
 
@@ -187,7 +184,7 @@ class Directed(abc.ABC):  # noqa: B024
             This instance after `other` has been appended.
 
         """
-        self.append(item=other)
+        self.append(item = other)
         return self
 
     def __iadd__(self, other: Any) -> Self:
@@ -200,7 +197,7 @@ class Directed(abc.ABC):  # noqa: B024
             This instance after `other` has been appended.
 
         """
-        self.append(item=other)
+        self.append(item = other)
         return self
 
     def __radd__(self, other: Any) -> Self:
@@ -213,7 +210,7 @@ class Directed(abc.ABC):  # noqa: B024
             This instance after `other` has been prepended.
 
         """
-        self.prepend(item=other)
+        self.prepend(item = other)
         return self
 
 
@@ -227,8 +224,7 @@ class Exportable(abc.ABC):  # noqa: B024
         self,
         path: str | pathlib.Path | None = None,
         name: str | None = None,
-        settings: dict[str, Any] | None = None,
-    ) -> str:
+        settings: dict[str, Any] | None = None) -> str:
         """Converts the stored composite to a dot format.
 
         Args:
@@ -244,15 +240,14 @@ class Exportable(abc.ABC):  # noqa: B024
         """
         name = name or utilities._namify(self)
         return export.to_dot(
-            item=self, path=path, name=name or "holden", settings=settings
-        )
+            item = self, path = path, name = name or 'holden',
+                settings = settings)
 
     def to_mermaid(
         self,
         path: str | pathlib.Path | None = None,
         name: str | None = None,
-        settings: dict[str, Any] | None = None,
-    ) -> str:
+        settings: dict[str, Any] | None = None) -> str:
         """Converts the stored composite to a mermaid format.
 
         Args:
@@ -268,8 +263,8 @@ class Exportable(abc.ABC):  # noqa: B024
         """
         name = name or utilities._namify(self)
         return export.to_mermaid(
-            item=self, path=path, name=name or "holden", settings=settings
-        )
+            item = self, path = path, name = name or 'holden',
+                settings = settings)
 
 
 @dataclasses.dataclass
@@ -289,48 +284,42 @@ class Fungible(abc.ABC):  # noqa: B024
     def adjacency(self) -> graphs.Adjacency:
         """Returns the stored composite as an Adjacency."""
         return cast(
-            "graphs.Adjacency",
-            base.Forms.transform(self, "adjacency", raise_same_error=False),
-        )
+            'graphs.Adjacency',
+            base.Forms.transform(self, 'adjacency', raise_same_error = False))
 
     @property
     def edges(self) -> graphs.Edges:
         """Returns the stored composite as an Edges."""
         return cast(
-            "graphs.Edges",
-            base.Forms.transform(self, "edges", raise_same_error=False),
-        )
+            'graphs.Edges',
+            base.Forms.transform(self, 'edges', raise_same_error = False))
 
     @property
     def matrix(self) -> graphs.Matrix:
         """Returns the stored composite as a Matrix."""
         return cast(
-            "graphs.Matrix",
-            base.Forms.transform(self, "matrix", raise_same_error=False),
-        )
+            'graphs.Matrix',
+            base.Forms.transform(self, 'matrix', raise_same_error = False))
 
     @property
     def parallel(self) -> composites.Parallel:
         """Returns the stored composite as a Parallel."""
         return cast(
-            "composites.Parallel",
-            base.Forms.transform(self, "parallel", raise_same_error=False),
-        )
+            'composites.Parallel',
+            base.Forms.transform(self, 'parallel', raise_same_error = False))
 
     @property
     def serial(self) -> composites.Serial:
         """Returns the stored composite as a Serial."""
         return cast(
-            "composites.Serial",
-            base.Forms.transform(self, "serial", raise_same_error=False),
-        )
+            'composites.Serial',
+            base.Forms.transform(self, 'serial', raise_same_error = False))
 
     """ Class Methods """
 
     @classmethod
     def from_adjacency(
-        cls, item: graphs.Adjacency | dict[Hashable, set[Hashable]]
-    ) -> Self:
+        cls, item: graphs.Adjacency | kinds.RawAdjacency) -> Self:
         """Creates a composite data structure from an adjacency list.
 
         Args:
@@ -340,12 +329,11 @@ class Fungible(abc.ABC):  # noqa: B024
             New instance of this class derived from `item`.
 
         """
-        return cls._from(item, "adjacency")
+        return cls._from(item, 'adjacency')
 
     @classmethod
     def from_edges(
-        cls, item: graphs.Edges | list[tuple[Hashable, Hashable]]
-    ) -> Self:
+        cls, item: graphs.Edges | kinds.RawEdges) -> Self:
         """Creates a composite data structure from an edge list.
 
         Args:
@@ -355,12 +343,11 @@ class Fungible(abc.ABC):  # noqa: B024
             New instance of this class derived from `item`.
 
         """
-        return cls._from(item, "edges")
+        return cls._from(item, 'edges')
 
     @classmethod
     def from_matrix(
-        cls, item: graphs.Matrix | tuple[list[list[float]], list[Hashable]]
-    ) -> Self:
+        cls, item: graphs.Matrix | kinds.RawMatrix) -> Self:
         """Creates a composite data structure from an adjacency matrix.
 
         Args:
@@ -371,12 +358,11 @@ class Fungible(abc.ABC):  # noqa: B024
             New instance of this class derived from `item`.
 
         """
-        return cls._from(item, "matrix")
+        return cls._from(item, 'matrix')
 
     @classmethod
     def from_parallel(
-        cls, item: composites.Parallel | list[list[Hashable]]
-    ) -> Self:
+        cls, item: composites.Parallel | kinds.RawParallel) -> Self:
         """Creates a composite data structure from a parallel structure.
 
         Args:
@@ -386,10 +372,10 @@ class Fungible(abc.ABC):  # noqa: B024
             New instance of this class derived from `item`.
 
         """
-        return cls._from(item, "parallel")
+        return cls._from(item, 'parallel')
 
     @classmethod
-    def from_serial(cls, item: composites.Serial | list[Hashable]) -> Self:
+    def from_serial(cls, item: composites.Serial | kinds.RawSerial) -> Self:
         """Creates a composite data structure from a serial structure.
 
         Args:
@@ -399,7 +385,7 @@ class Fungible(abc.ABC):  # noqa: B024
             New instance of this class derived from `item`.
 
         """
-        return cls._from(item, "serial")
+        return cls._from(item, 'serial')
 
     @classmethod
     def _from(cls, item: Any, form: str) -> Self:
@@ -416,14 +402,14 @@ class Fungible(abc.ABC):  # noqa: B024
             New instance of this class.
 
         """
-        checker = getattr(check, f"is_{form}")
+        checker = getattr(check, f'is_{form}')
         if base.classify(item) != form and not checker(item):
-            raise TypeError(f"item is not a(n) {form} form")
+            raise TypeError(f'item is not a(n) {form} form')
         output = base.classify(cls)
         raw = utilities._rawify(
-            base.transform(item, output, raise_same_error=False)
-        )
-        return cast("Self", base._wrap(cls, output, base._copy_raw(raw)))  # type: ignore[arg-type]
+            base.transform(item, output, raise_same_error = False))
+        return cast('Self', base._wrap(
+            cls, output, base._copy_raw(raw)))  # type: ignore[arg-type]
 
 
 @dataclasses.dataclass
@@ -450,7 +436,7 @@ class Labeled(abc.ABC):  # noqa: B024
         """Initializes instance."""
         # To support usage as a mixin, it is important to call other base class
         # '__post_init__' methods, if they exist.
-        parent = getattr(super(), "__post_init__", None)
+        parent = getattr(super(), '__post_init__', None)
         if parent is not None:
             parent()
         self.name = self.name or self._namify()
@@ -473,11 +459,11 @@ class Labeled(abc.ABC):  # noqa: B024
             `str` label for part of a composite data structure.
 
         """
-        class_name = getattr(type(self), "name", None)
+        class_name = getattr(type(self), 'name', None)
         if isinstance(class_name, str):
             return class_name
         if self.contents is None:
-            return "none"
+            return 'none'
         return str(utilities._namify(self.contents))
 
     """ Dunder Methods """
@@ -503,7 +489,8 @@ class Labeled(abc.ABC):  # noqa: B024
 
         """
         try:
-            return str(self.name) == str(other.name)  # type: ignore[attr-defined]
+            return str(self.name) == str(
+                other.name)  # type: ignore[attr-defined]
         except AttributeError:
             return str(self.name) == other
 
@@ -522,8 +509,7 @@ class Storage(abc.ABC):  # noqa: B024
     """
 
     library: MutableMapping[Hashable, Any] = dataclasses.field(
-        default_factory=dict
-    )
+        default_factory = dict)
 
     """ Public Methods """
 
@@ -552,7 +538,7 @@ class Storage(abc.ABC):  # noqa: B024
         try:
             return self.library[node]
         except KeyError as error:
-            raise KeyError(f"There is no data stored for {node}") from error
+            raise KeyError(f'There is no data stored for {node}') from error
 
     def store(self, node: Hashable, item: Any) -> None:
         """Stores `item` as the data for `node`.
@@ -568,7 +554,7 @@ class Storage(abc.ABC):  # noqa: B024
 
         """
         if isinstance(self, base.Composite) and node not in self:
-            raise KeyError(f"{node} is not in the composite data structure")
+            raise KeyError(f'{node} is not in the composite data structure')
         self.library[node] = item
 
 
@@ -595,7 +581,7 @@ class Weighted(abc.ABC):  # noqa: B024
         return float(self.weight)
 
 
-def _to_adjacency(item: Any) -> dict[Hashable, set[Hashable]] | None:
+def _to_adjacency(item: Any) -> kinds.RawAdjacency | None:
     """Returns `item` as a raw adjacency list if it is a composite form.
 
     Args:
@@ -608,8 +594,7 @@ def _to_adjacency(item: Any) -> dict[Hashable, set[Hashable]] | None:
     """
     try:
         raw = utilities._rawify(
-            base.transform(item, "adjacency", raise_same_error=False)
-        )
+            base.transform(item, 'adjacency', raise_same_error = False))
     except TypeError:
         return None
-    return cast("dict[Hashable, set[Hashable]]", raw)
+    return cast('kinds.RawAdjacency', raw)

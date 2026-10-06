@@ -24,7 +24,8 @@ def test_doc_examples_run(name: str) -> None:
     sys.modules[module.__name__] = module
     try:
         for block in blocks:
-            exec(compile(block, f'{name}.md', 'exec'), module.__dict__)  # noqa: S102
+            exec(compile(block, f'{name}.md', 'exec'),  # noqa: S102
+                module.__dict__)
     finally:
         del sys.modules[module.__name__]
         for module_name, function in (

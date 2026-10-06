@@ -56,7 +56,8 @@ def test_adjacency_to_parallel(adjacency: dict[str, set[str]]) -> None:
 
 def test_adjacency_to_serial(adjacency: dict[str, set[str]]) -> None:
     """Tests `adjacency_to_serial`."""
-    assert workshop.adjacency_to_serial({'a': {'b'}, 'b': {'c'}, 'c': set()}) == [
+    assert workshop.adjacency_to_serial(
+        {'a': {'b'}, 'b': {'c'}, 'c': set()}) == [
         'a', 'b', 'c']
     assert workshop.adjacency_to_serial(adjacency) == [
         'a', 'b', 'a', 'd', 'e', 'c', 'd', 'e']
@@ -130,7 +131,8 @@ def test_parallel_to_adjacency(adjacency: dict[str, set[str]]) -> None:
         [holden.Serial(['a', 'b']), ['b', 'c']]) == {
             'a': {'b'}, 'b': {'c'}, 'c': set()}
     # Nodes that are in more than one path keep all of their connections
-    assert workshop.parallel_to_adjacency([['a', 'b'], ['b', 'c'], ['a', 'c']]) == {
+    assert workshop.parallel_to_adjacency(
+        [['a', 'b'], ['b', 'c'], ['a', 'c']]) == {
         'a': {'b', 'c'}, 'b': {'c'}, 'c': set()}
 
 
@@ -159,14 +161,17 @@ def test_serial_to_adjacency() -> None:
         'a': {'b'}, 'b': {'c'}, 'c': set()}
     assert workshop.serial_to_adjacency(['a']) == {'a': set()}
     assert workshop.serial_to_adjacency([]) == {}
-    assert workshop.serial_to_adjacency('a') == {'a': set()}  # type: ignore[arg-type]
-    assert workshop.serial_to_adjacency(5) == {5: set()}  # type: ignore[arg-type]
+    assert workshop.serial_to_adjacency('a') == {  # type: ignore[arg-type]
+        'a': set()}
+    assert workshop.serial_to_adjacency(5) == {  # type: ignore[arg-type]
+        5: set()}
     assert workshop.serial_to_adjacency(holden.Serial(['a', 'b'])) == {
         'a': {'b'}, 'b': set()}
     assert workshop.serial_to_adjacency(['a', 'b', 'a']) == {
         'a': {'b'}, 'b': {'a'}}
     # A parallel structure is also accepted
-    assert workshop.serial_to_adjacency([['a', 'b'], ['b', 'c']]) == {  # type: ignore[arg-type]
+    assert workshop.serial_to_adjacency(  # type: ignore[arg-type]
+        [['a', 'b'], ['b', 'c']]) == {
         'a': {'b'}, 'b': {'c'}, 'c': set()}
 
 
@@ -219,7 +224,8 @@ def test_add_transformer() -> None:
     """Tests `add_transformer`."""
     workshop.add_transformer('serial_to_thing', lambda item: ('thing', item))
     try:
-        assert workshop.serial_to_thing(['a']) == ('thing', ['a'])  # type: ignore[attr-defined]
+        assert workshop.serial_to_thing(  # type: ignore[attr-defined]
+            ['a']) == ('thing', ['a'])
         for name in ('thing', 'to_thing', 'serial_to_', '_to_thing'):
             with pytest.raises(ValueError, match = 'format'):
                 workshop.add_transformer(name, lambda item: item)

@@ -75,6 +75,23 @@ class TestDirected:
             'a': {'b'}, 'b': {'z'}, 'c': {'d'}, 'd': {'z'}, 'z': set()}
         assert system.endpoint == ['z']
 
+    def test_append_with_attachment(self) -> None:
+        """Tests appending to chosen endpoints instead of all of them."""
+        system = make_system()
+        system.append('z', attachment = 'b')
+        assert system['b'] == {'z'}
+        assert system['d'] == set()
+        system = make_system()
+        system.append('z', attachment = ['b', 'd'])
+        assert system['b'] == {'z'}
+        assert system['d'] == {'z'}
+        system = make_system()
+        system.append(
+            holden.System.from_edges([('x', 'y')]), attachment = 'd')
+        assert system['d'] == {'x'}
+        assert system['b'] == set()
+        assert system['x'] == {'y'}
+
     def test_append_existing_node(self) -> None:
         """Tests that appending a node that is already stored connects it."""
         system = holden.System.from_edges([('a', 'b'), ('a', 'c')])
@@ -199,7 +216,8 @@ class TestExportable:
         system = make_system()
         dot = system.to_dot()
         assert dot == 'digraph system {\na -> b\nc -> d\n}\n'
-        assert system.to_dot(name = 'graph one').startswith('digraph "graph one" {')
+        assert system.to_dot(name = 'graph one').startswith(
+            'digraph "graph one" {')
         path = tmp_path / 'system.dot'
         assert system.to_dot(path = path, settings = {'rankdir': 'LR'}) == (
             'digraph system {\nrankdir=LR;\na -> b\nc -> d\n}\n')
@@ -267,7 +285,8 @@ class TestFungible:
         assert holden.System.from_edges(holden.Edges(edges)) == expected
         assert holden.System.from_matrix(
             holden.Matrix(matrix[0], matrix[1])) == expected
-        assert holden.System.from_adjacency(holden.System(adjacency)) == expected
+        assert holden.System.from_adjacency(
+            holden.System(adjacency)) == expected
         assert holden.System.from_parallel(holden.Parallel(
             [['a', 'b'], ['a', 'd', 'e'], ['c', 'd', 'e']])) == expected
         assert holden.System.from_serial(holden.Serial(['a', 'b'])) == (

@@ -134,7 +134,8 @@ def test_to_mermaid_isolated_nodes() -> None:
 def test_to_mermaid_saves_file(tmp_path: pathlib.Path) -> None:
     """Tests writing to a file."""
     system = holden.System.from_edges([('a', 'b')])
-    result = export.to_mermaid(system, path = tmp_path / 'one.mmd', name = 'one')
+    result = export.to_mermaid(system, path = tmp_path / 'one.mmd',
+        name = 'one')
     assert (tmp_path / 'one.mmd').read_text() == result
 
 

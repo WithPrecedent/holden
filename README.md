@@ -18,7 +18,7 @@
 <img src="https://media.giphy.com/media/3ornjRyce6SukW8INi/giphy.gif" />
 </p>
 
-This package is named after the Roci's captain in *The Expanse*, James Holden, who was adept at furling his brow and recognizing connections. In a similar vein, **holden** offers users easy-to-use composite data structures without the overhead or complexity of larger graph packages. The included graphs are built for basic workflow design or analysis of conditional relationships. They are not designed for big data network analysis or similar large-scale projects (although nothing prevents you from using them in that manner). Rather, the goal of **holden** is to provide lightweight, turnkey, extensible composite data structures without all of the stuff you don't need in packages like [networkx](https://github.com/networkx/networkx). **holden** serves as the base for my [chrisjen](https://github.com/WithPrecedent/chrisjen) workflow package (similarly named for a character from The Expanse), but I have made **holden** available separately for easier integration into other uses.
+This package is named after the Roci's captain in *The Expanse*, James Holden, who was adept at furling his brow and recognizing connections. In a similar vein, `holden` offers users easy-to-use composite data structures without the overhead or complexity of larger graph packages. The included graphs are built for basic workflow design or analysis of conditional relationships. They are not designed for big data network analysis or similar large-scale projects (although nothing prevents you from using them in that manner). Rather, the goal of `holden` is to provide lightweight, turnkey, extensible composite data structures without all of the stuff you don't need in packages like [networkx](https://github.com/networkx/networkx). `holden` serves as the base for my [chrisjen](https://github.com/WithPrecedent/chrisjen) workflow package (similarly named for a character from The Expanse), but I have made `holden` available separately for easier integration into other uses.
 
 ## Why use holden?
 
@@ -43,7 +43,7 @@ Paths through a graph are stored in two other composite data structures:
 
 `System` is a ready-to-use directed graph that is stored as an adjacency list. It combines the `Adjacency` form with the traits described below.
 
-You can use **holden** without any regard to what is going on inside the graph. The methods and properties are the same regardless of which internal format is used. But the different forms are provided in case you want to utilize the advantages or avoid certain drawbacks of a particular form. Unless you want to design a different graph form, you should design subclasses to inherit from one of the
+You can use `holden` without any regard to what is going on inside the graph. The methods and properties are the same regardless of which internal format is used. But the different forms are provided in case you want to utilize the advantages or avoid certain drawbacks of a particular form. Unless you want to design a different graph form, you should design subclasses to inherit from one of the
 included forms and add mixins to expand functionality.
 
 ## Flexible
@@ -56,18 +56,18 @@ included forms and add mixins to expand functionality.
 * Has methods to convert and export to other graph formats (`Exportable`)
 * Ability to store node data internally for easy reuse separate from the graph structure (`Storage`)
 
-**holden** provides transformation methods between all of the internal storage forms as well as functions to convert graphs into a set of paths (`Parallel`) or a single path (`Serial`). The transformation methods can be used as class properties or with functions using an easy-to-understand naming convention (e.g., `adjacency_to_edges` or `edges_to_parallel`).
+`holden` provides transformation methods between all of the internal storage forms as well as functions to convert graphs into a set of paths (`Parallel`) or a single path (`Serial`). The transformation methods can be used as class properties or with functions using an easy-to-understand naming convention (e.g., `adjacency_to_edges` or `edges_to_parallel`).
 
-**holden**'s framework supports a wide range of coding styles. You can create complex multiple inheritance structures with mixins galore or simpler, compositional objects. Even though the data structures are necessarily object-oriented, all of the tools to modify them are also available as functions, for those who prefer a more functional approach to programming.
+`holden`'s framework supports a wide range of coding styles. You can create complex multiple inheritance structures with mixins galore or simpler, compositional objects. Even though the data structures are necessarily object-oriented, all of the tools to modify them are also available as functions, for those who prefer a more functional approach to programming.
 
-The package also uses structural subtyping that allows raw forms of the supported composite subtypes to be used and recognized as the same forms for which **holden** includes classes. So, for example, the `is_adjacency` function will recognize any object with a `dict[Node, set[Node]]` structure and `isinstance(item, holden.Adjacency)` will similarly return `True` for a raw adjacency list.
+The package also uses structural subtyping that allows raw forms of the supported composite subtypes to be used and recognized as the same forms for which `holden` includes classes. So, for example, the `is_adjacency` function will recognize any object with a `dict[Node, set[Node]]` structure and `isinstance(item, holden.Adjacency)` will similarly return `True` for a raw adjacency list.
 
 
 ## Getting started
 
 ### Requirements
 
-**holden** requires Python 3.11 or later. It runs on Linux, macOS, and Windows. Its only dependencies are [bunches](https://github.com/WithPrecedent/bunches) (the base classes for its collections) and [wonka](https://github.com/WithPrecedent/wonka) (the base class for its registry). Both are installed automatically by `pip`.
+`holden` requires Python 3.11 or later. It runs on Linux, macOS, and Windows. Its only dependencies are [bunches](https://github.com/WithPrecedent/bunches) (the base classes for its collections) and [wonka](https://github.com/WithPrecedent/wonka) (the base class for its registry). Both are installed automatically by `pip`.
 
 ### Installation
 
@@ -170,7 +170,7 @@ holden.transform([("a", "b"), ("b", "c")], "serial")  # ['a', 'b', 'c']
 
 #### Use raw structures
 
-Because **holden** uses structural subtyping, you can ask about the form of any object. The `is_{form}` functions check the structure and `classify` returns the name of the form.
+Because `holden` uses structural subtyping, you can ask about the form of any object. The `is_{form}` functions check the structure and `classify` returns the name of the form.
 
 ```python
 raw = {"a": {"b"}, "b": set()}
@@ -287,7 +287,7 @@ Contributors are always welcome. Feel free to grab an [issue](https://www.github
 
 ## Acknowledgments
 
-**holden** is named for James Holden and his crew from *The Expanse* by James S. A. Corey (the pen name of Daniel Abraham and Ty Franck). The graph algorithms for finding paths are adapted from [Python Patterns - Implementing Graphs](https://www.python.org/doc/essays/graphs/) by Guido van Rossum, and the sliding window function is adapted from [more-itertools](https://github.com/more-itertools/more-itertools).
+`holden` is named for James Holden and his crew from *The Expanse* by James S. A. Corey (the pen name of Daniel Abraham and Ty Franck). The graph algorithms for finding paths are adapted from [Python Patterns - Implementing Graphs](https://www.python.org/doc/essays/graphs/) by Guido van Rossum, and the sliding window function is adapted from [more-itertools](https://github.com/more-itertools/more-itertools).
 
 ## License
 

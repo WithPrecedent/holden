@@ -32,7 +32,8 @@ def _run_block(source: str, namespace: dict) -> int:
         last = node.end_lineno
         code = '\n'.join(lines[first:last])
         raises = None
-        if first and (match := re.match(r'# Raises (\w+): (.*)', lines[first - 1])):
+        if first and (
+            match := re.match(r'# Raises (\w+): (.*)', lines[first - 1])):
             raises = match.groups()
         expected_output = None
         trailing = []
@@ -46,9 +47,12 @@ def _run_block(source: str, namespace: dict) -> int:
         try:
             with contextlib.redirect_stdout(buffer):
                 if isinstance(node, ast.Expr):
-                    value = eval(compile(ast.Expression(node.value), 'README', 'eval'), namespace)
+                    value = eval(
+                        compile(ast.Expression(node.value), 'README', 'eval'),
+                            namespace)
                 else:
-                    exec(compile(ast.Module([node], []), 'README', 'exec'), namespace)
+                    exec(compile(ast.Module([node], []), 'README', 'exec'),
+                        namespace)
                     value = None
         except Exception as error:
             assert raises is not None, f'Unexpected {error!r} in: {code}'

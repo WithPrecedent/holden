@@ -11,10 +11,6 @@ Contents:
     walk_parallel: returns path(s) through a parallel structure.
     walk_serial: returns path(s) through a serial structure.
 
-To Do:
-    For adjacency matrix walk, consider the efficient approach here:
-        https://www.geeksforgeeks.org/count-possible-paths-source-destination-exactly-k-edges/
-
 """
 
 from __future__ import annotations
@@ -26,23 +22,13 @@ from . import base, report, utilities, workshop
 if TYPE_CHECKING:
     from collections.abc import Hashable, Sequence
 
-    from . import composites, graphs
-
-__all__: list[str] = [
-    "walk",
-    "walk_adjacency",
-    "walk_edges",
-    "walk_matrix",
-    "walk_parallel",
-    "walk_serial",
-]
+    from . import composites, graphs, kinds
 
 
 def walk(
     item: Any,
     start: Hashable | Sequence[Hashable] | None = None,
-    stop: Hashable | Sequence[Hashable] | None = None,
-) -> list[list[Hashable]]:
+    stop: Hashable | Sequence[Hashable] | None = None) -> kinds.RawParallel:
     """Returns all paths in any recognized composite form.
 
     Args:
@@ -64,16 +50,15 @@ def walk(
 
     """
     form = base.classify(item)
-    function = globals().get(f"walk_{form}")
+    function = globals().get(f'walk_{form}')
     if function is None:
-        raise NotImplementedError(f"walk does not support {form} forms")
+        raise NotImplementedError(f'walk does not support {form} forms')
     starts = (
-        report.get_roots(item) if start is None else utilities._listify(start)
-    )
+        report.get_roots(item) if start is None else utilities._listify(start))
     stops = (
-        report.get_endpoints(item) if stop is None else utilities._listify(stop)
-    )
-    paths: list[list[Hashable]] = []
+        report.get_endpoints(item) if stop is None
+            else utilities._listify(stop))
+    paths: kinds.RawParallel = []
     for first in starts:
         for last in stops:
             paths.extend(function(item, first, last))
@@ -81,11 +66,10 @@ def walk(
 
 
 def walk_adjacency(
-    item: graphs.Adjacency | dict[Hashable, set[Hashable]],
+    item: graphs.Adjacency | kinds.RawAdjacency,
     start: Hashable,
     stop: Hashable,
-    path: Sequence[Hashable] | None = None,
-) -> list[list[Hashable]]:
+    path: Sequence[Hashable] | None = None) -> kinds.RawParallel:
     """Returns all paths in `item` from `start` to `stop`.
 
     A path never visits the same node twice, so cycles cannot cause the search
@@ -107,7 +91,7 @@ def walk_adjacency(
 
     """
     adjacency = utilities._rawify(item)
-    paths: list[list[Hashable]] = []
+    paths: kinds.RawParallel = []
     stack = [[*(path or []), start]]
     while stack:
         current = stack.pop()
@@ -118,17 +102,15 @@ def walk_adjacency(
         stack.extend(
             [*current, child]
             for child in reversed(utilities._stabilize(adjacency.get(node, ())))
-            if child not in current
-        )
+            if child not in current)
     return paths
 
 
 def walk_edges(
-    item: graphs.Edges | list[tuple[Hashable, Hashable]],
+    item: graphs.Edges | kinds.RawEdges,
     start: Hashable,
     stop: Hashable,
-    path: Sequence[Hashable] | None = None,
-) -> list[list[Hashable]]:
+    path: Sequence[Hashable] | None = None) -> kinds.RawParallel:
     """Returns all paths in `item` from `start` to `stop`.
 
     Args:
@@ -144,19 +126,17 @@ def walk_edges(
 
     """
     return walk_adjacency(
-        item=workshop.edges_to_adjacency(item=item),
-        start=start,
-        stop=stop,
-        path=path,
-    )
+        item = workshop.edges_to_adjacency(item = item),
+        start = start,
+        stop = stop,
+        path = path)
 
 
 def walk_matrix(
-    item: graphs.Matrix | tuple[list[list[float]], list[Hashable]],
+    item: graphs.Matrix | kinds.RawMatrix,
     start: Hashable,
     stop: Hashable,
-    path: Sequence[Hashable] | None = None,
-) -> list[list[Hashable]]:
+    path: Sequence[Hashable] | None = None) -> kinds.RawParallel:
     """Returns all paths in `item` from `start` to `stop`.
 
     Args:
@@ -172,18 +152,16 @@ def walk_matrix(
 
     """
     return walk_adjacency(
-        item=workshop.matrix_to_adjacency(item=item),
-        start=start,
-        stop=stop,
-        path=path,
-    )
+        item = workshop.matrix_to_adjacency(item = item),
+        start = start,
+        stop = stop,
+        path = path)
 
 
 def walk_parallel(
-    item: composites.Parallel | list[list[Hashable]],
+    item: composites.Parallel | kinds.RawParallel,
     start: Hashable,
-    stop: Hashable,
-) -> list[list[Hashable]]:
+    stop: Hashable) -> kinds.RawParallel:
     """Returns all paths in `item` from `start` to `stop`.
 
     Args:
@@ -197,17 +175,16 @@ def walk_parallel(
             `stop` does not contribute a path.
 
     """
-    paths: list[list[Hashable]] = []
+    paths: kinds.RawParallel = []
     for serial in utilities._rawify(item):
-        paths.extend(walk_serial(item=serial, start=start, stop=stop))
+        paths.extend(walk_serial(item = serial, start = start, stop = stop))
     return paths
 
 
 def walk_serial(
-    item: composites.Serial | list[Hashable],
+    item: composites.Serial | kinds.RawSerial,
     start: Hashable,
-    stop: Hashable,
-) -> list[list[Hashable]]:
+    stop: Hashable) -> kinds.RawParallel:
     """Returns all paths in `item` from `start` to `stop`.
 
     Args:

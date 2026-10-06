@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
+## Unreleased
+    * Restyled the code to single quotes, spaces around keyword `=` signs, and closing brackets on the last line of an argument list; `ruff-format` is no longer run in `pre-commit` because it undoes this style
+    * Added `holden.kinds` with type aliases for the raw forms (`RawAdjacency`, `RawEdges`, `RawMatrix`, `RawParallel`, and `RawSerial`)
+    * `Serial.append` and `Parallel.append` now accept (and ignore) `attachment` so that they match `Directed.append`, which fixes the `mypy` errors
+    * Added tests for `attachment` and `holden.kinds` (coverage is 100%)
+    * Wrote the name of the package in code font (rather than bold) in the README
+
 ## 0.2.2
     * Simplified the README code examples (no doctest prompts, results shown as comments)
     * Added rendered Graphviz and mermaid images of the export example to the README

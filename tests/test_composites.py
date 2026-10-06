@@ -70,6 +70,15 @@ class TestSerial:
         with pytest.raises(TypeError):
             serial.prepend({'a': 1})
 
+    def test_append_ignores_attachment(self) -> None:
+        """Tests that `attachment` is accepted, but paths attach at the end."""
+        serial = holden.Serial(['a', 'b'])
+        serial.append('c', attachment = 'a')
+        assert serial.contents == ['a', 'b', 'c']
+        parallel = holden.Parallel([['a'], ['b']])
+        parallel.append('c', attachment = 'a')
+        assert parallel.contents == [['a', 'c'], ['b', 'c']]
+
     def test_append_graph(self) -> None:
         """Tests appending a graph, which adds the nodes of each path."""
         serial = holden.Serial(['a'])
@@ -103,7 +112,8 @@ class TestSerial:
         serial = holden.Serial(['a', 'b', 'c', 'd'])
         assert serial.subset(include = ['a', 'c']).contents == ['a', 'c']
         assert serial.subset(exclude = ['b']).contents == ['a', 'c', 'd']
-        assert serial.subset(include = ['a', 'b'], exclude = ['a']).contents == [
+        assert serial.subset(include = ['a', 'b'],
+            exclude = ['a']).contents == [
             'b']
         assert type(serial.subset(include = 'a')) is holden.Serial
         assert serial.contents == ['a', 'b', 'c', 'd']
@@ -145,11 +155,13 @@ class TestSerial:
         """Tests the `Fungible` class methods."""
         assert holden.Serial.from_edges([('a', 'b'), ('b', 'c')]).contents == [
             'a', 'b', 'c']
-        assert holden.Serial.from_adjacency({'a': {'b'}, 'b': set()}).contents == [
+        assert holden.Serial.from_adjacency(
+            {'a': {'b'}, 'b': set()}).contents == [
             'a', 'b']
         assert holden.Serial.from_parallel([['a', 'b']]).contents == ['a', 'b']
         assert holden.Serial.from_serial(['a']).contents == ['a']
-        assert holden.Serial.from_matrix(([[0, 1], [0, 0]], ['a', 'b'])).contents == [
+        assert holden.Serial.from_matrix(
+            ([[0, 1], [0, 0]], ['a', 'b'])).contents == [
             'a', 'b']
 
     def test_equality(self) -> None:

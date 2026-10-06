@@ -20,7 +20,7 @@ from . import base, check, report
 if TYPE_CHECKING:
     from collections.abc import Hashable, MutableMapping, MutableSequence
 
-__all__: list[str] = ["Adjacency", "Edges", "Matrix"]
+__all__: list[str] = ['Adjacency', 'Edges', 'Matrix']
 
 """ Graph Form Base Classes """
 
@@ -39,14 +39,13 @@ class Adjacency(base.Graph, bunches.Dictionary):
     """
 
     contents: MutableMapping[Hashable, set[Hashable]] = dataclasses.field(
-        default_factory=dict
-    )
+        default_factory = dict)
 
     """ Initialization Methods """
 
     def __post_init__(self) -> None:
         """Adds a key for every node that only appears as a connection."""
-        parent = getattr(super(), "__post_init__", None)
+        parent = getattr(super(), '__post_init__', None)
         if parent is not None:
             parent()
         for node in report._nodes_adjacency(self.contents):
@@ -72,8 +71,8 @@ class Adjacency(base.Graph, bunches.Dictionary):
         self.contents[item] = set()
 
     def _connect(
-        self, item: base.Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: base.Edge | tuple[Hashable, Hashable],
+            **kwargs: Any) -> None:
         """Adds edge to the stored graph.
 
         Args:
@@ -97,8 +96,8 @@ class Adjacency(base.Graph, bunches.Dictionary):
             connections.discard(item)
 
     def _disconnect(
-        self, item: base.Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: base.Edge | tuple[Hashable, Hashable],
+            **kwargs: Any) -> None:
         """Removes edge from the stored graph.
 
         Args:
@@ -116,7 +115,7 @@ class Adjacency(base.Graph, bunches.Dictionary):
             **kwargs: additional keyword arguments.
 
         """
-        other = base._to_raw(item, "adjacency")
+        other = base._to_raw(item, 'adjacency')
         for node, connections in other.items():
             self.contents.setdefault(node, set()).update(connections)
         for node in report._nodes_adjacency(self.contents):
@@ -125,8 +124,7 @@ class Adjacency(base.Graph, bunches.Dictionary):
     def _subset(
         self,
         include: list[Hashable] | None = None,
-        exclude: list[Hashable] | None = None,
-    ) -> Adjacency:
+        exclude: list[Hashable] | None = None) -> Adjacency:
         """Returns a new graph with a subset of the stored nodes.
 
         Args:
@@ -139,14 +137,12 @@ class Adjacency(base.Graph, bunches.Dictionary):
 
         """
         nodes = self._selected(
-            report._nodes_adjacency(self.contents), include, exclude
-        )
+            report._nodes_adjacency(self.contents), include, exclude)
         keep = set(nodes)
         new_graph = copy.copy(self)
         new_graph.contents = {
             node: {c for c in self.contents[node] if c in keep}
-            for node in nodes
-        }
+            for node in nodes}
         return new_graph
 
 
@@ -165,8 +161,7 @@ class Edges(base.Graph, bunches.Listing):
     """
 
     contents: MutableSequence[base.Edge | tuple[Hashable, Hashable]] = (
-        dataclasses.field(default_factory=list)
-    )
+        dataclasses.field(default_factory = list))
 
     _implicit_nodes: ClassVar[bool] = True
 
@@ -192,16 +187,14 @@ class Edges(base.Graph, bunches.Listing):
         """
         if not check.is_edge(item):
             raise ValueError(
-                "An edge list can only add edges. Use `connect` to create an "
-                "edge between nodes."
-            )
+                'An edge list can only add edges. Use `connect` to create an '
+                'edge between nodes.')
         self.contents.append(
-            cast("base.Edge | tuple[Hashable, Hashable]", item)
-        )
+            cast('base.Edge | tuple[Hashable, Hashable]', item))
 
     def _connect(
-        self, item: base.Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: base.Edge | tuple[Hashable, Hashable],
+            **kwargs: Any) -> None:
         """Adds edge to the stored graph if it is not already stored.
 
         Args:
@@ -215,8 +208,7 @@ class Edges(base.Graph, bunches.Listing):
     def _delete(
         self,
         item: Hashable | base.Edge | tuple[Hashable, Hashable],
-        **kwargs: Any,
-    ) -> None:
+        **kwargs: Any) -> None:
         """Removes node (and its edges) or edge from the stored graph.
 
         Args:
@@ -227,14 +219,14 @@ class Edges(base.Graph, bunches.Listing):
         """
         if item in self.nodes:
             self.contents[:] = [
-                edge for edge in self.contents if item not in {edge[0], edge[1]}
-            ]
+                edge for edge in self.contents
+                    if item not in {edge[0], edge[1]}]
         else:
             self.contents.remove(item)  # type: ignore[arg-type]
 
     def _disconnect(
-        self, item: base.Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: base.Edge | tuple[Hashable, Hashable],
+            **kwargs: Any) -> None:
         """Removes edge from the stored graph.
 
         Args:
@@ -252,15 +244,14 @@ class Edges(base.Graph, bunches.Listing):
             **kwargs: additional keyword arguments.
 
         """
-        for edge in base._to_raw(item, "edges"):
+        for edge in base._to_raw(item, 'edges'):
             if edge not in self.contents:
                 self.contents.append(edge)
 
     def _subset(
         self,
         include: list[Hashable] | None = None,
-        exclude: list[Hashable] | None = None,
-    ) -> Edges:
+        exclude: list[Hashable] | None = None) -> Edges:
         """Returns a new graph with a subset of the stored nodes.
 
         Args:
@@ -274,16 +265,13 @@ class Edges(base.Graph, bunches.Listing):
         """
         ordered = list(
             dict.fromkeys(
-                node for edge in self.contents for node in (edge[0], edge[1])
-            )
-        )
+                node for edge in self.contents for node in (edge[0], edge[1])))
         keep = set(self._selected(ordered, include, exclude))
         new_graph = copy.copy(self)
         new_graph.contents = [
             edge
             for edge in self.contents
-            if edge[0] in keep and edge[1] in keep
-        ]
+            if edge[0] in keep and edge[1] in keep]
         return new_graph
 
     """ Dunder Methods """
@@ -325,9 +313,9 @@ class Matrix(base.Graph, bunches.Listing):
     """
 
     contents: MutableSequence[MutableSequence[float]] = dataclasses.field(
-        default_factory=list
-    )
-    labels: MutableSequence[Hashable] = dataclasses.field(default_factory=list)
+        default_factory = list)
+    labels: MutableSequence[Hashable] = dataclasses.field(
+        default_factory = list)
 
     """ Initialization Methods """
 
@@ -339,17 +327,15 @@ class Matrix(base.Graph, bunches.Listing):
                 the number of labels.
 
         """
-        parent = getattr(super(), "__post_init__", None)
+        parent = getattr(super(), '__post_init__', None)
         if parent is not None:
             parent()
         size = len(self.labels)
         if len(self.contents) != size or any(
-            len(row) != size for row in self.contents
-        ):
+            len(row) != size for row in self.contents):
             raise ValueError(
-                "The matrix must be square with one label for each row and "
-                "column"
-            )
+                'The matrix must be square with one label for each row and '
+                'column')
 
     """ Properties """
 
@@ -374,8 +360,8 @@ class Matrix(base.Graph, bunches.Listing):
         self.contents.append([0] * len(self.labels))
 
     def _connect(
-        self, item: base.Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: base.Edge | tuple[Hashable, Hashable],
+            **kwargs: Any) -> None:
         """Adds edge to the stored graph.
 
         Args:
@@ -403,8 +389,8 @@ class Matrix(base.Graph, bunches.Listing):
         del self.labels[index]
 
     def _disconnect(
-        self, item: base.Edge | tuple[Hashable, Hashable], **kwargs: Any
-    ) -> None:
+        self, item: base.Edge | tuple[Hashable, Hashable],
+            **kwargs: Any) -> None:
         """Removes edge from the stored graph.
 
         Args:
@@ -418,7 +404,7 @@ class Matrix(base.Graph, bunches.Listing):
         row = self.labels.index(item[0])
         column = self.labels.index(item[1])
         if not self.contents[row][column]:
-            raise ValueError("The edge is not in the graph")
+            raise ValueError('The edge is not in the graph')
         self.contents[row][column] = 0
 
     def _merge(self, item: Any, **kwargs: Any) -> None:
@@ -429,7 +415,7 @@ class Matrix(base.Graph, bunches.Listing):
             **kwargs: additional keyword arguments.
 
         """
-        other = base._to_raw(item, "adjacency")
+        other = base._to_raw(item, 'adjacency')
         for node in report._nodes_adjacency(other):
             if node not in self:
                 self._add(node)
@@ -440,8 +426,7 @@ class Matrix(base.Graph, bunches.Listing):
     def _subset(
         self,
         include: list[Hashable] | None = None,
-        exclude: list[Hashable] | None = None,
-    ) -> Matrix:
+        exclude: list[Hashable] | None = None) -> Matrix:
         """Returns a new graph with a subset of the stored nodes.
 
         Args:
@@ -457,7 +442,6 @@ class Matrix(base.Graph, bunches.Listing):
         indices = [i for i, label in enumerate(self.labels) if label in keep]
         new_graph = copy.copy(self)
         new_graph.contents = [
-            [self.contents[i][j] for j in indices] for i in indices
-        ]
+            [self.contents[i][j] for j in indices] for i in indices]
         new_graph.labels = [self.labels[i] for i in indices]
         return new_graph
