@@ -291,7 +291,7 @@ Contributors are always welcome. Feel free to grab an [issue](https://www.github
 
 ## License
 
-Use of this repository is authorized under the [Apache Software License 2.0](https://www.github.com/WithPrecedent/holden/blog/main/LICENSE).
+Use of this repository is authorized under the [Apache Software License 2.0](https://www.github.com/WithPrecedent/holden/blob/main/LICENSE).
 
 <p align="center">
 <img src="https://media.giphy.com/media/3oKIPwyf0EBAGnAkWk/giphy.gif" />
