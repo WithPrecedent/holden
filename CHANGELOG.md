@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
+## 0.2.4
+    * Updated to the `snickerdoodle` 0.4.0 template
+    * Made `ruff` ignore boolean default positional arguments (`FBT002`)
+    * Relaxed `pydoclint` checks of type hints, class attributes, and raised exceptions
+    * Excluded `uv.lock` from the large file check
+    * Fixed typos in the contributing guide and noted that the project does not use a code formatter
+    * Fixed the LICENSE link in the README
+
 ## 0.2.3
     * Restyled the code to single quotes, spaces around keyword `=` signs, and closing brackets on the last line of an argument list; `ruff-format` is no longer run in `pre-commit` because it undoes this style
     * Added `holden.kinds` with type aliases for the raw forms (`RawAdjacency`, `RawEdges`, `RawMatrix`, `RawParallel`, and `RawSerial`)
