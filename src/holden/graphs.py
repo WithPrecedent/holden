@@ -175,7 +175,9 @@ class Edges(base.Graph, bunches.Listing):
     # `bunches` methods of the same name (which work with the items in
     # `contents`). `Composite` comes first in the bases, so this does not
     # change which method is called: it tells type checkers which one wins.
-    delete = base.Composite.delete  # type: ignore[assignment]
+    # Before Python 3.12, a `slice` is not `Hashable`, so only older
+    # versions report the conflict with the `bunches` method.
+    delete = base.Composite.delete  # type: ignore[assignment, unused-ignore]
     subset = base.Composite.subset  # type: ignore[assignment]
 
     """ Properties """
@@ -334,7 +336,9 @@ class Matrix(base.Graph, bunches.Listing):
     # `bunches` methods of the same name (which work with the items in
     # `contents`). `Composite` comes first in the bases, so this does not
     # change which method is called: it tells type checkers which one wins.
-    delete = base.Composite.delete  # type: ignore[assignment]
+    # Before Python 3.12, a `slice` is not `Hashable`, so only older
+    # versions report the conflict with the `bunches` method.
+    delete = base.Composite.delete  # type: ignore[assignment, unused-ignore]
     subset = base.Composite.subset  # type: ignore[assignment]
 
     """ Initialization Methods """
