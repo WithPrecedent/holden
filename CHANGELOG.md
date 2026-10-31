@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
+## Unreleased
+
+* Added the `py.typed` marker so that type checkers use the type hints in
+  `holden`.
+
 ## 0.2.4
     * Updated to the `snickerdoodle` 0.4.0 template
     * Made `ruff` ignore boolean default positional arguments (`FBT002`)
