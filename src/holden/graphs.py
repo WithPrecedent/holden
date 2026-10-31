@@ -41,6 +41,12 @@ class Adjacency(base.Graph, bunches.Dictionary):
     contents: MutableMapping[Hashable, set[Hashable]] = dataclasses.field(
         default_factory = dict)
 
+    # The `Composite` method (which works with nodes) is used rather than the
+    # `bunches` method of the same name (which works with the items in
+    # `contents`). `Composite` comes first in the bases, so this does not
+    # change which method is called: it tells type checkers which one wins.
+    subset = base.Composite.subset  # type: ignore[assignment]
+
     """ Initialization Methods """
 
     def __post_init__(self) -> None:
@@ -164,6 +170,13 @@ class Edges(base.Graph, bunches.Listing):
         dataclasses.field(default_factory = list))
 
     _implicit_nodes: ClassVar[bool] = True
+
+    # The `Composite` methods (which work with nodes) are used rather than the
+    # `bunches` methods of the same name (which work with the items in
+    # `contents`). `Composite` comes first in the bases, so this does not
+    # change which method is called: it tells type checkers which one wins.
+    delete = base.Composite.delete  # type: ignore[assignment]
+    subset = base.Composite.subset  # type: ignore[assignment]
 
     """ Properties """
 
@@ -316,6 +329,13 @@ class Matrix(base.Graph, bunches.Listing):
         default_factory = list)
     labels: MutableSequence[Hashable] = dataclasses.field(
         default_factory = list)
+
+    # The `Composite` methods (which work with nodes) are used rather than the
+    # `bunches` methods of the same name (which work with the items in
+    # `contents`). `Composite` comes first in the bases, so this does not
+    # change which method is called: it tells type checkers which one wins.
+    delete = base.Composite.delete  # type: ignore[assignment]
+    subset = base.Composite.subset  # type: ignore[assignment]
 
     """ Initialization Methods """
 

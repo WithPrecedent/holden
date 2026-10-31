@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14"]
 keywords = []
 dependencies = [
-    "bunches>=0.1.3",
+    "bunches>=0.3.0",
     "wonka>=0.2.0"]
 
 [project.urls]

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
+## Unreleased
+
+* Fixed the type errors that `mypy` reports when `bunches` is typed (0.3.0
+  and later). `Parallel`, `Serial`, `Adjacency`, `Edges`, and `Matrix` now say
+  that they use the `delete` and `subset` methods of `Composite`, which work
+  with nodes, rather than those of `bunches`, which work with the items in
+  `contents`. This does not change which methods are called, but packages
+  that subclass these classes no longer get the conflict between them from
+  type checkers.
+* Raised the minimum version of `bunches` to 0.3.0, the first with the
+  `py.typed` marker
+
 ## 0.2.5
 
 * Added the `py.typed` marker so that type checkers use the type hints in
