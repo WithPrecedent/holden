@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 <!-- insertion marker -->
 
-## Unreleased
+## 0.2.6
 
 * Fixed the type errors that `mypy` reports when `bunches` is typed (0.3.0
   and later). `Parallel`, `Serial`, `Adjacency`, `Edges`, and `Matrix` now say
